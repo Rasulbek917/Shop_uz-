@@ -119,14 +119,21 @@ export async function POST(req: NextRequest) {
       });
 
       // Default categories
-      await tx.category.createMany({
-        data: [
-          { shopId: shop.id, name: "Oziq-ovqat", description: "Kundalik oziq-ovqat mahsulotlari" },
-          { shopId: shop.id, name: "Ichimliklar", description: "Sovuq va issiq ichimliklar" },
-          { shopId: shop.id, name: "Shirinliklar", description: "Shirinlik va pishiriqlar" },
-          { shopId: shop.id, name: "Uy-ro‘zg‘r", description: "Uy uchun kerakli buyumlar" },
-        ],
-      });
+     await tx.category.createMany({
+  data: [
+    { shopId: shop.id, name: "Oziq-ovqat", description: "Kundalik oziq-ovqat mahsulotlari" },
+    { shopId: shop.id, name: "Ichimliklar", description: "Sovuq va issiq ichimliklar" },
+    { shopId: shop.id, name: "Shirinliklar", description: "Shirinlik va pishiriqlar" },
+    { shopId: shop.id, name: "Uy-ro‘zg‘or", description: "Uy uchun kerakli buyumlar" },
+    { shopId: shop.id, name: "Kanselyariya", description: "Daftar, ruchka va maktab buyumlari" },
+    { shopId: shop.id, name: "Kiyim-kechak", description: "Kiyim va aksessuarlar" },
+    { shopId: shop.id, name: "Oyoq kiyimlar", description: "Poyabzal va tapochkalar" },
+    { shopId: shop.id, name: "Gigiena va kosmetika", description: "Sovun, shampun va parvarish vositalari" },
+    { shopId: shop.id, name: "Maishiy kimyo", description: "Kir yuvish va tozalash vositalari" },
+    { shopId: shop.id, name: "Bolalar tovarlari", description: "O‘yinchoqlar va bolalar buyumlari" },
+    { shopId: shop.id, name: "Elektronika", description: "Zaryadlovchi, quloqchin va aksessuarlar" },
+  ],
+});
 
       // Create initial notification for trial
       await tx.notification.create({
