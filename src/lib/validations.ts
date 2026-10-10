@@ -134,3 +134,12 @@ export const supplierSchema = z.object({
   debt: z.number().default(0),
   notes: z.string().optional().nullable(),
 });
+
+export const debtSchema = z.object({
+  firstName: z.string().min(2, "Ism kamida 2 ta belgi bo‘lishi kerak"),
+  lastName: z.string().min(2, "Familiya kamida 2 ta belgi bo‘lishi kerak"),
+  phone: z.string().optional().nullable(),
+  amount: z.number().min(0, "Qarz miqdori manfiy bo‘lmasligi kerak"),
+  description: z.string().optional().nullable(),
+  status: z.enum(["OPEN", "PAID", "CANCELLED"]).optional(),
+});

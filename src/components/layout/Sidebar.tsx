@@ -60,6 +60,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Sotuvlar tarixi", href: "/admin/sotuvlar", icon: ShoppingCart },
           { label: "Qaytarishlar", href: "/admin/qaytarishlar", icon: RotateCcw },
           { label: "Mijozlar bazasi", href: "/admin/mijozlar", icon: Users },
+          { label: "Qarzlar", href: "/admin/qarzlar", icon: CreditCard },
           { label: "Yetkazib beruvchilar", href: "/admin/yetkazib-beruvchilar", icon: Truck },
           { label: "Xodimlar boshqaruvi", href: "/admin/xodimlar", icon: UserCog },
           { label: "Hisobotlar va Tahlil", href: "/admin/hisobotlar", icon: BarChart3 },
