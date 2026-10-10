@@ -1,0 +1,40 @@
+import { NextResponse } from "next/server";
+import { getAuthCookieName, getCurrentUser } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
+
+export const dynamic = "force-dynamic";
+
+export async function POST() {
+  try {
+    const user = await getCurrentUser();
+    if (user) {
+      await logAudit({
+        shopId: user.shopId,
+        userId: user.id,
+        userName: user.fullName,
+        action: "TIZIMDAN_CHIQILDI",
+        entity: "User",
+        entityId: user.id,
+        details: `${user.fullName} (${user.role}) tizimdan chiqdi`,
+      });
+    }
+  } catch (e) {
+    // Logout must succeed even if audit write fails — but never silently
+    logger.warn("POST /api/auth/logout: audit yozilmadi", { error: e, route: "/api/auth/logout" });
+  }
+
+  const response = NextResponse.json({
+    success: true,
+    message: "Tizimdan muvaffaqiyatli chiqildi",
+  });
+
+  response.cookies.set({
+    name: getAuthCookieName(),
+    value: "",
+    path: "/",
+    expires: new Date(0),
+  });
+
+  return response;
+}
