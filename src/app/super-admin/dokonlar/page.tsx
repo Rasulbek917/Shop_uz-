@@ -35,7 +35,9 @@ export default function ShopsPage() {
     adminName: "",
     adminUsername: "",
     adminPassword: "",
+    subscriptionType: "MONTHLY" as "TRIAL" | "MONTHLY",
     trialDays: 7,
+    subscriptionDays: 30,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export default function ShopsPage() {
         return;
       }
 
-      setSuccessMessage("Yangi do‘kon muvaffaqiyatli qo‘shildi va 7 kunlik trial boshlandi!");
+      setSuccessMessage(data.message || "Yangi do‘kon muvaffaqiyatli qo‘shildi!");
       setShowCreateModal(false);
       setCreateForm({
         name: "",
@@ -103,7 +105,9 @@ export default function ShopsPage() {
         adminName: "",
         adminUsername: "",
         adminPassword: "",
+        subscriptionType: "MONTHLY",
         trialDays: 7,
+        subscriptionDays: 30,
       });
       loadShops();
     } catch (err) {
@@ -544,16 +548,57 @@ export default function ShopsPage() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Sinov muddati (kun)
+                    Obuna Turi *
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={createForm.trialDays}
-                    onChange={(e) => setCreateForm({ ...createForm, trialDays: Number(e.target.value) })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
-                  />
+                  <div className="mt-1.5 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm({ ...createForm, subscriptionType: "TRIAL" })}
+                      className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${
+                        createForm.subscriptionType === "TRIAL"
+                          ? "border-amber-500 bg-amber-50 text-amber-700 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      🕐 Sinov (Trial)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCreateForm({ ...createForm, subscriptionType: "MONTHLY" })}
+                      className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${
+                        createForm.subscriptionType === "MONTHLY"
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                      }`}
+                    >
+                      ✅ Oylik Obuna
+                    </button>
+                  </div>
+                  {createForm.subscriptionType === "TRIAL" ? (
+                    <div className="mt-2">
+                      <label className="block text-xs text-slate-500 mb-1">Sinov kunlari (1-30)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={createForm.trialDays}
+                        onChange={(e) => setCreateForm({ ...createForm, trialDays: Number(e.target.value) })}
+                        className="w-full rounded-xl border border-amber-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      <label className="block text-xs text-slate-500 mb-1">Obuna kunlari (30, 60, 90, 365...)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={createForm.subscriptionDays}
+                        onChange={(e) => setCreateForm({ ...createForm, subscriptionDays: Number(e.target.value) })}
+                        className="w-full rounded-xl border border-emerald-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                      />
+                      <p className="mt-1 text-xs text-emerald-600">Do'kon aktiv holda ochiladi</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -636,7 +681,7 @@ export default function ShopsPage() {
                   disabled={isSubmitting}
                   className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
                 >
-                  {isSubmitting ? "Saqlanmoqda..." : "Saqlash va Trial Boshlash"}
+                  {isSubmitting ? "Saqlanmoqda..." : createForm.subscriptionType === "TRIAL" ? "Saqlash va Sinov Boshlash" : "Saqlash va Obuna Boshlash"}
                 </button>
               </div>
             </form>

@@ -19,13 +19,16 @@ body {
 
 /* Professional Multi-Target Print Stylesheet */
 @media print {
-  /* 1. Page settings */
-  @page {
-    margin: 8mm;
-    size: auto;
+  /* 1. Base reset for clean paper printing */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
   }
 
-  /* 2. Hide all chrome, nav, sidebar, action buttons, modals backdrop */
+  /* Hide all chrome, nav, sidebar, action buttons, modals backdrop */
   aside,
   header,
   nav,
@@ -35,18 +38,6 @@ body {
   textarea,
   .no-print {
     display: none !important;
-  }
-
-  /* 3. Base reset for clean white paper printing */
-  html, body {
-    background: #ffffff !important;
-    color: #000000 !important;
-    font-size: 11pt;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    box-shadow: none !important;
   }
 
   /* CASE A: Printing Receipt */
@@ -198,10 +189,99 @@ body {
   .print-only {
     display: block !important;
   }
+
+  /* CASE D: Printing Barcode Thermal Labels (80mm / 58mm POS & Label Printers) */
+  body.printing-barcode-label * {
+    visibility: hidden;
+  }
+  body.printing-barcode-label .barcode-thermal-print-area,
+  body.printing-barcode-label .barcode-thermal-print-area *,
+  body.printing-barcode-label .barcode-print-container,
+  body.printing-barcode-label .barcode-print-container * {
+    visibility: visible;
+  }
+  body.printing-barcode-label .barcode-thermal-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 76mm;
+    max-width: 80mm;
+    margin: 0 auto;
+    padding: 2mm 3mm;
+    background: #ffffff !important;
+    color: #000000 !important;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  body.printing-barcode-label .barcode-print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    max-width: 80mm;
+    margin: 0;
+    padding: 2mm 3mm;
+    background: #ffffff !important;
+    color: #000000 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  body.printing-barcode-label > *:not(.barcode-thermal-print-area):not(.barcode-print-container) {
+    display: none !important;
+  }
+
+  .thermal-store-name {
+    font-size: 8pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1mm;
+    border-bottom: 1px dashed #000000;
+    padding-bottom: 1mm;
+  }
+  .thermal-product-name {
+    font-size: 10pt;
+    font-weight: 800;
+    line-height: 1.2;
+    margin: 1mm 0;
+    word-break: break-word;
+  }
+  .thermal-product-sub {
+    font-size: 7.5pt;
+    color: #333333;
+    margin-bottom: 1mm;
+  }
+  .thermal-code-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 1.5mm 0;
+  }
+  .thermal-bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #000000;
+    padding-top: 1mm;
+    margin-top: 1mm;
+  }
+  .thermal-sku {
+    font-size: 8pt;
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+  }
+  .thermal-price {
+    font-size: 11pt;
+    font-weight: 900;
+  }
 }
 
-/* Named page for QR stickers: label printers get exact 58mm media,
-   no giant A4 sheet with a tiny label in the corner. */
+/* Specific page sizes for thermal barcode label stickers */
+@page barcode-label-80 {
+  size: 80mm auto;
+  margin: 0;
+}
+
 @page qr-label {
   size: 58mm 60mm;
   margin: 0;
@@ -209,6 +289,9 @@ body {
 
 /* The print-only label must never appear on screen */
 @media screen {
+  .barcode-thermal-print-area {
+    display: none !important;
+  }
   .qr-print-area {
     display: none !important;
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CreditCard, PencilLine, Plus, Search, Trash2, X } from "lucide-react";
+import { CreditCard, PencilLine, Plus, Search, Trash2, X, Banknote, CheckCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errorMessage";
 
@@ -23,6 +23,8 @@ export default function DebtsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [payingDebt, setPayingDebt] = useState<any | null>(null);
+  const [payAmount, setPayAmount] = useState<number>(0);
 
   useEffect(() => {
     loadDebts();
@@ -74,6 +76,62 @@ export default function DebtsPage() {
       loadDebts();
     } catch (error) {
       setErrorMsg("Server xatosi");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenPay = (debt: any) => {
+    setPayingDebt(debt);
+    setPayAmount(Number(debt.amount || 0));
+    setErrorMsg(null);
+  };
+
+  const handlePaySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payingDebt) return;
+
+    const amountPaid = Number(payAmount || 0);
+    if (amountPaid <= 0) {
+      alert("Iltimos, to‘langan summani kiriting!");
+      return;
+    }
+
+    const currentAmount = Number(payingDebt.amount || 0);
+    const newAmount = Math.max(0, currentAmount - amountPaid);
+    const newStatus = newAmount === 0 ? "PAID" : "OPEN";
+
+    setIsSubmitting(true);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch(`/api/debts/${payingDebt.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: newAmount,
+          status: newStatus,
+          description: payingDebt.description
+            ? `${payingDebt.description} | [${new Date().toLocaleDateString("uz-UZ")} to'landi: ${amountPaid.toLocaleString("uz-UZ")} so'm]`
+            : `[${new Date().toLocaleDateString("uz-UZ")} to'landi: ${amountPaid.toLocaleString("uz-UZ")} so'm]`,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setErrorMsg(getErrorMessage(data.error, "To‘lovni qayd etishda xatolik yuz berdi"));
+        return;
+      }
+
+      setSuccessMsg(
+        newAmount === 0
+          ? `Qarz to‘liq yopildi (${amountPaid.toLocaleString("uz-UZ")} so'm qabul qilindi)!`
+          : `Qarzdan ${amountPaid.toLocaleString("uz-UZ")} so'm to‘landi. Qolgan qarz: ${newAmount.toLocaleString("uz-UZ")} so'm.`
+      );
+      setPayingDebt(null);
+      loadDebts();
+    } catch (err) {
+      setErrorMsg("Server bilan bog‘lanishda xatolik");
     } finally {
       setIsSubmitting(false);
     }
@@ -139,7 +197,13 @@ export default function DebtsPage() {
           </div>
 
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setErrorMsg(null);
+              setSuccessMsg(null);
+              setEditingDebtId(null);
+              setFormData(emptyForm);
+              setShowAddModal(true);
+            }}
             className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D]"
           >
             <Plus className="h-4 w-4" />
@@ -243,7 +307,18 @@ export default function DebtsPage() {
                     </td>
 
                     <td className="px-5 py-3.5 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1.5 items-center">
+                        {debt.status !== "PAID" && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPay(debt)}
+                            className="flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors shadow-sm"
+                            title="To‘lov qabul qilish"
+                          >
+                            <Banknote className="h-3.5 w-3.5" />
+                            <span>To‘landi</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleEdit(debt)}
@@ -285,6 +360,16 @@ export default function DebtsPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
+
+            {errorMsg && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <X className="h-4 w-4 shrink-0 text-red-600" />
+                  <span>{errorMsg}</span>
+                </div>
+                <button type="button" onClick={() => setErrorMsg(null)} className="text-red-500 hover:text-red-700">×</button>
+              </div>
+            )}
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -368,6 +453,102 @@ export default function DebtsPage() {
                   className="rounded-xl bg-[#16A34A] px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : editingDebtId ? "Yangilash" : "Saqlash"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* To'lov Qabul Qilish Modali */}
+      {payingDebt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <Banknote className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm md:text-base font-bold text-slate-900">
+                    Qarz To‘lovini Qabul Qilish
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {payingDebt.firstName} {payingDebt.lastName}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPayingDebt(null)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePaySubmit} className="space-y-4">
+              <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Joriy qarz miqdori:</span>
+                  <span className="font-extrabold text-red-600 text-sm">
+                    {formatCurrency(payingDebt.amount)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center border-t border-slate-200 pt-1.5">
+                  <span className="text-slate-500">To‘lovdan keyingi qoldiq:</span>
+                  <span className={`font-extrabold text-sm ${
+                    Math.max(0, Number(payingDebt.amount || 0) - Number(payAmount || 0)) === 0
+                      ? "text-emerald-600"
+                      : "text-amber-600"
+                  }`}>
+                    {formatCurrency(Math.max(0, Number(payingDebt.amount || 0) - Number(payAmount || 0)))}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Necha so‘m to‘ladi? *
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    max={payingDebt.amount}
+                    required
+                    value={payAmount || ""}
+                    onChange={(e) => setPayAmount(Number(e.target.value || 0))}
+                    placeholder="Masalan: 250000"
+                    className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-[#16A34A] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPayAmount(Number(payingDebt.amount || 0))}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-slate-200 px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-300"
+                  >
+                    To‘liq yopish
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Agar qisman to‘lasa (masalan yarmini), qolgan summa qarz sifatida saqlanib qoladi.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPayingDebt(null)}
+                  className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || Number(payAmount) <= 0}
+                  className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  <span>{isSubmitting ? "Saqlanmoqda..." : "To‘lovni tasdiqlash"}</span>
                 </button>
               </div>
             </form>

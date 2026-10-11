@@ -14,6 +14,7 @@ import {
   Plus,
   Package,
   Users,
+  RotateCcw,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 
@@ -148,7 +149,9 @@ export default function AdminDashboardPage() {
           <p className="mt-2 text-lg sm:text-xl font-extrabold text-emerald-700">
             {formatCurrency(today.profit)}
           </p>
-          <span className="text-[10px] text-slate-400 mt-0.5 block">Chiqimlar ayirilganda</span>
+          <span className="text-[10px] text-slate-400 mt-0.5 block">
+            {today.refundTotal > 0 ? `Qaytarish: -${formatCurrency(today.refundTotal)}` : "Chiqimlar ayirilganda"}
+          </span>
         </div>
       </div>
 
@@ -192,37 +195,53 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Top Selling Products */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-sm font-bold text-slate-900">Eng Ko‘p Sotilgan Mahsulotlar</h3>
-            <Package className="h-5 w-5 text-emerald-600" />
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-900">Eng Ko‘p Sotilgan Mahsulotlar</h3>
+              <Package className="h-5 w-5 text-emerald-600" />
+            </div>
+
+            <div className="mt-4 divide-y divide-slate-100">
+              {topProducts.length === 0 ? (
+                <p className="py-8 text-center text-xs text-slate-400">
+                  Ushbu oyda hali sotuvlar amalga oshirilmagan
+                </p>
+              ) : (
+                topProducts.slice(0, 5).map((med: any, idx: number) => (
+                  <div key={med.id} className="py-2.5 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 font-bold text-[10px] text-slate-600">
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <p className="font-bold text-slate-800">{med.name}</p>
+                        <p className="text-[11px] text-slate-500">
+                          {med.totalQuantity} {med.unit} sotildi
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-emerald-700">
+                      {formatCurrency(med.totalRevenue)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
-          <div className="mt-4 divide-y divide-slate-100">
-            {topProducts.length === 0 ? (
-              <p className="py-8 text-center text-xs text-slate-400">
-                Ushbu oyda hali sotuvlar amalga oshirilmagan
-              </p>
-            ) : (
-              topProducts.slice(0, 5).map((med: any, idx: number) => (
-                <div key={med.id} className="py-2.5 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 font-bold text-[10px] text-slate-600">
-                      {idx + 1}
-                    </span>
-                    <div>
-                      <p className="font-bold text-slate-800">{med.name}</p>
-                      <p className="text-[11px] text-slate-500">
-                        {med.totalQuantity} {med.unit} sotildi
-                      </p>
-                    </div>
-                  </div>
-                  <span className="font-bold text-emerald-700">
-                    {formatCurrency(med.totalRevenue)}
-                  </span>
-                </div>
-              ))
-            )}
+          {/* Quick link to Returns & Inflow-Outflow */}
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <Link
+              href="/admin/qaytarishlar"
+              className="flex items-center gap-1.5 font-bold text-rose-600 hover:text-rose-700"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span>Qaytarishlar tarixi ({today.refundCount || 0} ta bugun)</span>
+            </Link>
+            <span className="font-extrabold text-slate-700">
+              {formatCurrency(today.refundTotal || 0)}
+            </span>
           </div>
         </div>
       </div>

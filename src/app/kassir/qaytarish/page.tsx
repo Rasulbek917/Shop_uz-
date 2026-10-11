@@ -26,12 +26,12 @@ export default function ReturnsPage() {
     setSelectedItems({});
 
     try {
-      const res = await fetch(`/api/sales`);
+      const res = await fetch(`/api/sales?receiptNumber=${encodeURIComponent(receiptNumber.trim())}`);
       const data = await res.json();
       if (data.success) {
         const found = (data.data || []).find(
           (s: any) => s.receiptNumber.toLowerCase() === receiptNumber.trim().toLowerCase()
-        );
+        ) || (data.data && data.data[0]);
 
         if (!found) {
           setErrorMsg(`"${receiptNumber}" raqamli chek topilmadi!`);

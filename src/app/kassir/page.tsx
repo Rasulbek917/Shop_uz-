@@ -21,6 +21,7 @@ import { formatCurrency, formatDate } from "@/lib/formatters";
 import BarcodeScannerModal from "@/components/scanner/BarcodeScannerModal";
 import UsbBarcodeDetector from "@/components/scanner/UsbBarcodeDetector";
 import ReceiptModal from "@/components/pos/ReceiptModal";
+import CentralProductModal from "@/components/pos/CentralProductModal";
 import { CartItem } from "@/types";
 import { getErrorMessage } from "@/lib/errorMessage";
 
@@ -49,6 +50,10 @@ export default function CashierPosPage() {
     taxRate: 0,
     taxIncluded: false,
   });
+
+  // Central Product Code Center integration modal state
+  const [centralProductToImport, setCentralProductToImport] = useState<any | null>(null);
+  const [showCentralImportModal, setShowCentralImportModal] = useState(false);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -139,11 +144,54 @@ export default function CashierPosPage() {
     if (found) {
       addToCart(found);
     } else {
+      // 3. Not found in local store: Query Product Code Center (Central Database)!
       setStatusMessage({
-        text: `"${code}" kodi bo‘yicha omborda hech qanday mahsulot topilmadi!`,
+        text: `"${trimmed}" kodi markaziy bazadan qidirilmoqda...`,
+        type: "success",
+      });
+
+      try {
+        const centralRes = await fetch(`/api/products/central-lookup?code=${encodeURIComponent(trimmed)}`);
+        const centralData = await centralRes.json();
+
+        if (centralData.success && centralData.data) {
+          setStatusMessage(null);
+          setCentralProductToImport(centralData.data);
+          setShowCentralImportModal(true);
+          return;
+        } else if (centralData.error?.code === "CENTRAL_API_UNAVAILABLE") {
+          setStatusMessage({
+            text: `Do'konda topilmadi. ${centralData.error.message}`,
+            type: "error",
+          });
+          return;
+        }
+      } catch (centralErr) {
+        console.error("Central product lookup failed:", centralErr);
+      }
+
+      setStatusMessage({
+        text: `"${code}" kodi bo‘yicha na mahalliy omborda, na markaziy bazada mahsulot topilmadi!`,
         type: "error",
       });
     }
+  };
+
+  const handleCentralImportSuccess = (importedProduct: any, andAddToCart: boolean) => {
+    // Add/update to local products state cache
+    setProducts((prev) => {
+      const filtered = prev.filter((p) => p.id !== importedProduct.id);
+      return [importedProduct, ...filtered];
+    });
+
+    if (andAddToCart) {
+      addToCart(importedProduct);
+    }
+
+    setStatusMessage({
+      text: `"${importedProduct.name}" do'konga muvaffaqiyatli qabul qilindi!`,
+      type: "success",
+    });
   };
 
   // Add product to cart with FEFO batch selection
@@ -785,6 +833,14 @@ export default function CashierPosPage() {
           </div>
         </div>
       )}
+
+      {/* Central Product Code Center Import Modal */}
+      <CentralProductModal
+        isOpen={showCentralImportModal}
+        onClose={() => setShowCentralImportModal(false)}
+        centralProduct={centralProductToImport}
+        onImportSuccess={handleCentralImportSuccess}
+      />
     </div>
   );
 }

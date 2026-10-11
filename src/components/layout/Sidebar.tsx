@@ -23,6 +23,7 @@ import {
   X,
   ShieldCheck,
   Settings,
+  QrCode,
 } from "lucide-react";
 import { AuthUser, UserRole } from "@/types";
 
@@ -47,6 +48,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         return [
           { label: "Boshqaruv paneli", href: "/super-admin", icon: LayoutDashboard },
           { label: "Do‘konlar", href: "/super-admin/dokonlar", icon: Building2 },
+          { label: "QR / Shtrix-kodlar", href: "/admin/shtrix-kodlar", icon: QrCode },
           { label: "Obuna va Sinov", href: "/super-admin/obunalar", icon: CreditCard },
           { label: "Tizim jurnali (Audit)", href: "/super-admin/audit-log", icon: ScrollText },
         ];
@@ -55,6 +57,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         return [
           { label: "Bosh sahifa", href: "/admin", icon: LayoutDashboard },
           { label: "Mahsulotlar katalogi", href: "/admin/mahsulotlar", icon: Package },
+          { label: "QR / Shtrix-kodlar", href: "/admin/shtrix-kodlar", icon: QrCode },
           { label: "Ombor va partiyalar", href: "/admin/ombor", icon: Boxes },
           { label: "Tezkor kirim", href: "/omborchi/kirim", icon: ArrowDownToLine },
           { label: "Sotuvlar tarixi", href: "/admin/sotuvlar", icon: ShoppingCart },

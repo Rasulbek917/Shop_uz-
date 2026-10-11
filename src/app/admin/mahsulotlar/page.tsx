@@ -19,6 +19,7 @@ import { formatCurrency } from "@/lib/formatters";
 import BarcodeScannerModal from "@/components/scanner/BarcodeScannerModal";
 import UsbBarcodeDetector from "@/components/scanner/UsbBarcodeDetector";
 import QrLabelModal from "@/components/scanner/QrLabelModal";
+import CentralProductModal from "@/components/pos/CentralProductModal";
 import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function ProductsPage() {
@@ -34,6 +35,11 @@ export default function ProductsPage() {
   const [showPostCreateModal, setShowPostCreateModal] = useState(false);
   const [selectedQrProduct, setSelectedQrProduct] = useState<any | null>(null);
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+
+  // Central Product Code Center modal state
+  const [centralProductToImport, setCentralProductToImport] = useState<any | null>(null);
+  const [showCentralImportModal, setShowCentralImportModal] = useState(false);
+  const [centralCheckLoading, setCentralCheckLoading] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -95,10 +101,47 @@ export default function ProductsPage() {
     loadProducts(search);
   };
 
-  const handleBarcodeScanned = (code: string) => {
+  const checkCentralDatabase = async (codeToSearch: string) => {
+    const code = codeToSearch.trim();
+    if (!code) return;
+    setCentralCheckLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch(`/api/products/central-lookup?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setCentralProductToImport(data.data);
+        setShowCentralImportModal(true);
+      } else {
+        setErrorMessage(data.error?.message || `"${code}" kodi markaziy bazada topilmadi.`);
+      }
+    } catch (e: any) {
+      setErrorMessage("Markaziy baza bilan aloqa xatosi");
+    } finally {
+      setCentralCheckLoading(false);
+    }
+  };
+
+  const handleBarcodeScanned = async (code: string) => {
     if (scanningTarget === "search") {
       setSearch(code);
-      loadProducts(code);
+      setIsLoading(true);
+      try {
+        const url = `/api/products?search=${encodeURIComponent(code)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success && data.data && data.data.length > 0) {
+          setProducts(data.data);
+        } else {
+          setProducts([]);
+          // Not found in local store, check Product Code Center!
+          await checkCentralDatabase(code);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       setFormData((prev) => ({ ...prev, barcode: code }));
       setScannedNotice(`Shtrix-kod qabul qilindi: ${code}`);
@@ -711,6 +754,18 @@ export default function ProductsPage() {
         onClose={() => setSelectedQrProduct(null)}
         product={selectedQrProduct}
         onRegenerate={handleRegenerateQr}
+      />
+
+      {/* Central Product Code Center Import Modal */}
+      <CentralProductModal
+        isOpen={showCentralImportModal}
+        onClose={() => setShowCentralImportModal(false)}
+        centralProduct={centralProductToImport}
+        onImportSuccess={(imported) => {
+          loadProducts();
+          setSuccessMessage(`"${imported.name}" markaziy bazadan muvaffaqiyatli import qilindi!`);
+          setTimeout(() => setSuccessMessage(null), 5000);
+        }}
       />
     </div>
   );

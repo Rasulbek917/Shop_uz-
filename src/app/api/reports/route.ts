@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
       baseWhere.cashierId = user.id;
     }
 
-    // 1. Today's sales
+    // 1. Today's sales & returns
     const todaySales = await prisma.sale.findMany({
       where: {
         ...baseWhere,
@@ -33,7 +33,19 @@ export async function GET(req: NextRequest) {
       include: { items: true },
     });
 
-    const todayTotalRevenue = todaySales.reduce((acc, s) => acc + s.payableAmount, 0);
+    const todayReturns = await prisma.return.findMany({
+      where: {
+        shopId,
+        createdAt: { gte: todayStart, lte: todayEnd },
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    const todayRefundTotal = todayReturns.reduce((acc, r) => acc + r.totalRefundAmount, 0);
+    const todayGrossRevenue = todaySales.reduce((acc, s) => acc + s.payableAmount, 0);
+    const todayTotalRevenue = Math.max(0, todayGrossRevenue - todayRefundTotal);
     const todaySalesCount = todaySales.length;
     const todayDiscountTotal = todaySales.reduce((acc, s) => acc + s.discountAmount, 0);
     const todayTaxTotal = todaySales.reduce((acc, s) => acc + (s.taxAmount || 0), 0);
@@ -46,8 +58,15 @@ export async function GET(req: NextRequest) {
       todayProfit -= sale.discountAmount;
       todayProfit -= sale.taxAmount || 0;
     }
+    // Deduct profit lost from returns today
+    for (const ret of todayReturns) {
+      for (const it of ret.items) {
+        // item unit refund price minus batch purchase price
+        todayProfit -= it.totalRefund;
+      }
+    }
 
-    // 2. Month sales
+    // 2. Month sales & returns
     const monthSales = await prisma.sale.findMany({
       where: {
         ...baseWhere,
@@ -57,7 +76,17 @@ export async function GET(req: NextRequest) {
       include: { items: true },
     });
 
-    const monthTotalRevenue = monthSales.reduce((acc, s) => acc + s.payableAmount, 0);
+    const monthReturns = await prisma.return.findMany({
+      where: {
+        shopId,
+        createdAt: { gte: monthStart },
+      },
+      include: { items: true },
+    });
+
+    const monthRefundTotal = monthReturns.reduce((acc, r) => acc + r.totalRefundAmount, 0);
+    const monthGrossRevenue = monthSales.reduce((acc, s) => acc + s.payableAmount, 0);
+    const monthTotalRevenue = Math.max(0, monthGrossRevenue - monthRefundTotal);
     const monthSalesCount = monthSales.length;
     const monthTaxTotal = monthSales.reduce((acc, s) => acc + (s.taxAmount || 0), 0);
 
@@ -68,6 +97,11 @@ export async function GET(req: NextRequest) {
       }
       monthProfit -= sale.discountAmount;
       monthProfit -= sale.taxAmount || 0;
+    }
+    for (const ret of monthReturns) {
+      for (const it of ret.items) {
+        monthProfit -= it.totalRefund;
+      }
     }
 
     // 3. Top selling products & Full Analytics Table
@@ -295,6 +329,8 @@ export async function GET(req: NextRequest) {
         today: {
           revenue: todayTotalRevenue,
           salesCount: todaySalesCount,
+          refundTotal: todayRefundTotal,
+          refundCount: todayReturns.length,
           profit: todayProfit,
           discountTotal: todayDiscountTotal,
           taxTotal: todayTaxTotal,
@@ -302,6 +338,8 @@ export async function GET(req: NextRequest) {
         month: {
           revenue: monthTotalRevenue,
           salesCount: monthSalesCount,
+          refundTotal: monthRefundTotal,
+          refundCount: monthReturns.length,
           profit: monthProfit,
           taxTotal: monthTaxTotal,
         },

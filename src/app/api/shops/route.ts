@@ -71,7 +71,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, phone, address, adminName, adminUsername, adminPassword, trialDays } = validated.data;
+    const {
+      name,
+      phone,
+      address,
+      adminName,
+      adminUsername,
+      adminPassword,
+      trialDays,
+      subscriptionType,
+      subscriptionDays,
+    } = validated.data;
 
     // Check if username is taken
     const existingUser = await prisma.user.findUnique({
@@ -86,8 +96,10 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
-    const trialEndDate = new Date();
-    trialEndDate.setDate(now.getDate() + (trialDays || 7));
+    const isMonthly = subscriptionType === "MONTHLY";
+    const daysToAdd = isMonthly ? (subscriptionDays || 30) : (trialDays || 7);
+    const endDate = new Date(now);
+    endDate.setDate(now.getDate() + daysToAdd);
 
     // Create Shop + Admin User inside a transaction
     const passwordHash = await hashPassword(adminPassword);
@@ -99,10 +111,12 @@ export async function POST(req: NextRequest) {
           phone,
           address,
           adminName,
-          status: "TRIAL",
-          trialStartDate: now,
-          trialEndDate: trialEndDate,
-          subscriptionType: "TRIAL",
+          status: isMonthly ? "ACTIVE" : "TRIAL",
+          trialStartDate: isMonthly ? null : now,
+          trialEndDate: isMonthly ? null : endDate,
+          subscriptionType: isMonthly ? "MONTHLY" : "TRIAL",
+          subscriptionStartDate: isMonthly ? now : null,
+          subscriptionEndDate: isMonthly ? endDate : null,
         },
       });
 
@@ -135,12 +149,14 @@ export async function POST(req: NextRequest) {
   ],
 });
 
-      // Create initial notification for trial
+      // Create initial notification
       await tx.notification.create({
         data: {
           shopId: shop.id,
           title: "Xush kelibsiz!",
-          message: `Sizga 7 kunlik bepul sinov muddati berildi. Tugash sanasi: ${trialEndDate.toLocaleDateString('uz-UZ')}`,
+          message: isMonthly
+            ? `Sizning do‘koningiz uchun ${daysToAdd} kunlik obuna faollashtirildi. Tugash sanasi: ${endDate.toLocaleDateString("uz-UZ")}`
+            : `Sizga ${daysToAdd} kunlik bepul sinov muddati berildi. Tugash sanasi: ${endDate.toLocaleDateString("uz-UZ")}`,
           type: "SYSTEM",
         },
       });
@@ -154,12 +170,14 @@ export async function POST(req: NextRequest) {
       action: "DOKON_QOSHILDI",
       entity: "Shop",
       entityId: result.shop.id,
-      details: `Yangi do‘kon yaratildi: "${name}", 7 kunlik trial berildi`,
+      details: `Yangi do‘kon (${name}) qo‘shildi. Tarif: ${isMonthly ? "Oylik obuna" : "Sinov"} (${daysToAdd} kun)`,
     });
 
     return NextResponse.json({
       success: true,
-      message: "Do‘kon muvaffaqiyatli qo‘shildi va 7 kunlik sinov muddati boshlandi",
+      message: isMonthly
+        ? `Do‘kon muvaffaqiyatli qo‘shildi va ${daysToAdd} kunlik oylik obuna faollashtirildi!`
+        : `Do‘kon muvaffaqiyatli qo‘shildi va ${daysToAdd} kunlik sinov muddati boshlandi!`,
       data: result.shop,
     });
   } catch (error: any) {

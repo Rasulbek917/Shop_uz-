@@ -24,6 +24,8 @@ export const createShopSchema = z.object({
   adminUsername: z.string().min(3, "Administrator logini kamida 3 ta belgi bo‘lishi kerak"),
   adminPassword: z.string().min(5, "Administrator paroli kamida 5 ta belgi bo‘lishi kerak"),
   trialDays: z.number().int().min(1).default(7),
+  subscriptionType: z.enum(["TRIAL", "MONTHLY"]).default("MONTHLY"),
+  subscriptionDays: z.number().int().min(1).default(30),
 });
 
 export const updateShopSchema = z.object({

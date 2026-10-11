@@ -36,16 +36,21 @@ export async function GET(req: NextRequest) {
     const cashierId = req.nextUrl.searchParams.get("cashierId");
     const startDate = req.nextUrl.searchParams.get("startDate");
     const endDate = req.nextUrl.searchParams.get("endDate");
+    const receiptNumber = req.nextUrl.searchParams.get("receiptNumber");
 
     const where: any = {
       shopId,
     };
 
-    // If role is CASHIER, cashier only views their own sales
-    if (user.role === "CASHIER") {
-      where.cashierId = user.id;
-    } else if (cashierId) {
-      where.cashierId = cashierId;
+    if (receiptNumber) {
+      where.receiptNumber = { contains: receiptNumber.trim(), mode: "insensitive" };
+    } else {
+      // If role is CASHIER and not doing a specific receipt search, cashier views their own sales
+      if (user.role === "CASHIER") {
+        where.cashierId = user.id;
+      } else if (cashierId) {
+        where.cashierId = cashierId;
+      }
     }
 
     if (startDate || endDate) {
