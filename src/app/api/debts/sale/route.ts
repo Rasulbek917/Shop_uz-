@@ -4,6 +4,7 @@ import { requireTenantContext } from "@/lib/tenant";
 import { debtSaleSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { generateReceiptNumber } from "@/lib/receipt";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export const dynamic = "force-dynamic";
 //  - ombordan mahsulot kamayadi (inventar harakati yoziladi)
 //  - sotib olingan mahsulot nomlari tavsifda saqlanadi
 //  - umumiy summa "Qarzlar" bo'limiga qarz sifatida tushadi
+//  - statistika (savdo, foyda, top mahsulotlar) uchun Sale yozuvi ham yaratiladi
 export async function POST(req: NextRequest) {
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
@@ -42,6 +44,7 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
+    const receiptNumber = await generateReceiptNumber(shopId, "QARZ");
 
     const result = await prisma.$transaction(async (tx) => {
       // 1. Partiyalarni tekshirish, muddat va qoldiqni nazorat qilish
@@ -162,6 +165,45 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // 5.1 Statistika/hisobot uchun Sotuv (Sale) yozuvi.
+      // Qarzga sotuv ham oddiy sotuv kabi statistikaga (tushum, foyda, top mahsulotlar,
+      // kassir ko'rsatkichlari, 7 kunlik grafik) hisobga olinishi kerak.
+      const sale = await tx.sale.create({
+        data: {
+          shopId,
+          receiptNumber,
+          cashierId: user.id,
+          customerId: validated.data.customerId || null,
+          totalAmount,
+          discountAmount: Math.round(discountAmount),
+          taxRate: shopTaxRate,
+          taxAmount,
+          payableAmount,
+          paidAmount: 0,
+          changeAmount: 0,
+          paymentMethod: "DEBT",
+          status: "COMPLETED",
+          notes: `Qarzga sotuv: ${firstName.trim()} ${lastName.trim()}${
+            notes && notes.trim() ? ` | ${notes.trim()}` : ""
+          }`,
+        },
+      });
+
+      for (const item of validatedItems) {
+        await tx.saleItem.create({
+          data: {
+            saleId: sale.id,
+            productId: item.productId,
+            batchId: item.batchId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            discount: item.discount,
+            totalPrice: item.totalPrice,
+            purchasePrice: item.purchasePrice,
+          },
+        });
+      }
+
       // 6. Ombordan kamaytirish + inventar harakati
       for (const item of validatedItems) {
         const updateResult = await tx.productBatch.updateMany({
@@ -228,7 +270,7 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return { debt, items: validatedItems, totalAmount, payableAmount, taxAmount };
+      return { debt, sale, items: validatedItems, totalAmount, payableAmount, taxAmount, receiptNumber };
     });
 
     await logAudit({
@@ -238,7 +280,7 @@ export async function POST(req: NextRequest) {
       action: "QARZGA_SOTUV_QILINDI",
       entity: "Debt",
       entityId: result.debt.id,
-      details: `${firstName} ${lastName} nomiga ${result.payableAmount} so'm qarzga sotildi`,
+      details: `Chek #${receiptNumber}: ${firstName} ${lastName} nomiga ${result.payableAmount} so'm qarzga sotildi`,
     });
 
     return NextResponse.json({
@@ -246,6 +288,8 @@ export async function POST(req: NextRequest) {
       message: "Qarzga sotuv muvaffaqiyatli saqlandi",
       data: {
         id: result.debt.id,
+        saleId: result.sale.id,
+        receiptNumber: result.receiptNumber,
         firstName: result.debt.firstName,
         lastName: result.debt.lastName,
         phone: result.debt.phone,

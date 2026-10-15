@@ -116,6 +116,8 @@ export function getPaymentMethodLabel(method: string): string {
       return 'Bank kartasi';
     case 'ELECTRONIC':
       return 'Elektron to‘lov (Click/Payme/Uzum)';
+    case 'DEBT':
+      return 'Qarzga sotuv (Nasiya)';
     default:
       return method;
   }

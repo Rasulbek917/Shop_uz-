@@ -2,7 +2,7 @@ export type UserRole = 'SUPER_ADMIN' | 'SHOP_ADMIN' | 'WAREHOUSEMAN' | 'CASHIER'
 
 export type ShopStatus = 'ACTIVE' | 'TRIAL' | 'BLOCKED' | 'DELETED';
 
-export type PaymentMethod = 'CASH' | 'CARD' | 'ELECTRONIC';
+export type PaymentMethod = 'CASH' | 'CARD' | 'ELECTRONIC' | 'DEBT';
 
 export type BatchStatus = 'NORMAL' | 'APPROACHING' | 'EXPIRED';
 

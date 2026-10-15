@@ -4,28 +4,9 @@ import { requireTenantContext } from "@/lib/tenant";
 import { saleSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { generateReceiptNumber } from "@/lib/receipt";
 
 export const dynamic = "force-dynamic";
-
-async function generateReceiptNumber(shopId: string): Promise<string> {
-  const d = new Date();
-  const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const prefix = `CHK-${dateStr}-`;
-
-  const lastSale = await prisma.sale.findFirst({
-    where: { shopId, receiptNumber: { startsWith: prefix } },
-    orderBy: { receiptNumber: "desc" },
-    select: { receiptNumber: true },
-  });
-
-  let seq = 1;
-  if (lastSale) {
-    const lastSeq = parseInt(lastSale.receiptNumber.replace(prefix, ""), 10);
-    if (!isNaN(lastSeq)) seq = lastSeq + 1;
-  }
-
-  return `${prefix}${String(seq).padStart(4, '0')}`;
-}
 
 export async function GET(req: NextRequest) {
   try {

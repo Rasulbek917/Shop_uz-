@@ -265,7 +265,7 @@ model Sale {
   payableAmount  Float    @default(0)
   paidAmount     Float    @default(0)
   changeAmount   Float    @default(0)
-  paymentMethod  String   @default("CASH") // CASH, CARD, ELECTRONIC
+  paymentMethod  String   @default("CASH") // CASH, CARD, ELECTRONIC, DEBT (qarzga sotuv)
   status         String   @default("COMPLETED") // COMPLETED, CANCELLED, REFUNDED
   notes          String?
   createdAt      DateTime @default(now())
