@@ -16,6 +16,24 @@ export const changePasswordSchema = z
     path: ["confirmPassword"],
   });
 
+export const updateProfileSchema = z.object({
+  fullName: z
+    .string()
+    .min(2, "Ism-familiya kamida 2 ta belgidan iborat bo‘lishi kerak")
+    .optional(),
+  phone: z
+    .string()
+    .max(30, "Telefon raqami juda uzun")
+    .optional()
+    .nullable(),
+  username: z
+    .string()
+    .min(3, "Login kamida 3 ta belgidan iborat bo‘lishi kerak")
+    .max(50, "Login juda uzun")
+    .regex(/^\S+$/, "Login bo‘sh joy (probel) bo‘lmasligi kerak")
+    .optional(),
+});
+
 export const createShopSchema = z.object({
   name: z.string().min(2, "Do‘kon nomi kamida 2 ta belgidan iborat bo‘lishi kerak"),
   phone: z.string().min(7, "Telefon raqami noto‘g‘ri kiritildi"),

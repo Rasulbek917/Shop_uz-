@@ -51,6 +51,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "QR / Shtrix-kodlar", href: "/admin/shtrix-kodlar", icon: QrCode },
           { label: "Obuna va Sinov", href: "/super-admin/obunalar", icon: CreditCard },
           { label: "Tizim jurnali (Audit)", href: "/super-admin/audit-log", icon: ScrollText },
+          { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
 
       case "SHOP_ADMIN":
@@ -67,7 +68,8 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Yetkazib beruvchilar", href: "/admin/yetkazib-beruvchilar", icon: Truck },
           { label: "Xodimlar boshqaruvi", href: "/admin/xodimlar", icon: UserCog },
           { label: "Hisobotlar va Tahlil", href: "/admin/hisobotlar", icon: BarChart3 },
-          { label: "Sozlamalar", href: "/admin/sozlamalar", icon: Settings },
+          { label: "Do‘kon sozlamalari", href: "/admin/sozlamalar", icon: Settings },
+          { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
 
       case "WAREHOUSEMAN":
@@ -77,6 +79,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Tezkor kirim (Kamera/USB)", href: "/omborchi/kirim", icon: ArrowDownToLine },
           { label: "Partiyalar va muddat", href: "/omborchi/partiyalar", icon: CalendarClock },
           { label: "Mahsulot qo‘shish", href: "/admin/mahsulotlar", icon: Package },
+          { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
 
       case "CASHIER":
@@ -84,6 +87,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "POS Savdo terminali", href: "/kassir", icon: BadgePercent },
           { label: "Mening sotuvlarim", href: "/kassir/tarixim", icon: Receipt },
           { label: "Tovarni qaytarish", href: "/kassir/qaytarish", icon: RotateCcw },
+          { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
 
       default:
