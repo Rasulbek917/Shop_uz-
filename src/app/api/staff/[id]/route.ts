@@ -154,11 +154,15 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: "Xodim topilmadi" }, { status: 404 });
     }
 
-    // If staff has sales, deactivate instead of delete
+    // If staff has sales, deactivate instead of delete.
+    // Login band bo'lib qolmasligi uchun uni ham bo'shatamiz.
     if (staff.sales.length > 0) {
       await prisma.user.update({
         where: { id: params.id },
-        data: { status: "INACTIVE" },
+        data: {
+          status: "INACTIVE",
+          username: `${staff.username}__inactive_${staff.id.slice(0, 8)}`,
+        },
       });
     } else {
       await prisma.user.delete({

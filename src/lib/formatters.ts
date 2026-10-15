@@ -34,6 +34,19 @@ export function getDaysRemaining(targetDate: string | Date | null | undefined): 
   return diffDays;
 }
 
+// Berilgan davrning umumiy uzunligini kunlarda hisoblaydi (masalan, sinov muddati necha kunlik edi).
+export function getPeriodLengthDays(
+  startDate: string | Date | null | undefined,
+  endDate: string | Date | null | undefined
+): number | null {
+  if (!startDate || !endDate) return null;
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+  if (isNaN(start) || isNaN(end)) return null;
+  const days = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  return days > 0 ? days : null;
+}
+
 export const EXPIRY_WARNING_DAYS = Number(
   process.env.NEXT_PUBLIC_EXPIRY_WARNING_DAYS || process.env.EXPIRY_WARNING_DAYS || 90
 );

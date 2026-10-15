@@ -66,15 +66,33 @@ export async function POST(req: NextRequest) {
 
     const { fullName, username, password, phone, role } = validated.data;
 
+    // Agar login mavjud bo'lsa: nofaol (INACTIVE) xodim yoki o'chirilgan do'kon
+    // hisobiga tegishli bo'lsa uni bo'shatamiz, aks holda band deb hisoblaymiz.
     const existing = await prisma.user.findUnique({
       where: { username },
+      include: { shop: { select: { status: true } } },
     });
 
     if (existing) {
-      return NextResponse.json(
-        { success: false, error: "Ushbu login tizimda allaqachon mavjud!" },
-        { status: 400 }
-      );
+      const canReclaim =
+        existing.role !== "SUPER_ADMIN" &&
+        existing.id !== user.id &&
+        (existing.status === "INACTIVE" || existing.shop?.status === "DELETED");
+
+      if (!canReclaim) {
+        return NextResponse.json(
+          { success: false, error: "Ushbu login tizimda allaqachon mavjud!" },
+          { status: 400 }
+        );
+      }
+
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          status: "INACTIVE",
+          username: `${existing.username}__freed_${existing.id.slice(0, 8)}`,
+        },
+      });
     }
 
     const passwordHash = await hashPassword(password);

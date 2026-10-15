@@ -12,7 +12,7 @@ import {
   Zap,
   ArrowRight,
 } from "lucide-react";
-import { formatCurrency, formatDate, getShopStatusBadge } from "@/lib/formatters";
+import { formatCurrency, formatDate, getShopStatusBadge, getPeriodLengthDays } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function SuperAdminDashboard() {
@@ -156,7 +156,7 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
           <p className="mt-3 text-2xl font-extrabold text-blue-700">{trialCount}</p>
-          <p className="mt-1 text-[11px] text-blue-600 font-medium">7 kunlik bepul sinovda</p>
+          <p className="mt-1 text-[11px] text-blue-600 font-medium">Sinov muddatidagi do‘konlar</p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -225,6 +225,7 @@ export default function SuperAdminDashboard() {
                 shops.map((shop) => {
                   const badge = getShopStatusBadge(shop.status);
                   const isActivating = activatingId === shop.id;
+                  const trialLength = getPeriodLengthDays(shop.trialStartDate, shop.trialEndDate);
 
                   return (
                     <tr key={shop.id} className="hover:bg-slate-50/80 transition-colors">
@@ -251,7 +252,9 @@ export default function SuperAdminDashboard() {
                       <td className="px-4 py-3.5 text-[11px]">
                         {shop.status === "TRIAL" ? (
                           <div>
-                            <span className="font-semibold text-blue-700">7 kunlik Sinov</span>
+                            <span className="font-semibold text-blue-700">
+                              {trialLength ? `${trialLength} kunlik Sinov` : "Sinov (Trial)"}
+                            </span>
                             <span className="block text-slate-500">
                               Tugaydi: {formatDate(shop.trialEndDate)}
                             </span>

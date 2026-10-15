@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { CreditCard, Zap, CheckCircle, Clock, ShieldAlert, RefreshCw } from "lucide-react";
-import { formatDate, getShopStatusBadge } from "@/lib/formatters";
+import { formatDate, getShopStatusBadge, getPeriodLengthDays } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function SubscriptionsPage() {
@@ -78,7 +78,7 @@ export default function SubscriptionsPage() {
             Obuna va Sinov (Trial) Boshqaruvi
           </h2>
           <p className="text-xs md:text-sm text-slate-500 mt-1">
-            7 kunlik bepul sinov va 30 kunlik oylik obunalar monitoringi
+            Bepul sinov va oylik obunalar monitoringi
           </p>
         </div>
 
@@ -139,6 +139,7 @@ export default function SubscriptionsPage() {
                   const isTrial = shop.status === "TRIAL";
                   const startDate = isTrial ? shop.trialStartDate : shop.subscriptionStartDate;
                   const endDate = isTrial ? shop.trialEndDate : shop.subscriptionEndDate;
+                  const trialLength = getPeriodLengthDays(shop.trialStartDate, shop.trialEndDate);
 
                   return (
                     <tr key={shop.id} className="hover:bg-slate-50 transition-colors">
@@ -151,8 +152,10 @@ export default function SubscriptionsPage() {
 
                       <td className="px-4 py-3.5 font-semibold text-slate-800">
                         {isTrial
-                          ? "7 kunlik Sinov (Trial)"
-                          : shop.subscriptions?.[0]?.planName || "30 kunlik Oylik Obuna"}
+                          ? trialLength
+                            ? `${trialLength} kunlik Sinov (Trial)`
+                            : "Sinov (Trial)"
+                          : shop.subscriptions?.[0]?.planName || "Oylik Obuna"}
                       </td>
 
                       <td className="px-4 py-3.5">

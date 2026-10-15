@@ -97,6 +97,17 @@ export const saleSchema = z.object({
   idempotencyKey: z.string().optional().nullable(),
 });
 
+export const debtSaleSchema = z.object({
+  customerId: z.string().optional().nullable(),
+  firstName: z.string().min(2, "Ism kamida 2 ta belgi bo‘lishi kerak"),
+  lastName: z.string().min(2, "Familiya kamida 2 ta belgi bo‘lishi kerak"),
+  phone: z.string().optional().nullable(),
+  discountAmount: z.number().min(0).default(0),
+  notes: z.string().optional().nullable(),
+  items: z.array(saleItemSchema).min(1, "Savatchada kamida bitta mahsulot bo‘lishi shart"),
+  idempotencyKey: z.string().optional().nullable(),
+});
+
 export const returnItemSchema = z.object({
   saleItemId: z.string().min(1),
   productId: z.string().min(1),

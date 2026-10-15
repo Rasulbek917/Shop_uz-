@@ -16,6 +16,7 @@ import {
   Package,
   Printer,
   RotateCcw,
+  X,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import BarcodeScannerModal from "@/components/scanner/BarcodeScannerModal";
@@ -46,6 +47,12 @@ export default function CashierPosPage() {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  // Qarzga sotish (POS)
+  const [showDebtModal, setShowDebtModal] = useState(false);
+  const [debtForm, setDebtForm] = useState({ firstName: "", lastName: "", phone: "" });
+  const [isProcessingDebt, setIsProcessingDebt] = useState(false);
+  const [debtError, setDebtError] = useState<string | null>(null);
   const [taxSettings, setTaxSettings] = useState<{ taxRate: number; taxIncluded: boolean }>({
     taxRate: 0,
     taxIncluded: false,
@@ -404,6 +411,98 @@ export default function CashierPosPage() {
     }
   };
 
+  // Qarzga sotish modalini ochish
+  const handleOpenDebtSale = () => {
+    if (cart.length === 0) {
+      alert("Savatcha bo‘sh!");
+      return;
+    }
+
+    let prefill = { firstName: "", lastName: "", phone: "" };
+    if (selectedCustomerId) {
+      const customer = customers.find((c) => c.id === selectedCustomerId);
+      if (customer) {
+        const parts = String(customer.name || "").trim().split(/\s+/);
+        prefill = {
+          firstName: parts[0] || "",
+          lastName: parts.slice(1).join(" ") || "",
+          phone: customer.phone || "",
+        };
+      }
+    }
+
+    setDebtForm(prefill);
+    setDebtError(null);
+    setShowDebtModal(true);
+  };
+
+  // Qarzga sotishni saqlash
+  const handleCompleteDebtSale = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cart.length === 0 || isProcessingDebt) return;
+
+    const firstName = debtForm.firstName.trim();
+    const lastName = debtForm.lastName.trim();
+
+    if (firstName.length < 2 || lastName.length < 2) {
+      setDebtError("Ism va familiyani to‘liq kiriting (kamida 2 ta belgi).");
+      return;
+    }
+
+    if (Number(discountAmount) > cartSubtotal) {
+      setDebtError("Chegirma savat umumiy qiymatidan oshishi mumkin emas!");
+      return;
+    }
+
+    setIsProcessingDebt(true);
+    setDebtError(null);
+
+    try {
+      const payload = {
+        customerId: selectedCustomerId || null,
+        firstName,
+        lastName,
+        phone: debtForm.phone.trim() || null,
+        discountAmount: Number(discountAmount) || 0,
+        items: cart.map((item) => ({
+          productId: item.productId,
+          batchId: item.batchId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount: item.discount,
+        })),
+      };
+
+      const res = await fetch("/api/debts/sale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setDebtError(getErrorMessage(data.error, "Qarzga sotishda xatolik yuz berdi"));
+        return;
+      }
+
+      const savedAmount = Number(data.data?.amount ?? cartTotal);
+      setShowDebtModal(false);
+      setCart([]);
+      setDiscountAmount(0);
+      setStatusMessage({
+        text: `${firstName} ${lastName} nomiga ${formatCurrency(
+          savedAmount
+        )} qarz sifatida saqlandi. Qarzlar bo‘limiga o‘tdi.`,
+        type: "success",
+      });
+      loadProducts();
+    } catch (err: any) {
+      setDebtError("Server bilan bog‘lanishda xatolik: " + (err.message || ""));
+    } finally {
+      setIsProcessingDebt(false);
+    }
+  };
+
   const filteredProducts = products.filter((m) => {
     return (
       m.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -692,15 +791,27 @@ export default function CashierPosPage() {
             </div>
 
             {/* Pay Button */}
-            <button
-              type="button"
-              disabled={cart.length === 0}
-              onClick={handleOpenCheckout}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803D] active:scale-[0.98] transition-all disabled:opacity-50"
-            >
-              <CheckCircle className="h-5 w-5" />
-              <span>To‘lovga O‘tish ({formatCurrency(cartTotal)})</span>
-            </button>
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                type="button"
+                disabled={cart.length === 0}
+                onClick={handleOpenCheckout}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803D] active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                <CheckCircle className="h-5 w-5" />
+                <span>To‘lovga O‘tish ({formatCurrency(cartTotal)})</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={cart.length === 0}
+                onClick={handleOpenDebtSale}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-amber-400 bg-amber-50 py-3 text-sm font-extrabold text-amber-800 hover:bg-amber-100 active:scale-[0.98] transition-all disabled:opacity-50"
+              >
+                <CreditCard className="h-5 w-5 text-amber-600" />
+                <span>Qarzga Sotish ({formatCurrency(cartTotal)})</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -830,6 +941,126 @@ export default function CashierPosPage() {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* QARZGA SOTISH MODALI */}
+      {showDebtModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-amber-50 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">Qarzga Sotish</h3>
+                  <p className="text-[11px] text-slate-500">
+                    Mahsulot qarzlar bo‘limiga yoziladi, to‘lov keyinroq qabul qilinadi
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDebtModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-200"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCompleteDebtSale} className="p-6 space-y-4">
+              {debtError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>{debtError}</span>
+                </div>
+              )}
+
+              {/* Savatdagi mahsulotlar */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Sotilayotgan mahsulotlar ({cart.length})
+                </p>
+                <div className="max-h-40 overflow-y-auto space-y-1.5">
+                  {cart.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="text-slate-700 truncate">
+                        {item.quantity} × {item.productName}
+                      </span>
+                      <span className="font-bold text-slate-900 shrink-0">
+                        {formatCurrency(item.totalPrice)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center border-t border-slate-200 pt-2 text-sm">
+                  <span className="font-bold text-slate-700">Qarz summasi:</span>
+                  <span className="font-extrabold text-amber-700">{formatCurrency(cartTotal)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700">Mijoz ismi *</label>
+                  <input
+                    type="text"
+                    required
+                    value={debtForm.firstName}
+                    onChange={(e) => setDebtForm({ ...debtForm, firstName: e.target.value })}
+                    placeholder="Masalan: Sardor"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700">Mijoz familiyasi *</label>
+                  <input
+                    type="text"
+                    required
+                    value={debtForm.lastName}
+                    onChange={(e) => setDebtForm({ ...debtForm, lastName: e.target.value })}
+                    placeholder="Masalan: Rahimov"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700">Telefon raqami</label>
+                <input
+                  type="text"
+                  value={debtForm.phone}
+                  onChange={(e) => setDebtForm({ ...debtForm, phone: e.target.value })}
+                  placeholder="+998 90 123 45 67"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowDebtModal(false)}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessingDebt}
+                  className="flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-amber-600 disabled:opacity-50"
+                >
+                  {isProcessingDebt ? (
+                    <span>Saqlanmoqda...</span>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4" />
+                      <span>Qarzga Sotishni Tasdiqlash</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -221,9 +221,34 @@ export async function DELETE(
     const { user, errorResponse } = await requireApiAuth(req, ["SUPER_ADMIN"]);
     if (errorResponse) return errorResponse;
 
-    const shop = await prisma.shop.update({
-      where: { id: params.id },
-      data: { status: "DELETED" },
+    const existing = await prisma.shop.findUnique({ where: { id: params.id } });
+    if (!existing) {
+      return NextResponse.json({ success: false, error: "Do‘kon topilmadi" }, { status: 404 });
+    }
+
+    // Do'kon soft-delete qilinadi, ammo unga tegishli foydalanuvchilarning
+    // loginlari band bo'lib qolmasligi uchun ularni bo'shatamiz (nofaol qilib,
+    // login nomini noyob ko'rinishga o'zgartiramiz). Aks holda o'chirilgan
+    // do'kon admini logini bilan yangi do'kon qo'shib bo'lmaydi.
+    const shopUsers = await prisma.user.findMany({ where: { shopId: params.id } });
+
+    const shop = await prisma.$transaction(async (tx) => {
+      const updated = await tx.shop.update({
+        where: { id: params.id },
+        data: { status: "DELETED" },
+      });
+
+      for (const u of shopUsers) {
+        await tx.user.update({
+          where: { id: u.id },
+          data: {
+            status: "INACTIVE",
+            username: `${u.username}__deleted_${u.id.slice(0, 8)}`,
+          },
+        });
+      }
+
+      return updated;
     });
 
     await logAudit({

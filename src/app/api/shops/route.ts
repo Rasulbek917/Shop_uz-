@@ -83,16 +83,33 @@ export async function POST(req: NextRequest) {
       subscriptionDays,
     } = validated.data;
 
-    // Check if username is taken
+    // Check if username is taken.
+    // Agar login o'chirilgan (DELETED) do'konga tegishli bo'lsa, uni bo'shatib,
+    // qaytadan ishlatishga ruxsat beramiz.
     const existingUser = await prisma.user.findUnique({
       where: { username: adminUsername },
+      include: { shop: { select: { status: true } } },
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { success: false, error: "Ushbu admin logini allaqachon band. Boshqa login tanlang." },
-        { status: 400 }
-      );
+      const belongsToDeletedShop =
+        existingUser.shopId && existingUser.shop?.status === "DELETED";
+
+      if (!belongsToDeletedShop) {
+        return NextResponse.json(
+          { success: false, error: "Ushbu admin logini allaqachon band. Boshqa login tanlang." },
+          { status: 400 }
+        );
+      }
+
+      // O'chirilgan do'kon egasining loginini bo'shatamiz
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          status: "INACTIVE",
+          username: `${existingUser.username}__deleted_${existingUser.id.slice(0, 8)}`,
+        },
+      });
     }
 
     const now = new Date();
