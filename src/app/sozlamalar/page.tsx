@@ -171,7 +171,7 @@ export default function SettingsPage() {
     );
   }
 
-  const settingsTabs = <div className="flex gap-2 mb-6"><button className={!shopTab ? "btn-primary" : "btn-secondary"} onClick={() => setShopTab(false)}>Profil va xavfsizlik</button>{role === "SHOP_ADMIN" && <button className={shopTab ? "btn-primary" : "btn-secondary"} onClick={() => setShopTab(true)}>Do‘kon sozlamalari</button>}<Link href="/account" className="btn-secondary">Tarif va obuna</Link></div>;
+  const settingsTabs = <div className="flex flex-wrap gap-2 mb-6"><button className={!shopTab ? "btn-primary" : "btn-secondary"} onClick={() => setShopTab(false)}>Profil va xavfsizlik</button>{role === "SHOP_ADMIN" && <button className={shopTab ? "btn-primary" : "btn-secondary"} onClick={() => setShopTab(true)}>Do‘kon sozlamalari</button>}<Link href="/account" className="btn-secondary">Tarif va obuna</Link><Link href="/sozlamalar/ilovalar" className="btn-secondary">Android ilova</Link></div>;
   if (shopTab && role === "SHOP_ADMIN") return <div>{settingsTabs}<ShopSettings/></div>;
   return (
     <div className="mx-auto max-w-2xl space-y-6">{settingsTabs}
