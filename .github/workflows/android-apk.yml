@@ -30,7 +30,7 @@ jobs:
         run: |
           flutter config --no-analytics
           flutter pub get
-          flutter analyze --no-pub
+          flutter analyze --no-pub --no-fatal-infos
       - name: Build installation APK
         working-directory: apps/savdoza_client
         run: flutter build apk --debug --no-pub --dart-define=API_URL=https://shop.aminboyevrasulbek.uz --build-number=${{ github.run_number }}

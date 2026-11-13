@@ -16,7 +16,8 @@
     "predev": "prisma generate && prisma migrate deploy",
     "prestart": "prisma migrate deploy",
     "db:update": "prisma migrate deploy",
-    "payment:check": "node scripts/tezcheck-check.mjs"
+    "payment:check": "node scripts/tezcheck-check.mjs",
+    "prebuild": "node scripts/production-migrate.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.21.1",

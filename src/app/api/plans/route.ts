@@ -9,8 +9,8 @@ export async function GET() {
   catch (e) { return platformError(e); }
 }
 export async function PUT(req: NextRequest) {
-  const auth = await requireApiAuth(req, ["SUPER_ADMIN"]); if (auth.errorResponse) return auth.errorResponse;
   try {
+    const auth = await requireApiAuth(req, ["SUPER_ADMIN"]); if (auth.errorResponse) return auth.errorResponse;
     const body = z.object({ code: z.enum(["PRO", "MAX"]), price: z.number().int().min(0).max(100000000), enabled: z.boolean(), paymentInstructions: z.string().trim().max(2000) }).refine(v => !v.enabled || v.price > 0, "Tarifni yoqish uchun musbat narx kiriting").parse(await req.json());
     const { code, ...data } = body;
     return NextResponse.json({ success: true, data: await prisma.plan.upsert({ where: { code }, create: { code, name: code === "PRO" ? "Pro" : "Max", ...data }, update: data }) });
