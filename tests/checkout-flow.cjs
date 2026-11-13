@@ -361,24 +361,25 @@ test('receipt QR tokens reject tampering and bind to the canonical website', t =
   assert.throws(() => receiptToken('../secret'));
 });
 
-test('public receipt image escapes product names and keeps buyer data private', t => {
+test('public receipt renders a real PNG and keeps buyer data private', async t => {
   const before = process.env.JWT_SECRET;
   process.env.JWT_SECRET = 'isolated-receipt-test-secret-123456789';
   t.after(() => { if (before === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = before; });
   const signing = load('src/lib/receipt-share.ts');
   const formatting = load('src/lib/formatters.ts');
   let selected;
-  const receipt = { receiptNumber: 'CHK-001', createdAt: new Date('2026-11-12T20:00:00Z'), totalAmount: 20000, discountAmount: 0, taxAmount: 0, payableAmount: 20000, paymentMethod: 'CASH', status: 'COMPLETED', shop: { name: 'Test & Shop' }, items: [{ quantity: 2, unitPrice: 10000, totalPrice: 20000, product: { name: '<script>alert(1)</script>' } }] };
+  const receipt = { receiptNumber: 'CHK-001', createdAt: new Date('2026-11-12T20:00:00Z'), totalAmount: 20000, discountAmount: 0, taxAmount: 0, payableAmount: 20000, paymentMethod: 'CASH', status: 'COMPLETED', shop: { name: 'Test & Shop' }, items: [{ quantity: 2, unitPrice: 10000, totalPrice: 20000, product: { name: 'Молоко O‘zbekcha <script>' } }] };
   const api = load('src/lib/public-receipt.ts', {
     '@/lib/prisma': { prisma: { sale: { findUnique: async query => { selected = query.select; return receipt; } } } },
     './receipt-share': signing, './formatters': formatting,
   });
-  const svg = api.receiptImage(receipt);
-  assert.ok(svg.includes('&lt;script&gt;'));
-  assert.ok(svg.includes('Test &amp; Shop'));
-  assert.ok(!svg.includes('<script>'));
+  const renderer = load('src/lib/receipt-image.ts', { './formatters': formatting });
+  const png = Buffer.from(await renderer.receiptImage(receipt));
+  assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal(png.readUInt32BE(16), 640);
+  assert.ok(png.readUInt32BE(20) > 400);
   assert.match(formatting.receiptDate(receipt.createdAt), /13.11.2026.*01:00:00/);
-  fs.writeFileSync('/tmp/savdoza-receipt-test.svg', svg);
+  fs.writeFileSync('/tmp/savdoza-receipt-test.png', png);
   return api.publicReceipt(signing.receiptToken('sale-1')).then(result => {
     assert.equal(result.receiptNumber, 'CHK-001');
     assert.equal(selected.customer, undefined);
@@ -518,4 +519,49 @@ test('Max CSV and analysis use the same tenant and date filters', async () => {
   assert.deepEqual((await summary.json()).data, [{ paymentMethod: 'CASH', amount: 1000, count: 1 }]);
   assert.equal(selected.where.shopId, 'own-shop');
   assert.equal(selected.where.status, 'COMPLETED');
+});
+
+test('receipt image endpoint sends PNG with a PNG download filename', async () => {
+  const { NextRequest } = require('next/server');
+  const png = fs.readFileSync('/tmp/savdoza-receipt-test.png');
+  const route = load('src/app/api/receipts/[token]/image/route.ts', {
+    '@/lib/public-receipt': { publicReceipt: async token => token === 'valid-token' ? { receiptNumber: 'CHK-001' } : null },
+    '@/lib/receipt-image': { receiptImage: async () => png },
+  });
+  const request = new NextRequest('https://shop.example.uz/api/receipts/valid-token/image?format=png&download=1');
+  const response = await route.GET(request, { params: { token: 'valid-token' } });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'image/png');
+  assert.match(response.headers.get('content-disposition'), /attachment; filename="chek-CHK-001.png"/);
+  assert.equal(Buffer.from(await response.arrayBuffer()).subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.equal((await route.GET(request, { params: { token: 'invalid-token' } })).status, 404);
+});
+
+test('image download saves genuine PNG and refuses error pages or invalid images', async t => {
+  const before = global.document;
+  let downloads = 0;
+  let filename;
+  const errors = [];
+  const anchor = { href: '', download: '', click() { downloads++; filename = this.download; }, remove() {} };
+  global.document = { body: { appendChild() {} }, createElement: () => anchor };
+  t.after(() => { global.document = before; });
+  const states = [false, '', false, 0];
+  let index = 0;
+  const { default: PublicReceiptImage } = load('src/components/pos/PublicReceiptImage.tsx', {
+    react: { useState: () => { const current = index++; return [states[current], value => { if (current === 1) errors.push(value); }]; } },
+  });
+  const element = PublicReceiptImage({ imageUrl: '/image?format=png', filename: 'chek-001.png', description: 'Chek' });
+  const download = element.props.children[1].props.onClick;
+  t.mock.method(global, 'fetch', async () => Response.json({ error: 'Unavailable' }, { status: 503 }));
+  await download();
+  assert.equal(downloads, 0);
+  assert.ok(errors.some(error => error.includes('yuklab bo‘lmadi')));
+  global.fetch = async () => new Response('<svg>old image</svg>', { headers: { 'content-type': 'image/png' } });
+  await download();
+  assert.equal(downloads, 0);
+  assert.ok(errors.some(error => error.includes('to‘liq olinmadi')));
+  global.fetch = async () => new Response(fs.readFileSync('/tmp/savdoza-receipt-test.png'), { headers: { 'content-type': 'image/png' } });
+  await download();
+  assert.equal(downloads, 1);
+  assert.equal(filename, 'chek-001.png');
 });

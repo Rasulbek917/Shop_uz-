@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { publicReceipt } from "@/lib/public-receipt";
+import PublicReceiptImage from "@/components/pos/PublicReceiptImage";
 import { receiptDate } from "@/lib/formatters";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ export default async function ReceiptPage({
 }) {
   const receipt = await publicReceipt(params.token);
   if (!receipt) notFound();
-  const imageUrl = `/api/receipts/${encodeURIComponent(params.token)}/image`;
+  const imageUrl = `/api/receipts/${encodeURIComponent(params.token)}/image?format=png`;
   return (
     <main className="mx-auto max-w-xl p-5">
       <p className="text-sm font-bold text-emerald-800">SAVDOZA</p>
@@ -35,18 +36,11 @@ export default async function ReceiptPage({
               ? "Bekor qilingan"
               : receipt.status}
       </p>
-      <img
-        className="my-5 w-full rounded-xl border bg-white shadow-sm"
-        src={imageUrl}
-        alt={`${receipt.receiptNumber} raqamli chek rasmi, ${receiptDate(receipt.createdAt)}`}
+      <PublicReceiptImage
+        imageUrl={imageUrl}
+        filename={`chek-${receipt.receiptNumber.replace(/[^A-Za-z0-9_-]/g, "_")}.png`}
+        description={`${receipt.receiptNumber} raqamli chek, ${receiptDate(receipt.createdAt)}`}
       />
-      <a
-        className="btn-primary inline-flex"
-        href={imageUrl}
-        download={`chek-${receipt.receiptNumber}.svg`}
-      >
-        Chek rasmini saqlash
-      </a>
       <p className="mt-5 text-xs text-slate-500">
         Ichki savdo cheki. Havolani ochgan odam chek ma’lumotlarini ko‘ra oladi.
       </p>
