@@ -19,6 +19,7 @@ export interface AuthUser {
   subscriptionEndDate?: string | null;
   tokenVersion?: number;
   planCode?: string | null;
+  planPrice?: number | null;
   hasAccess?: boolean;
   id: string;
   username: string;

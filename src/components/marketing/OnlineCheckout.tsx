@@ -1,10 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { clientApi, jsonOptions } from "@/lib/client-api";
-import { PLAN_PRICES } from "@/lib/plans";
 
 interface Method { provider_code: string; name: string; min_amount_minor: number; max_amount_minor: number; }
-export default function OnlineCheckout({ planCode }: { planCode: "PRO" | "MAX" }) {
+export default function OnlineCheckout({ planCode, price, enabled }: { planCode: "PRO" | "MAX"; price: number; enabled: boolean }) {
   const [methods, setMethods] = useState<Method[]>([]);
   const [providerCode, setProviderCode] = useState("");
   const [error, setError] = useState("");
@@ -46,7 +45,7 @@ export default function OnlineCheckout({ planCode }: { planCode: "PRO" | "MAX" }
   }, [orderId, planCode]);
   async function pay(e: React.FormEvent) {
     e.preventDefault();
-    if (busy || !providerCode) return;
+    if (busy || !providerCode || !enabled) return;
     setBusy(true); setError("");
     try {
       const result = await clientApi("/api/checkout", jsonOptions("POST", { planCode, providerCode }));
@@ -55,10 +54,10 @@ export default function OnlineCheckout({ planCode }: { planCode: "PRO" | "MAX" }
       window.location.assign(result.paymentUrl);
     } catch (e) { setError((e as Error).message); setBusy(false); }
   }
-  const amount = PLAN_PRICES[planCode] * 100;
+  const amount = price * 100;
   const available = methods.filter(m => m.min_amount_minor <= amount && m.max_amount_minor >= amount);
   return <section className="purchase-form">
-    <h2>{planCode} · {PLAN_PRICES[planCode].toLocaleString("uz-UZ")} so‘m / 30 kun</h2>
+    <h2>{planCode} · {price.toLocaleString("uz-UZ")} so‘m / 30 kun</h2>
     <p>To‘lov usulini tanlang. Tezcheck to‘lov sahifasida to‘lovni yakunlang. Tasdiq kelgach hisobingiz avtomatik ochiladi.</p>
     {configured === false && <p className="notice">To‘lov xizmati hali sozlanmoqda. Administrator Tezcheck API tokenini ulashi kerak.</p>}
     {configured === null && !error && <p>To‘lov usullari yuklanmoqda…</p>}
@@ -67,7 +66,7 @@ export default function OnlineCheckout({ planCode }: { planCode: "PRO" | "MAX" }
       {error && <p role="alert" className="form-error">{error}</p>}
       {orderId && status === "PENDING" && <p role="status" className="notice">To‘lov natijasi tekshirilmoqda.</p>}
       {status === "EXPIRED" && <p className="notice">To‘lov havolasi muddati tugagan. Yangi to‘lovni boshlashingiz mumkin.</p>}
-      <button className="public-button" disabled={busy || !configured || !providerCode}>{busy ? "To‘lovga o‘tilmoqda…" : "To‘lovga o‘tish"}</button>
+      <button className="public-button" disabled={busy || !configured || !providerCode || !enabled}>{busy ? "To‘lovga o‘tilmoqda…" : "To‘lovga o‘tish"}</button>
     </form>
   </section>;
 }

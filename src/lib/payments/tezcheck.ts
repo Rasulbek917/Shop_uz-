@@ -1,7 +1,6 @@
 import { createHash, createHmac } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { PLAN_PRICES } from "@/lib/plans";
 import { BusinessError } from "@/lib/onboarding";
 import { verifiedPayment } from "./tezcheck-security";
 
@@ -47,16 +46,18 @@ export async function paymentMethods() {
 }
 const allowedStatuses = ["AWAITING_PAYMENT", "ACTIVE", "TRIAL", "EXPIRED"];
 
-export async function createCheckout(shopId: string, planCode: keyof typeof PLAN_PRICES, providerCode: string) {
+export async function createCheckout(shopId: string, planCode: "PRO" | "MAX", providerCode: string) {
   if (!paymentConfigured()) throw new BusinessError("Tezcheck API tokeni hali sozlanmagan", 503);
   const shop = await prisma.shop.findUnique({ where: { id: shopId } });
   if (!shop || !allowedStatuses.includes(shop.status)) throw new BusinessError("Hisob holati to‘lovga ruxsat bermaydi", 403);
-  const amount = PLAN_PRICES[planCode];
+  const plan = await prisma.plan.findUnique({ where: { code: planCode } });
+  if (!plan || !plan.enabled || plan.price <= 0) throw new BusinessError("Tarif xarid uchun yopilgan", 409);
+  const amount = plan.price;
   const methods = await paymentMethods();
   if (!methods.some(m => m.provider_code === providerCode && m.min_amount_minor <= amount * 100 && m.max_amount_minor >= amount * 100)) throw new BusinessError("Tanlangan to‘lov usuli bu summa uchun ochilmagan");
   const origin = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (!origin || new URL(origin).protocol !== "https:") throw new BusinessError("To‘lov uchun HTTPS sayt manzilini sozlang", 503);
-  const activeKey = `${shopId}:${planCode}:${providerCode}`;
+  const activeKey = `${shopId}:${planCode}:${providerCode}:${amount}`;
   let order = await prisma.checkoutOrder.findUnique({ where: { activeKey } });
   if (!order) {
     try {

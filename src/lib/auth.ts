@@ -51,10 +51,14 @@ export async function resolveUser(claims: AuthUser | null): Promise<AuthUser | n
   if (!claims?.id) return null;
   const user = await prisma.user.findUnique({ where: { id: claims.id }, include: { shop: true } });
   if (!user || user.status !== "ACTIVE" || user.shop?.status === "DELETED" || (claims.tokenVersion || 0) !== user.tokenVersion) return null;
+  const plan = user.shop?.planCode && ["PRO", "MAX"].includes(user.shop.planCode)
+    ? await prisma.plan.findUnique({ where: { code: user.shop.planCode }, select: { price: true } })
+    : null;
   const access = user.role === "SUPER_ADMIN" || (hasShopAccess(user.shop) && (user.role === "SHOP_ADMIN" || isMax(user.shop?.planCode)));
   return { id: user.id, username: user.username, fullName: user.fullName, role: user.role as UserRole,
     shopId: user.shopId, shopName: user.shop?.name, shopStatus: user.shop?.status as AuthUser["shopStatus"],
     subscriptionEndDate: user.shop?.subscriptionEndDate?.toISOString() || null,
     subscriptionDaysLeft: user.shop?.subscriptionEndDate ? Math.max(0, Math.ceil((user.shop.subscriptionEndDate.getTime() - Date.now()) / 86400000)) : null,
+    planPrice: plan?.price ?? null,
     planCode: user.shop?.planCode, hasAccess: access, tokenVersion: user.tokenVersion };
 }

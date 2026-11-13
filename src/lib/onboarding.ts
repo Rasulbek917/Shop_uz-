@@ -1,4 +1,3 @@
-import { PLAN_PRICES } from "./plans";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 export class BusinessError extends Error { constructor(message: string, public status = 400) { super(message); } }
@@ -35,7 +34,7 @@ export async function requestPurchase(db: PrismaClient, shopId: string, code: st
     const plan = await tx.plan.findUnique({ where: { code } });
     if (!plan || !plan.enabled || plan.price <= 0 || !plan.paymentInstructions.trim()) throw new BusinessError("Bu tarif uchun to‘lov hali ochilmagan");
     if (await tx.purchaseRequest.findFirst({ where: { shopId, status: "PENDING" } })) throw new BusinessError("Sizning to‘lov so‘rovingiz tekshirilmoqda", 409);
-    return tx.purchaseRequest.create({ data: { shopId, planCode: code, amount: PLAN_PRICES[code as keyof typeof PLAN_PRICES], reference: `[${paymentMethod}] ${reference}` } });
+    return tx.purchaseRequest.create({ data: { shopId, planCode: code, amount: plan.price, reference: `[${paymentMethod}] ${reference}` } });
   }, { isolationLevel: "Serializable" });
 }
 export async function reviewPurchase(db: PrismaClient, id: string, approve: boolean, reviewer: string, note: string) {
