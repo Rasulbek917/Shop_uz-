@@ -139,7 +139,7 @@ export default function CentralProductModal({
         <div className="p-6 space-y-5">
           {canImport === null && !error && <p role="status" className="text-sm text-slate-500">Tarif tekshirilmoqda…</p>}
           {canImport === false && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-            Markaziy import Max tarifida ochiladi. <Link href="/checkout?plan=MAX" className="font-bold underline">Max tarifiga o‘ting</Link>
+            Markaziy import Max tarifida ochiladi. <Link href="/sozlamalar/tarif?plan=MAX" className="font-bold underline">Max tarifiga o‘ting</Link>
           </div>}
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">

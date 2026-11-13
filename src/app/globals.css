@@ -391,3 +391,6 @@ body {
   .purchase-history article { flex-direction: column; padding: 20px 0; }
   .purchase-form { padding: 22px 18px; }
 }
+
+.input-field { display: block; width: 100%; border: 1px solid #cbd5e1; border-radius: .65rem; background: white; padding: .65rem .8rem; color: #0f172a; font-size: .875rem; }
+.input-field:focus-visible { outline: 3px solid #9ec5a6; outline-offset: 2px; }

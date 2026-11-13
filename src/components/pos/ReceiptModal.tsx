@@ -3,15 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import QRCode from "qrcode";
-import { Printer, Check, X, AlertTriangle, RefreshCw, Cpu, FileText } from "lucide-react";
-import { formatCurrency, formatDateTime, getPaymentMethodLabel } from "@/lib/formatters";
-import {
-  generateEscPosBytes,
-  printDirectWebSerial,
-  printViaLocalBridge,
-  PaperWidth,
-} from "@/lib/escpos";
-
+import { Printer, Check, X } from "lucide-react";
+import { clientApi } from "@/lib/client-api";
+import type { PaperWidth } from "@/lib/escpos";
+import { formatCurrency, receiptDate, getPaymentMethodLabel } from "@/lib/formatters";
 interface ReceiptItem {
   productName: string;
   quantity: number;
@@ -20,7 +15,7 @@ interface ReceiptItem {
   totalPrice: number;
 }
 
-interface ReceiptModalProps {
+export interface ReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   receipt: {
@@ -46,79 +41,25 @@ interface ReceiptModalProps {
 
 export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = false }: ReceiptModalProps) {
   const [paperWidth, setPaperWidth] = useState<PaperWidth>("58mm");
-  const [isPrintingEscPos, setIsPrintingEscPos] = useState(false);
-  const [printStatus, setPrintStatus] = useState<{
-    type: "success" | "error" | "info";
-    message: string;
-  } | null>(null);
-
-  const [qrUrl, setQrUrl] = useState("");
+  const [qr, setQr] = useState<{ receiptNumber: string; image: string } | null>(null);
+  const [qrError, setQrError] = useState("");
+  const [retry, setRetry] = useState(0);
   const receiptNumber = receipt?.receiptNumber;
+  const qrUrl = qr?.receiptNumber === receiptNumber ? qr?.image || "" : "";
   useEffect(() => {
-    if (!receiptNumber) return;
-    QRCode.toDataURL(receiptNumber, { margin: 0, width: 240, errorCorrectionLevel: "M" })
-      .then(setQrUrl)
-      .catch(() => setQrUrl(""));
-  }, [receiptNumber]);
+    if (!isOpen || !receiptNumber) return;
+    let active = true;
+    setQrError("");
+    clientApi(`/api/receipts/link?receiptNumber=${encodeURIComponent(receiptNumber)}`)
+      .then(async result => ({ receiptNumber, image: await QRCode.toDataURL(result.url, { margin: 1, width: 240, errorCorrectionLevel: "M" }) }))
+      .then(result => { if (active) setQr(result); })
+      .catch(error => { if (active) setQrError(error.message); });
+    return () => { active = false; };
+  }, [isOpen, receiptNumber, retry]);
 
   if (!isOpen || !receipt) return null;
 
-  // 1. Direct ESC/POS printing (Web Serial / USB / Local Bridge)
-  const handleDirectEscPosPrint = async () => {
-    setIsPrintingEscPos(true);
-    setPrintStatus({ type: "info", message: "Termal printerga ulanmoqda..." });
-
-    try {
-      const bytes = generateEscPosBytes(
-        {
-          receiptNumber: receipt.receiptNumber,
-          shopName: receipt.shopName,
-          shopPhone: receipt.shopPhone,
-          shopAddress: receipt.shopAddress,
-          cashierName: receipt.cashierName,
-          createdAt: receipt.createdAt,
-          totalAmount: receipt.totalAmount,
-          discountAmount: receipt.discountAmount,
-          taxRate: receipt.taxRate,
-          taxAmount: receipt.taxAmount,
-          payableAmount: receipt.payableAmount,
-          paidAmount: receipt.paidAmount,
-          changeAmount: receipt.changeAmount,
-          paymentMethod: receipt.paymentMethod,
-          items: receipt.items,
-        },
-        { paperWidth, openDrawer: receipt.paymentMethod === "CASH", cutPaper: true, qrData: receipt.receiptNumber }
-      );
-
-      // Try local bridge first (fastest and most reliable for POS terminals)
-      const bridgeRes = await printViaLocalBridge(bytes);
-      if (bridgeRes.success) {
-        setPrintStatus({ type: "success", message: bridgeRes.message });
-        setIsPrintingEscPos(false);
-        return;
-      }
-
-      // If no local bridge, try Web Serial API
-      const serialRes = await printDirectWebSerial(bytes);
-      if (serialRes.success) {
-        setPrintStatus({ type: "success", message: serialRes.message });
-      } else {
-        setPrintStatus({
-          type: "error",
-          message: `To‘g‘ridan-to‘g‘ri termal printerga ulanib bo‘lmadi: ${serialRes.message}. Brauzer printeri orqali chop etishdan foydalanishingiz mumkin.`,
-        });
-      }
-    } catch (err: any) {
-      setPrintStatus({
-        type: "error",
-        message: "Termal printer xatoligi. Savdo saqlangan, lekin chek chiqarilmadi.",
-      });
-    } finally {
-      setIsPrintingEscPos(false);
-    }
-  };
-
-  // 2. Standard Browser Print (Continuous Thermal Receipt)
+  // Print the receipt at the selected thermal paper width.
   const handleStandardPrint = () => {
     const widthClass = paperWidth === "58mm" ? "receipt-58" : "receipt-80";
     const cleanup = () => document.body.classList.remove("printing-receipt", "receipt-58", "receipt-80");
@@ -170,33 +111,8 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
           </div>
         </div>
 
-        {/* Printer Status Banner if any */}
-        {printStatus && (
-          <div
-            className={`px-4 py-2.5 text-xs font-medium no-print flex items-center justify-between ${
-              printStatus.type === "success"
-                ? "bg-primary-50 text-primary-800 border-b border-primary-100"
-                : printStatus.type === "error"
-                ? "bg-amber-50 text-amber-900 border-b border-amber-200"
-                : "bg-blue-50 text-blue-800 border-b border-blue-100"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {printStatus.type === "error" && <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />}
-              {printStatus.type === "success" && <Check className="h-4 w-4 shrink-0 text-primary-600" />}
-              <span>{printStatus.message}</span>
-            </div>
-            {printStatus.type === "error" && (
-              <button
-                onClick={handleDirectEscPosPrint}
-                className="ml-2 text-xs font-bold text-amber-800 underline hover:text-amber-900"
-              >
-                Qayta urinish
-              </button>
-            )}
-          </div>
-        )}
-
+        {qrError && <div role="alert" className="p-3 text-sm text-red-700">{qrError}<button className="ml-3 underline" onClick={() => setRetry(value => value + 1)}>Qayta tekshirish</button></div>}
+        {!qrUrl && !qrError && <p role="status" className="p-3 text-sm">Chek QR havolasi tayyorlanmoqda…</p>}
         {/* Printable Thermal Receipt Container */}
         <div
           className={`p-6 bg-white max-h-[65vh] overflow-y-auto transition-all ${
@@ -224,7 +140,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
             </div>
             <div className="flex justify-between">
               <span>Sana va vaqt:</span>
-              <span>{formatDateTime(receipt.createdAt || new Date())}</span>
+              <span>{receiptDate(receipt.createdAt || new Date())}</span>
             </div>
             <div className="flex justify-between">
               <span>Kassir:</span>
@@ -317,30 +233,18 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
 
         {/* Modal Action Buttons Footer */}
         <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50 p-4 no-print">
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={handleDirectEscPosPrint}
-              disabled={isPrintingEscPos}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-primary-600 px-3 py-2 text-xs font-bold text-white hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50"
-            >
-              <Cpu className="h-4 w-4" />
-              <span>{isPrintingEscPos ? "Yuborilmoqda..." : "ESC/POS Termal"}</span>
-            </button>
-
-            <button
-              onClick={handleStandardPrint}
-              className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors shadow-sm"
-            >
-              <Printer className="h-4 w-4" />
-              <span>Standart Chop</span>
-            </button>
-          </div>
-
+          <button
+            onClick={handleStandardPrint}
+            disabled={!qrUrl}
+            className="flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+          >
+            <Printer className="h-4 w-4"/> Chek chiqarish
+          </button>
           <button
             onClick={onClose}
             className="w-full rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-sm"
           >
-            Yopish va yangi sotuvga o‘tish
+            {isReprint ? "Yopish" : "Yangi savdoni boshlash"}
           </button>
         </div>
       </div>
@@ -363,7 +267,7 @@ function PrintReceipt({ receipt, qrUrl, isReprint }: { receipt: NonNullable<Rece
       {receipt.shopPhone && <div className="rp-center">Tel: {receipt.shopPhone}</div>}
       <hr className="rp-line" />
       <div className="rp-wrap">Chek: {receipt.receiptNumber}</div>
-      <div>{formatDateTime(receipt.createdAt || new Date())}</div>
+      <div>{receiptDate(receipt.createdAt || new Date())}</div>
       <div>Kassir: {receipt.cashierName}</div>
       <div>To‘lov: {getPaymentMethodLabel(receipt.paymentMethod)}</div>
       {isReprint && <div className="rp-center rp-bold">* NUSXA *</div>}

@@ -344,3 +344,178 @@ test('central import buttons remain visible and locked for Pro', () => {
   canImport = true;
   assert.equal((render().match(/<button[^>]*\sdisabled=""/g) || []).length, 0);
 });
+
+test('receipt QR tokens reject tampering and bind to the canonical website', t => {
+  const before = { ...process.env };
+  process.env.JWT_SECRET = 'isolated-receipt-test-secret-123456789';
+  delete process.env.RECEIPT_SIGNING_SECRET;
+  process.env.APP_URL = 'https://shop.example.uz';
+  t.after(() => { process.env = before; });
+  const { receiptToken, receiptId, receiptUrl } = load('src/lib/receipt-share.ts');
+  const token = receiptToken('sale-1');
+  assert.equal(receiptId(token), 'sale-1');
+  assert.equal(receiptId(token.replace('sale-1', 'sale-2')), null);
+  assert.equal(receiptId(token + 'x'), null);
+  assert.equal(receiptId('../secret'), null);
+  assert.equal(receiptUrl('sale-1'), `https://shop.example.uz/chek/${token}`);
+  assert.throws(() => receiptToken('../secret'));
+});
+
+test('public receipt image escapes product names and keeps buyer data private', t => {
+  const before = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = 'isolated-receipt-test-secret-123456789';
+  t.after(() => { if (before === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = before; });
+  const signing = load('src/lib/receipt-share.ts');
+  const formatting = load('src/lib/formatters.ts');
+  let selected;
+  const receipt = { receiptNumber: 'CHK-001', createdAt: new Date('2026-11-12T20:00:00Z'), totalAmount: 20000, discountAmount: 0, taxAmount: 0, payableAmount: 20000, paymentMethod: 'CASH', status: 'COMPLETED', shop: { name: 'Test & Shop' }, items: [{ quantity: 2, unitPrice: 10000, totalPrice: 20000, product: { name: '<script>alert(1)</script>' } }] };
+  const api = load('src/lib/public-receipt.ts', {
+    '@/lib/prisma': { prisma: { sale: { findUnique: async query => { selected = query.select; return receipt; } } } },
+    './receipt-share': signing, './formatters': formatting,
+  });
+  const svg = api.receiptImage(receipt);
+  assert.ok(svg.includes('&lt;script&gt;'));
+  assert.ok(svg.includes('Test &amp; Shop'));
+  assert.ok(!svg.includes('<script>'));
+  assert.match(formatting.receiptDate(receipt.createdAt), /13.11.2026.*01:00:00/);
+  fs.writeFileSync('/tmp/savdoza-receipt-test.svg', svg);
+  return api.publicReceipt(signing.receiptToken('sale-1')).then(result => {
+    assert.equal(result.receiptNumber, 'CHK-001');
+    assert.equal(selected.customer, undefined);
+    assert.equal(selected.cashier, undefined);
+    assert.equal(selected.shop.select.phone, undefined);
+  });
+});
+
+test('receipt filters cover whole Tashkent days and CSV cells prevent formulas', () => {
+  const { receiptFilters, csvCell } = load('src/lib/receipt-filters.ts');
+  const { where, page } = receiptFilters(new URLSearchParams('from=2026-11-13&to=2026-11-13&page=5&search=CHK'), 'own-shop', 'own-cashier');
+  assert.equal(page, 5);
+  assert.equal(where.shopId, 'own-shop');
+  assert.equal(where.cashierId, 'own-cashier');
+  assert.equal(where.createdAt.gte.toISOString(), '2026-11-12T19:00:00.000Z');
+  assert.equal(where.createdAt.lt.toISOString(), '2026-11-13T19:00:00.000Z');
+  assert.throws(() => receiptFilters(new URLSearchParams('from=2026-02-31'), 'shop'));
+  assert.throws(() => receiptFilters(new URLSearchParams('from=2026-11-14&to=2026-11-13'), 'shop'));
+  assert.equal(csvCell('=HYPERLINK("bad")'), '"\'=HYPERLINK(""bad"")"');
+  assert.equal(csvCell('a,b'), '"a,b"');
+});
+
+test('receipt link issuance is scoped to the cashier and shop', async () => {
+  let query;
+  const route = load('src/app/api/receipts/link/route.ts', {
+    '@/lib/prisma': { prisma: { sale: { findFirst: async value => { query = value; return null; } } } },
+    '@/lib/tenant': { requireTenantContext: async () => ({ context: { shopId: 'own-shop', user: { role: 'CASHIER', id: 'own-cashier' } } }) },
+    '@/lib/receipt-share': { receiptUrl: () => assert.fail('A foreign receipt cannot receive a sharing link') },
+    '@/lib/platform-api': { platformError: error => { throw error; } },
+  });
+  const { NextRequest } = require('next/server');
+  const response = await route.GET(new NextRequest('https://shop.example.uz/api/receipts/link?receiptNumber=CHK-001'));
+  assert.equal(response.status, 404);
+  assert.deepEqual(query.where, { receiptNumber: 'CHK-001', shopId: 'own-shop', cashierId: 'own-cashier' });
+});
+
+test('receipt history paginates beyond the first hundred records', async () => {
+  let query;
+  const route = load('src/app/api/receipts/route.ts', {
+    '@/lib/prisma': { prisma: {
+      sale: { findMany: async value => { query = value; return [{ id: 'sale-101' }]; }, count: async () => 123 },
+      $transaction: values => Promise.all(values),
+    } },
+    '@/lib/tenant': { requireTenantContext: async () => ({ context: { shopId: 'own-shop', user: { role: 'SHOP_ADMIN' } } }) },
+    '@/lib/receipt-filters': load('src/lib/receipt-filters.ts'),
+    '@/lib/platform-api': { platformError: error => { throw error; } },
+  });
+  const { NextRequest } = require('next/server');
+  const response = await route.GET(new NextRequest('https://shop.example.uz/api/receipts?page=5'));
+  const body = await response.json();
+  assert.equal(body.data.total, 123);
+  assert.equal(query.skip, 100);
+  assert.equal(query.take, 25);
+  assert.equal(query.where.shopId, 'own-shop');
+});
+
+test('category editing stays tenant-scoped and occupied categories cannot be deleted', async () => {
+  let where;
+  let count = 2;
+  const route = load('src/app/api/categories/[id]/route.ts', {
+    '@/lib/prisma': { prisma: { category: {
+      updateMany: async query => { where = query.where; return { count: 0 }; },
+      findFirst: async () => ({ _count: { products: count } }),
+      deleteMany: async () => { assert.equal(count, 0); return { count: 0 }; },
+    } } },
+    '@/lib/tenant': { requireTenantContext: async () => ({ context: { shopId: 'own-shop', user: { id: 'user-1' } } }) },
+    '@/lib/validations': load('src/lib/validations.ts'),
+    '@/lib/platform-api': { platformError: error => { throw error; } },
+  });
+  const edited = await route.PATCH(new Request('https://shop.example.uz/api/categories/foreign', { method: 'PATCH', body: JSON.stringify({ name: 'Changed' }) }), { params: { id: 'foreign' } });
+  assert.equal(edited.status, 404);
+  assert.deepEqual(where, { id: 'foreign', shopId: 'own-shop' });
+  assert.equal((await route.DELETE(new Request('https://shop.example.uz'), { params: { id: 'category-1' } })).status, 409);
+  count = 0;
+  assert.equal((await route.DELETE(new Request('https://shop.example.uz'), { params: { id: 'category-1' } })).status, 409);
+});
+
+test('receipt modal has a single print action and new sale action', t => {
+  const before = global.document;
+  global.document = { body: {} };
+  t.after(() => { global.document = before; });
+  const React = require('react');
+  const { default: ReceiptModal } = load('src/components/pos/ReceiptModal.tsx', {
+    'react-dom': { createPortal: () => null },
+    '@/lib/client-api': {}, '@/lib/formatters': load('src/lib/formatters.ts'),
+  });
+  const receipt = { receiptNumber: 'CHK-001', shopName: 'Shop', cashierName: 'Cashier', createdAt: '2026-11-13T01:00:00Z', totalAmount: 1000, discountAmount: 0, payableAmount: 1000, paidAmount: 1000, changeAmount: 0, paymentMethod: 'CASH', items: [] };
+  const html = require('react-dom/server').renderToStaticMarkup(React.createElement(ReceiptModal, { isOpen: true, onClose() {}, receipt }));
+  assert.ok(html.includes('Chek chiqarish'));
+  assert.ok(html.includes('Yangi savdoni boshlash'));
+  assert.ok(!html.includes('ESC/POS Termal'));
+  assert.ok(!html.includes('Standart Chop'));
+});
+
+test('settings tariff view embeds both plans without the public header', () => {
+  const data = { user: { username: 'test.user', fullName: 'Test User', role: 'SHOP_ADMIN', hasAccess: true }, shop: { name: 'Shop', status: 'ACTIVE', planCode: 'PRO', purchaseRequests: [], checkoutOrders: [] }, plans: [{ code: 'PRO', price: 299000, enabled: true }, { code: 'MAX', price: 499000, enabled: true }] };
+  let index = 0;
+  const states = [data, '', null];
+  const { default: AccountPlans } = load('src/components/settings/AccountPlans.tsx', {
+    react: { useRef: () => ({ current: false }), useState: () => [states[index++], () => {}], useEffect() {} },
+    '@/lib/client-api': {}, '@/lib/plans': load('src/lib/plans.ts'),
+    '@/components/marketing/OnlineCheckout': { __esModule: true, default: () => null },
+    '@/components/marketing/PublicShell': { PublicHeader: () => 'Public header', PublicFooter: () => 'Public footer' },
+  });
+  const html = require('react-dom/server').renderToStaticMarkup(AccountPlans({ embedded: true }));
+  assert.ok(html.includes('PRO'));
+  assert.ok(html.includes('MAX'));
+  assert.ok(!html.includes('Public header'));
+  assert.ok(!html.includes('Public footer'));
+});
+
+test('Max CSV and analysis use the same tenant and date filters', async () => {
+  const { NextRequest } = require('next/server');
+  let rows = [{ receiptNumber: 'CHK-001', createdAt: new Date('2026-11-13T00:00:00Z'), payableAmount: 1000, paymentMethod: 'CASH', status: 'COMPLETED' }];
+  let selected;
+  const db = { sale: {
+    findMany: async query => { selected = query; return rows; },
+    groupBy: async query => { selected = query; return [{ paymentMethod: 'CASH', _sum: { payableAmount: 1000 }, _count: { _all: 1 } }]; },
+  } };
+  const mocks = {
+    '@/lib/prisma': { prisma: db }, '@/lib/tenant': { requireTenantContext: async () => ({ context: { shopId: 'own-shop', user: { role: 'SHOP_ADMIN' } } }) },
+    '@/lib/receipt-filters': load('src/lib/receipt-filters.ts'), '@/lib/formatters': load('src/lib/formatters.ts'),
+    '@/lib/platform-api': { platformError: error => { throw error; } },
+  };
+  const request = new NextRequest('https://shop.example.uz/api/receipts/export?from=2026-11-13&to=2026-11-13');
+  const csv = load('src/app/api/receipts/export/route.ts', mocks);
+  const response = await csv.GET(request);
+  assert.equal(response.status, 200);
+  assert.ok((await response.text()).includes('CHK-001'));
+  assert.ok(response.headers.get('content-type').includes('text/csv'));
+  assert.equal(selected.where.shopId, 'own-shop');
+  assert.equal(selected.where.createdAt.gte.toISOString(), '2026-11-12T19:00:00.000Z');
+  rows = Array(10001).fill(rows[0]);
+  assert.equal((await csv.GET(request)).status, 400);
+  const analytics = load('src/app/api/receipts/analytics/route.ts', mocks);
+  const summary = await analytics.GET(request);
+  assert.deepEqual((await summary.json()).data, [{ paymentMethod: 'CASH', amount: 1000, count: 1 }]);
+  assert.equal(selected.where.shopId, 'own-shop');
+  assert.equal(selected.where.status, 'COMPLETED');
+});

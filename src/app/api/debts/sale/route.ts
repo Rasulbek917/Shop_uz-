@@ -289,6 +289,10 @@ export async function POST(req: NextRequest) {
       data: {
         id: result.debt.id,
         saleId: result.sale.id,
+        receipt: {
+          ...result.sale, shopName: shop.name, shopPhone: shop.phone,
+          shopAddress: shop.address, cashierName: user.fullName, items: result.items,
+        },
         receiptNumber: result.receiptNumber,
         firstName: result.debt.firstName,
         lastName: result.debt.lastName,

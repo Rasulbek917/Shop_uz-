@@ -63,8 +63,9 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         return [
           { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
           { label: "POS · Savdo terminali", href: "/admin/pos", icon: BadgePercent },
-          { label: "Mening tarifim", href: "/account", icon: CreditCard },
           { label: "Mahsulotlar katalogi", href: "/admin/mahsulotlar", icon: Package },
+          { label: "Kategoriyalar", href: "/admin/kategoriyalar", icon: Boxes },
+          { label: "Cheklar", href: "/admin/cheklar", icon: Receipt },
           { label: "QR / Shtrix-kodlar", href: "/admin/shtrix-kodlar", icon: QrCode },
           { label: "Ombor va partiyalar", href: "/admin/ombor", icon: Boxes },
           { label: "Tezkor kirim", href: "/omborchi/kirim", icon: ArrowDownToLine },
@@ -93,6 +94,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         return [
           { label: "POS Savdo terminali", href: "/kassir", icon: BadgePercent },
           { label: "Mening sotuvlarim", href: "/kassir/tarixim", icon: Receipt },
+          { label: "Cheklar", href: "/kassir/cheklar", icon: Receipt },
           { label: "Tovarni qaytarish", href: "/kassir/qaytarish", icon: RotateCcw },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
@@ -180,7 +182,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             );
           })}
           {user.role === "SHOP_ADMIN" && !isMax(user.planCode) && (
-            <Link href="/checkout?plan=MAX" onClick={onClose} className="mt-4 block rounded-xl border border-amber-200/30 px-3 py-3 text-sm font-semibold text-amber-100 hover:bg-white/5">
+            <Link href="/sozlamalar/tarif?plan=MAX" onClick={onClose} className="mt-4 block rounded-xl border border-amber-200/30 px-3 py-3 text-sm font-semibold text-amber-100 hover:bg-white/5">
               Max tarifiga o‘tish
             </Link>
           )}

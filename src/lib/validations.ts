@@ -66,8 +66,8 @@ export const activateSubscriptionSchema = z.object({
 });
 
 export const categorySchema = z.object({
-  name: z.string().min(2, "Kategoriya nomi kamida 2 ta belgi bo‘lishi kerak"),
-  description: z.string().optional().nullable(),
+  name: z.string().trim().min(2, "Kategoriya nomi kamida 2 ta belgi bo‘lishi kerak"),
+  description: z.string().trim().optional().nullable(),
 });
 
 export const manufacturerSchema = z.object({

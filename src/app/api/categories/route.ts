@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
       data: category,
     });
   } catch (error: any) {
+    if (error?.code === "P2002") return NextResponse.json({ success: false, error: "Bu nomdagi kategoriya mavjud" }, { status: 409 });
     logger.error("Category POST error", { error: error });
     return NextResponse.json(
       { success: false, error: { code: "SERVER_ERROR", message: error.message || "Xatolik yuz berdi" } },

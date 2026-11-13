@@ -407,6 +407,8 @@ export default function CashierPosPage() {
       setShowReceiptModal(true);
       setCart([]);
       setDiscountAmount(0);
+      setPaidAmount(0);
+      setSelectedCustomerId("");
       loadProducts(); // Refresh stock
     } catch (err: any) {
       alert("Server bilan bog‘lanishda xatolik: " + (err.message || ""));
@@ -491,6 +493,10 @@ export default function CashierPosPage() {
 
       const savedAmount = Number(data.data?.amount ?? cartTotal);
       setShowDebtModal(false);
+      setCompletedReceipt(data.data.receipt);
+      setShowReceiptModal(true);
+      setPaidAmount(0);
+      setSelectedCustomerId("");
       setCart([]);
       setDiscountAmount(0);
       setStatusMessage({
@@ -523,7 +529,7 @@ export default function CashierPosPage() {
       <div className="rounded-2xl border border-primary-200 bg-white p-5 flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-bold text-slate-900">POS · Savdo terminali</h1><p className="mt-1 text-sm text-slate-500">Mahsulotni toping, savatga qo‘shing va to‘lovni yakunlang.</p></div><div className="rounded-xl bg-primary-50 px-4 py-2 text-primary-800 text-sm font-semibold">Savatda {cart.reduce((sum, item) => sum + item.quantity, 0)} ta · {formatCurrency(cartTotal)}</div></div>
       <div className="flex flex-wrap gap-3 items-center"><label className="sr-only" htmlFor="pos-category">Kategoriya</label><select id="pos-category" className="rounded-xl border bg-white px-4 py-3 text-sm" value={categoryId} onChange={e => setCategoryId(e.target.value)}><option value="">Barcha kategoriyalar</option>{categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={stockOnly} onChange={e => setStockOnly(e.target.checked)}/>Faqat qoldig‘i bor mahsulotlar</label><button className="btn-secondary" onClick={loadProducts} disabled={isLoading}>Qoldiqni yangilash</button></div>
       {/* USB Hardware Barcode Detector */}
-      <UsbBarcodeDetector onScan={handleBarcodeScanned} enabled={!showCheckoutModal} />
+      <UsbBarcodeDetector onScan={handleBarcodeScanned} enabled={!showCheckoutModal && !showReceiptModal && !showCameraScanner && !showDebtModal && !showCentralImportModal} />
 
       {/* Camera Barcode Scanner Modal */}
       <BarcodeScannerModal

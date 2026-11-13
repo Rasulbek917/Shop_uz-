@@ -122,3 +122,7 @@ export function getPaymentMethodLabel(method: string): string {
       return method;
   }
 }
+
+export function receiptDate(value: Date | string): string {
+  return new Intl.DateTimeFormat("uz-UZ", { timeZone: "Asia/Tashkent", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(value));
+}

@@ -23,7 +23,7 @@ export default function BottomNav({ user }: { user: AuthUser }) {
   if (user.role === "CASHIER") {
     items = [
       { label: "Savdo (POS)", href: "/kassir", icon: BadgePercent },
-      { label: "Sotuvlarim", href: "/kassir/tarixim", icon: Receipt },
+      { label: "Cheklar", href: "/kassir/cheklar", icon: Receipt },
     ];
   } else if (user.role === "WAREHOUSEMAN") {
     items = [
@@ -40,7 +40,7 @@ export default function BottomNav({ user }: { user: AuthUser }) {
     items = [
       { label: "Bosh sahifa", href: "/admin", icon: LayoutDashboard },
       { label: "POS", href: "/admin/pos", icon: BadgePercent },
-      { label: "Kirim", href: "/omborchi/kirim", icon: ArrowDownToLine },
+      { label: "Cheklar", href: "/admin/cheklar", icon: Receipt },
       { label: "Hisobot", href: "/admin/hisobotlar", icon: BarChart3 },
     ];
   }
