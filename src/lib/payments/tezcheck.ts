@@ -2,7 +2,7 @@ import { createHash, createHmac } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { BusinessError } from "@/lib/onboarding";
-import { verifiedPayment } from "./tezcheck-security";
+import { verifiedPayment, paymentMethodSchema } from "./tezcheck-security";
 
 const baseUrl = "https://api.tezcheck.uz/api/merchant/v1";
 export function paymentConfigured() {
@@ -40,9 +40,8 @@ async function sendTezcheck(path: string, body?: unknown, idempotencyKey?: strin
   }
   return (await response.json()).data;
 }
-const methodSchema = z.object({ provider_code: z.string().min(1), name: z.string(), currency: z.literal("UZS"), min_amount_minor: z.number().int(), max_amount_minor: z.number().int() });
 export async function paymentMethods() {
-  return z.array(methodSchema).parse(await tezcheck("/payment-methods"));
+  return z.array(paymentMethodSchema).parse(await tezcheck("/payment-methods"));
 }
 const allowedStatuses = ["AWAITING_PAYMENT", "ACTIVE", "TRIAL", "EXPIRED"];
 

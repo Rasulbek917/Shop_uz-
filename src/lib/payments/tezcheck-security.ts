@@ -28,3 +28,12 @@ export function verifiedPayment(value: unknown, order: { id: string; billId: str
   if (payment.amount_minor !== order.amount * 100) throw new Error("To‘lov summasi mos emas");
   return payment.id;
 }
+
+// An unset provider limit is returned as null. Keep numeric bounds in the public API.
+export const paymentMethodSchema = z.object({
+  provider_code: z.string().min(1),
+  name: z.string(),
+  currency: z.literal("UZS"),
+  min_amount_minor: z.number().int().nonnegative().safe().nullable().transform(value => value ?? 0),
+  max_amount_minor: z.number().int().nonnegative().safe().nullable().transform(value => value ?? Number.MAX_SAFE_INTEGER),
+});
