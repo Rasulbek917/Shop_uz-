@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { comparePassword, signJwtToken, getAuthCookieName } from "@/lib/auth";
+import { comparePassword, signJwtToken, getAuthCookieName, resolveUser } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations";
 import { getDaysRemaining } from "@/lib/formatters";
 import { logAudit } from "@/lib/audit";
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     const { username, password } = validated.data;
     const ipAddress = req.headers.get("x-forwarded-for") || req.ip || "127.0.0.1";
-    const rateLimitKey = `${ipAddress}_${username}`;
+    const rateLimitKey = `login:${username.toLowerCase()}`;
 
     // 1. Check rate limit
     const rateCheck = checkLoginRateLimit(rateLimitKey);
@@ -76,19 +76,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (user.status !== "ACTIVE") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "ACCOUNT_INACTIVE",
-            message: "Ushbu foydalanuvchi hisobi faol emas yoki bloklangan.",
-          },
-        },
-        { status: 403 }
-      );
-    }
-
     // 3. Verify password
     const isPasswordValid = await comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
@@ -113,6 +100,19 @@ export async function POST(req: NextRequest) {
           },
         },
         { status: 401 }
+      );
+    }
+
+    if (user.status !== "ACTIVE") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "ACCOUNT_INACTIVE",
+            message: "Ushbu foydalanuvchi hisobi faol emas yoki bloklangan.",
+          },
+        },
+        { status: 403 }
       );
     }
 
@@ -161,27 +161,15 @@ export async function POST(req: NextRequest) {
       if (shouldBlock && shop.status !== "BLOCKED") {
         await prisma.shop.update({
           where: { id: shop.id },
-          data: { status: "BLOCKED" },
+          data: { status: "EXPIRED" },
         });
-        shop.status = "BLOCKED";
+        shop.status = "EXPIRED";
       }
 
-      if (shop.status === "BLOCKED") {
-        return NextResponse.json(
-          {
-            success: false,
-            isBlocked: true,
-            error: {
-              code: "SUBSCRIPTION_EXPIRED",
-              message: "Obunangiz tugagan. Tizimdan foydalanishni davom ettirish uchun obunani yangilang.",
-            },
-          },
-          { status: 403 }
-        );
-      }
     }
 
     const authUser: AuthUser = {
+      tokenVersion: user.tokenVersion,
       id: user.id,
       username: user.username,
       fullName: user.fullName,
@@ -210,7 +198,7 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({
       success: true,
       message: "Tizimga muvaffaqiyatli kirdingiz",
-      user: authUser,
+      user: await resolveUser(authUser),
     });
 
     response.cookies.set({
@@ -226,12 +214,16 @@ export async function POST(req: NextRequest) {
     return response;
   } catch (error: any) {
     logger.error("Login error", { error: error });
+    const schemaMissing = ["P2021", "P2022"].includes(error?.code);
+    const hint = schemaMissing
+      ? "Baza yangilanishi bajarilmagan. Administrator saytni qayta ishga tushirishi kerak."
+      : "Ma’lumotlar bazasiga ulanib bo‘lmadi. Qayta urinib ko‘ring.";
     return NextResponse.json(
       {
         success: false,
         error: {
           code: "SERVER_ERROR",
-          message: "Serverda xatolik yuz berdi. Qayta urinib ko‘ring.",
+          message: hint,
         },
       },
       { status: 500 }

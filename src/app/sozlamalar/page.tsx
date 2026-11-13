@@ -1,5 +1,7 @@
 "use client";
 
+import ShopSettings from "@/components/settings/ShopSettings";
+import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -28,6 +30,8 @@ interface Profile {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const [shopTab, setShopTab] = useState(false);
+  useEffect(() => { setShopTab(new URLSearchParams(window.location.search).get("tab") === "shop"); }, []);
 
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string>("");
@@ -162,16 +166,18 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <RefreshCw className="h-6 w-6 animate-spin text-emerald-600" />
+        <RefreshCw className="h-6 w-6 animate-spin text-primary-600" />
       </div>
     );
   }
 
+  const settingsTabs = <div className="flex gap-2 mb-6"><button className={!shopTab ? "btn-primary" : "btn-secondary"} onClick={() => setShopTab(false)}>Profil va xavfsizlik</button>{role === "SHOP_ADMIN" && <button className={shopTab ? "btn-primary" : "btn-secondary"} onClick={() => setShopTab(true)}>Do‘kon sozlamalari</button>}<Link href="/account" className="btn-secondary">Tarif va obuna</Link></div>;
+  if (shopTab && role === "SHOP_ADMIN") return <div>{settingsTabs}<ShopSettings/></div>;
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6">{settingsTabs}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
-          <Settings className="h-5 w-5 text-emerald-700" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100">
+          <Settings className="h-5 w-5 text-primary-700" />
         </div>
         <div>
           <h2 className="text-xl font-extrabold text-slate-900">Sozlamalar</h2>
@@ -188,7 +194,7 @@ export default function SettingsPage() {
         className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
       >
         <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-          <UserIcon className="h-4 w-4 text-emerald-600" />
+          <UserIcon className="h-4 w-4 text-primary-600" />
           Profil ma‘lumotlari
         </h3>
 
@@ -200,7 +206,7 @@ export default function SettingsPage() {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="Ism"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
           <div>
@@ -210,7 +216,7 @@ export default function SettingsPage() {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder="Familiya"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
         </div>
@@ -224,7 +230,7 @@ export default function SettingsPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+998 90 123 45 67"
-            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </div>
 
@@ -237,7 +243,7 @@ export default function SettingsPage() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="login"
-            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-semibold focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-semibold focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
           <p className="mt-1 text-[11px] text-slate-400">
             Login tizimga kirishda ishlatiladi. Boshqa foydalanuvchi egallagan login bo‘lmasligi kerak.
@@ -248,7 +254,7 @@ export default function SettingsPage() {
           <div
             className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-medium ${
               profileMsg.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                ? "border-primary-200 bg-primary-50 text-primary-700"
                 : "border-red-200 bg-red-50 text-red-700"
             }`}
           >
@@ -264,7 +270,7 @@ export default function SettingsPage() {
         <button
           type="submit"
           disabled={savingProfile}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#16A34A] py-3 text-sm font-extrabold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-3 text-sm font-extrabold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
         >
           {savingProfile ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           <span>{savingProfile ? "Saqlanmoqda..." : "Profilni saqlash"}</span>
@@ -277,7 +283,7 @@ export default function SettingsPage() {
         className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4"
       >
         <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-          <KeyRound className="h-4 w-4 text-emerald-600" />
+          <KeyRound className="h-4 w-4 text-primary-600" />
           Parolni almashtirish
         </h3>
 
@@ -288,7 +294,7 @@ export default function SettingsPage() {
             value={pwdForm.currentPassword}
             onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
             autoComplete="current-password"
-            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
         </div>
 
@@ -301,7 +307,7 @@ export default function SettingsPage() {
               onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
               autoComplete="new-password"
               minLength={5}
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
           <div>
@@ -312,7 +318,7 @@ export default function SettingsPage() {
               onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
               autoComplete="new-password"
               minLength={5}
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
         </div>
@@ -321,7 +327,7 @@ export default function SettingsPage() {
           <div
             className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-medium ${
               pwdMsg.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                ? "border-primary-200 bg-primary-50 text-primary-700"
                 : "border-red-200 bg-red-50 text-red-700"
             }`}
           >

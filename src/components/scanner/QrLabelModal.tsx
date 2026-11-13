@@ -27,7 +27,7 @@ export default function QrLabelModal({
   isOpen,
   onClose,
   product,
-  shopName = "SHOP MARKET",
+  shopName = "SAVDOZA",
   onRegenerate,
 }: QrLabelModalProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
@@ -116,7 +116,7 @@ export default function QrLabelModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-3.5 no-print">
           <div className="flex items-center gap-2">
-            <QrCode className="h-5 w-5 text-emerald-600" />
+            <QrCode className="h-5 w-5 text-primary-600" />
             <h3 className="text-sm font-bold text-slate-900">Mahsulot QR-Kod Stikeri</h3>
           </div>
           <button
@@ -206,7 +206,7 @@ export default function QrLabelModal({
               )}
 
               {product.salePrice !== undefined && (
-                <p className="text-xs font-bold text-emerald-700">
+                <p className="text-xs font-bold text-primary-700">
                   {formatCurrency(product.salePrice)}
                 </p>
               )}
@@ -239,7 +239,7 @@ export default function QrLabelModal({
               type="button"
               onClick={handlePrint}
               disabled={!qrDataUrl || isGenerating}
-              className="w-full sm:w-auto flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#16A34A] px-4 py-2 text-xs font-bold text-white hover:bg-[#15803D] transition-colors shadow-md shadow-emerald-600/20 disabled:opacity-50"
+              className="w-full sm:w-auto flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white hover:bg-[#4338CA] transition-colors shadow-md shadow-primary-600/20 disabled:opacity-50"
             >
               <Printer className="h-4 w-4" />
               <span>Chop Etish</span>

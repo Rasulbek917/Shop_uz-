@@ -36,6 +36,7 @@ export default function AppShell({
         const res = await fetch("/api/auth/me", { cache: "no-store" });
         const data = await res.json();
         if (active && data?.success && data.user) {
+          if (!data.user.hasAccess) { window.location.replace("/account"); return; }
           setCurrentUser((prev) => ({ ...prev, ...data.user }));
         }
       } catch {
@@ -52,7 +53,7 @@ export default function AppShell({
     document.addEventListener("visibilitychange", onVisibility);
 
     // Har 10 daqiqada avtomatik yangilash
-    const interval = setInterval(refresh, 10 * 60 * 1000);
+    const interval = setInterval(refresh, 60 * 1000);
 
     return () => {
       active = false;
@@ -62,7 +63,7 @@ export default function AppShell({
   }, [user.role]);
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
+    <div className="flex min-h-screen bg-[#F5F8F2]">
       {/* Sidebar */}
       <Sidebar
         user={currentUser}

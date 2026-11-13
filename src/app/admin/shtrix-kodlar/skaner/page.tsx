@@ -159,7 +159,7 @@ export default function ScannerLookupPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <ScanLine className="w-6 h-6 text-[#16A34A]" />
+            <ScanLine className="w-6 h-6 text-[#4F46E5]" />
             Skaner & Tezkor Tovarni Qidirish
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -214,21 +214,21 @@ export default function ScannerLookupPage() {
               placeholder="Shtrix-kodni USB skaner orqali o'qing yoki raqamini yozing..."
               value={scannedCode}
               onChange={(e) => setScannedCode(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#16A34A] text-xs font-mono outline-none"
+              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#4F46E5] text-xs font-mono outline-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="px-6 py-3 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs shadow-sm transition-all disabled:opacity-50"
+            className="px-6 py-3 rounded-2xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-bold text-xs shadow-sm transition-all disabled:opacity-50"
           >
             {isLoading ? "Qidirilmoqda..." : "Qidirish"}
           </button>
         </form>
 
         <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></span>
           USB skaner avtomatik faol holatda. Skanerni shtrix-kodga bosishingiz bilan ma'lumotlar chiqadi.
         </p>
       </div>
@@ -248,8 +248,8 @@ export default function ScannerLookupPage() {
       {product && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <div className="flex items-center gap-2 text-xs font-bold text-primary-700 bg-primary-50 px-3 py-1 rounded-full">
+              <CheckCircle2 className="w-4 h-4 text-primary-600" />
               Tovar ombordan topildi
             </div>
             <span className="font-mono text-xs text-slate-500 font-bold">
@@ -274,7 +274,7 @@ export default function ScannerLookupPage() {
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2 text-xs">
                 <div className="flex justify-between py-1 border-b border-slate-200/60">
                   <span className="text-slate-500">Do'kondagi narxi:</span>
-                  <span className="font-extrabold text-[#16A34A] text-base">
+                  <span className="font-extrabold text-[#4F46E5] text-base">
                     {formatCurrency(product.salePrice)}
                   </span>
                 </div>
@@ -290,7 +290,7 @@ export default function ScannerLookupPage() {
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-slate-500">Holat:</span>
-                  <span className="font-bold text-emerald-600">
+                  <span className="font-bold text-primary-600">
                     {product.status === "ACTIVE" ? "Faol (Sotuvda)" : "Nofaol"}
                   </span>
                 </div>
@@ -323,7 +323,7 @@ export default function ScannerLookupPage() {
               <div className="pt-2">
                 <Link
                   href="/kassir"
-                  className="w-full py-3 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                  className="w-full py-3 px-4 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   Kassaga o'tish va Savatga qo'shish

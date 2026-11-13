@@ -1,4 +1,4 @@
-# Production Deployment Guide (Shop Market)
+# Production Deployment Guide (Savdoza)
 
 ## 1. Arxitektura
 
@@ -17,7 +17,7 @@ Production: PostgreSQL + **`prisma migrate deploy`** (db push EMAS).
 
 1. `.env` (production):
    ```
-   DATABASE_URL="postgresql://USER:STRONG_PASSWORD@localhost:5432/shop_market?schema=public"
+   DATABASE_URL="postgresql://USER:STRONG_PASSWORD@localhost:5432/savdoza?schema=public"
    JWT_SECRET="<64 belgili tasodifiy string>"
    NEXT_PUBLIC_APP_URL="https://yourdomain.uz"
    EXPIRY_WARNING_DAYS="90"

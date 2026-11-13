@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       user: {
+        ...user,
         id: dbUser.id,
         username: dbUser.username,
         fullName: dbUser.fullName,

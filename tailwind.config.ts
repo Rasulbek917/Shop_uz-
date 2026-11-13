@@ -10,14 +10,20 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#16A34A",
-          hover: "#15803D",
-          light: "#DCFCE7",
-          50: "#F0FDF4",
-          100: "#DCFCE7",
-          500: "#16A34A",
-          600: "#15803D",
-          700: "#166534",
+          DEFAULT: "#24634F",
+          hover: "#193E33",
+          light: "#DDEBDF",
+          50: "#F0F6EE",
+          100: "#DDEBDF",
+          200: "#C4DBC6",
+          300: "#9EC5A6",
+          400: "#79AC89",
+          500: "#488868",
+          600: "#24634F",
+          700: "#193E33",
+          800: "#183D30",
+          900: "#122F25",
+          950: "#0C2119",
         },
         navy: {
           DEFAULT: "#0F172A",

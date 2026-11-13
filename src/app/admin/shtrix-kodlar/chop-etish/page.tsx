@@ -85,7 +85,7 @@ export default function BatchPrintPage() {
       <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Printer className="w-6 h-6 text-[#16A34A]" />
+            <Printer className="w-6 h-6 text-[#4F46E5]" />
             Etiketkalar Chop Etish (Ommaviy)
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -96,7 +96,7 @@ export default function BatchPrintPage() {
         <button
           onClick={handlePrint}
           disabled={selectedProducts.length === 0}
-          className="px-5 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all disabled:opacity-40"
+          className="px-5 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all disabled:opacity-40"
         >
           <Printer className="w-4 h-4" />
           Chop etish ({selectedProducts.length * printCopies} ta etiketka)
@@ -114,7 +114,7 @@ export default function BatchPrintPage() {
               placeholder="Ro'yxatdan qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#16A34A]"
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#4F46E5]"
             />
           </div>
 
@@ -163,12 +163,12 @@ export default function BatchPrintPage() {
                 key={p.id}
                 onClick={() => toggleSelect(p.id)}
                 className={`p-2.5 flex items-center justify-between text-xs cursor-pointer transition-colors ${
-                  isSelected ? "bg-emerald-50/70 font-semibold" : "hover:bg-slate-50"
+                  isSelected ? "bg-primary-50/70 font-semibold" : "hover:bg-slate-50"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   {isSelected ? (
-                    <CheckSquare className="w-4 h-4 text-[#16A34A] shrink-0" />
+                    <CheckSquare className="w-4 h-4 text-[#4F46E5] shrink-0" />
                   ) : (
                     <Square className="w-4 h-4 text-slate-300 shrink-0" />
                   )}
@@ -221,7 +221,7 @@ export default function BatchPrintPage() {
                 >
                   <div className="w-full">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 truncate">
-                      {product.shop?.name || "SHOP MARKET"}
+                      {product.shop?.name || "SAVDOZA"}
                     </div>
                     <div className="font-bold text-slate-900 text-xs leading-snug line-clamp-2 my-1 px-1">
                       {product.name}

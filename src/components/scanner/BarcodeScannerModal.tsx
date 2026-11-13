@@ -122,7 +122,7 @@ export default function BarcodeScannerModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-4">
           <div className="flex items-center gap-2">
-            <Camera className="h-5 w-5 text-emerald-600" />
+            <Camera className="h-5 w-5 text-primary-600" />
             <h3 className="font-bold text-slate-800 text-sm md:text-base">{title}</h3>
           </div>
           <button
@@ -145,11 +145,11 @@ export default function BarcodeScannerModal({
               </div>
             </div>
           ) : (
-            <div className="relative overflow-hidden rounded-xl bg-slate-950 aspect-[4/3] flex items-center justify-center border-2 border-emerald-500/30">
+            <div className="relative overflow-hidden rounded-xl bg-slate-950 aspect-[4/3] flex items-center justify-center border-2 border-primary-500/30">
               <div id={readerElementId} className="w-full h-full" />
               {isInitializing && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 text-white text-xs gap-2.5">
-                  <div className="h-7 w-7 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                  <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
                   <span className="font-medium">Kamera ishga tushirilmoqda...</span>
                 </div>
               )}

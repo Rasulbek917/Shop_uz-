@@ -30,7 +30,11 @@ async function main() {
   await prisma.user.deleteMany({});
   await prisma.shop.deleteMany({});
 
-  const superAdminPassword = await hashPassword("superpassword123");
+  const superAdminPlain = process.env.INITIAL_SUPER_ADMIN_PASSWORD || "";
+  if (!superAdminPlain && process.env.NODE_ENV === "production") {
+    throw new Error("Production'da INITIAL_SUPER_ADMIN_PASSWORD majburiy");
+  }
+  const superAdminPassword = await hashPassword(superAdminPlain || "superpassword123");
   const defaultPassword = await hashPassword("admin123");
   const omborchiPassword = await hashPassword("omborchi123");
   const kassirPassword = await hashPassword("kassir123");
@@ -46,7 +50,7 @@ async function main() {
       status: "ACTIVE",
     },
   });
-  console.log("✓ Super Admin yaratildi: superadmin / superpassword123");
+  console.log("✓ Super Admin yaratildi: superadmin / (.env dagi INITIAL_SUPER_ADMIN_PASSWORD yoki test paroli)");
 
   // 2. Shop 1: BARAKA MARKET (ACTIVE, 30 days subscription)
   const now = new Date();
@@ -565,7 +569,7 @@ async function main() {
   console.log("✓ Barcha ma'lumotlar muvaffaqiyatli saqlandi!");
   console.log("------------------------------------------------------------");
   console.log("Kirish hisoblari:");
-  console.log("1. Super Admin:      superadmin     / superpassword123");
+  console.log("1. Super Admin:      superadmin     / (.env dagi INITIAL_SUPER_ADMIN_PASSWORD yoki test paroli)");
   console.log("2. Do‘kon Admin:   baraka_admin    / admin123  (Aktiv)");
   console.log("3. Omborchi:         baraka_omborchi / omborchi123");
   console.log("4. Kassir:           baraka_kassir   / kassir123");

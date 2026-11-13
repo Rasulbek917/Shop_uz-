@@ -178,14 +178,14 @@ export default function InflowPage() {
           onClick={() => setShowCameraScanner(true)}
           className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-sm hover:bg-slate-800 transition-colors"
         >
-          <Camera className="h-4 w-4 text-emerald-400" />
+          <Camera className="h-4 w-4 text-primary-400" />
           <span>Kamera orqali skanerlash</span>
         </button>
       </div>
 
       {/* Messages */}
       {successMessage && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800 flex items-center justify-between">
+        <div className="rounded-xl border border-primary-200 bg-primary-50 p-4 text-xs font-bold text-primary-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             <span>{successMessage}</span>
@@ -207,7 +207,7 @@ export default function InflowPage() {
       {/* Step 1: Select or Scan Product */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-          <Package className="h-4 w-4 text-emerald-600" />
+          <Package className="h-4 w-4 text-primary-600" />
           1-Qadam: Mahsulotni tanlash
         </h3>
 
@@ -222,7 +222,7 @@ export default function InflowPage() {
                 const found = products.find((m) => m.id === e.target.value);
                 if (found) selectProduct(found);
               }}
-              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+              className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
             >
               <option value="">-- Mahsulotni tanlang --</option>
               {products.map((med) => (
@@ -251,7 +251,7 @@ export default function InflowPage() {
                     }
                   }}
                   placeholder="Shtrix-kod / QR / nom (masalan 4780003456789)"
-                  className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2.5 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none font-mono"
+                  className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-2.5 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-mono"
                 />
               </div>
               <button
@@ -266,7 +266,7 @@ export default function InflowPage() {
                 type="button"
                 onClick={() => setShowCameraScanner(true)}
                 title="Kamera orqali skanerlash"
-                className="flex items-center justify-center rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-emerald-700 hover:bg-emerald-100"
+                className="flex items-center justify-center rounded-xl border border-primary-300 bg-primary-50 px-3 py-2.5 text-primary-700 hover:bg-primary-100"
               >
                 <Camera className="h-4 w-4" />
               </button>
@@ -279,12 +279,12 @@ export default function InflowPage() {
 
         {/* Selected Product Info Banner */}
         {selectedProduct && (
-          <div className="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="mt-3 rounded-xl bg-primary-50 border border-primary-200 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <span className="text-xs font-bold text-emerald-900 block">
+              <span className="text-xs font-bold text-primary-900 block">
                 Tanlangan mahsulot: {selectedProduct.name}
               </span>
-              <span className="text-[11px] text-emerald-700">
+              <span className="text-[11px] text-primary-700">
                 Shtrix-kod: {selectedProduct.barcode || "Mavjud emas"} • Birligi: {selectedProduct.unit} •
                 Hozirgi umumiy qoldiq: {selectedProduct.totalStock || 0} {selectedProduct.unit}
               </span>
@@ -304,7 +304,7 @@ export default function InflowPage() {
       {selectedProduct && (
         <form onSubmit={handleSubmit} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4 animate-in fade-in">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-            <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
+            <ArrowDownToLine className="h-4 w-4 text-primary-600" />
             2-Qadam: Partiya va Narx Ma'lumotlari
           </h3>
 
@@ -319,7 +319,7 @@ export default function InflowPage() {
                 value={formData.batchNumber}
                 onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
                 placeholder="PT-2026-001"
-                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none font-mono"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-mono"
               />
             </div>
 
@@ -333,7 +333,7 @@ export default function InflowPage() {
                 required
                 value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm font-bold text-slate-900 focus:border-[#16A34A] focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm font-bold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
               />
             </div>
 
@@ -346,7 +346,7 @@ export default function InflowPage() {
                 required
                 value={formData.expiryDate}
                 onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none font-medium"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-medium"
               />
             </div>
           </div>
@@ -364,7 +364,7 @@ export default function InflowPage() {
                 value={formData.purchasePrice}
                 onChange={(e) => setFormData({ ...formData, purchasePrice: Number(e.target.value) })}
                 placeholder="Tan narx"
-                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
               />
             </div>
 
@@ -380,7 +380,7 @@ export default function InflowPage() {
                 value={formData.salePrice}
                 onChange={(e) => setFormData({ ...formData, salePrice: Number(e.target.value) })}
                 placeholder="Kassada sotiladigan narx"
-                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm font-bold text-emerald-700 focus:border-[#16A34A] focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm font-bold text-primary-700 focus:border-[#4F46E5] focus:outline-none"
               />
             </div>
 
@@ -391,7 +391,7 @@ export default function InflowPage() {
               <select
                 value={formData.supplierId}
                 onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
               >
                 <option value="">-- Ta'minotchisiz --</option>
                 {suppliers.map((sup) => (
@@ -414,14 +414,14 @@ export default function InflowPage() {
 
             <div>
               <span className="text-slate-500">Kutilayotgan sotuv summasi:</span>
-              <span className="font-bold text-emerald-700 ml-1.5">
+              <span className="font-bold text-primary-700 ml-1.5">
                 {formatCurrency(formData.salePrice * formData.quantity)}
               </span>
             </div>
 
             <div>
               <span className="text-slate-500">Kutilayotgan sof foyda:</span>
-              <span className="font-bold text-emerald-700 ml-1.5">
+              <span className="font-bold text-primary-700 ml-1.5">
                 {formatCurrency(
                   Math.max(0, (formData.salePrice - formData.purchasePrice) * formData.quantity)
                 )}
@@ -433,7 +433,7 @@ export default function InflowPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-xl bg-[#16A34A] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50 transition-colors"
             >
               {isSubmitting ? (
                 <span>Qabul qilinmoqda...</span>

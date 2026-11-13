@@ -13,5 +13,7 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
+  if (user.role !== "SUPER_ADMIN" && !user.hasAccess) redirect("/account");
+
   return <AppShell user={user}>{children}</AppShell>;
 }

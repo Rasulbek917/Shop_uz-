@@ -31,6 +31,8 @@ export default function CashierPosPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [stockOnly, setStockOnly] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
   // Cart
@@ -92,6 +94,8 @@ export default function CashierPosPage() {
       const data = await res.json();
       if (data.success) {
         setProducts(data.data || []);
+      } else {
+        setStatusMessage({ text: getErrorMessage(data.error, "Mahsulotlarni yuklab bo‘lmadi"), type: "error" });
       }
     } catch (e) {
       console.error(e);
@@ -503,7 +507,10 @@ export default function CashierPosPage() {
     }
   };
 
+  const categories = Array.from(new Map(products.filter(p => p.category).map(p => [p.category.id, p.category])).values());
   const filteredProducts = products.filter((m) => {
+    if (categoryId && m.category?.id !== categoryId) return false;
+    if (stockOnly && !(m.batches || []).some((b: any) => b.currentQuantity > 0 && new Date(b.expiryDate) > new Date())) return false;
     return (
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       (m.barcode && m.barcode.includes(search)) ||
@@ -513,6 +520,8 @@ export default function CashierPosPage() {
 
   return (
     <div className="space-y-4">
+      <div className="rounded-2xl border border-primary-200 bg-white p-5 flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-bold text-slate-900">POS · Savdo terminali</h1><p className="mt-1 text-sm text-slate-500">Mahsulotni toping, savatga qo‘shing va to‘lovni yakunlang.</p></div><div className="rounded-xl bg-primary-50 px-4 py-2 text-primary-800 text-sm font-semibold">Savatda {cart.reduce((sum, item) => sum + item.quantity, 0)} ta · {formatCurrency(cartTotal)}</div></div>
+      <div className="flex flex-wrap gap-3 items-center"><label className="sr-only" htmlFor="pos-category">Kategoriya</label><select id="pos-category" className="rounded-xl border bg-white px-4 py-3 text-sm" value={categoryId} onChange={e => setCategoryId(e.target.value)}><option value="">Barcha kategoriyalar</option>{categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={stockOnly} onChange={e => setStockOnly(e.target.checked)}/>Faqat qoldig‘i bor mahsulotlar</label><button className="btn-secondary" onClick={loadProducts} disabled={isLoading}>Qoldiqni yangilash</button></div>
       {/* USB Hardware Barcode Detector */}
       <UsbBarcodeDetector onScan={handleBarcodeScanned} enabled={!showCheckoutModal} />
 
@@ -536,13 +545,13 @@ export default function CashierPosPage() {
         <div
           className={`rounded-xl p-3.5 text-xs font-bold flex items-center justify-between animate-in fade-in ${
             statusMessage.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+              ? "bg-primary-50 text-primary-800 border border-primary-200"
               : "bg-red-50 text-red-800 border border-red-200"
           }`}
         >
           <div className="flex items-center gap-2">
             {statusMessage.type === "success" ? (
-              <CheckCircle className="h-4 w-4 text-emerald-600" />
+              <CheckCircle className="h-4 w-4 text-primary-600" />
             ) : (
               <AlertCircle className="h-4 w-4 text-red-600" />
             )}
@@ -566,7 +575,7 @@ export default function CashierPosPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Mahsulot nomi yoki shtrix-kodini kiriting (yoki USB skanerlang)..."
-                className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-[#16A34A] focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-[#4F46E5] focus:outline-none"
               />
             </div>
 
@@ -575,7 +584,7 @@ export default function CashierPosPage() {
               className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors"
               title="Telefon kamerasi orqali shtrix-kod skanerlash"
             >
-              <Camera className="h-4 w-4 text-emerald-400" />
+              <Camera className="h-4 w-4 text-primary-400" />
               <span className="hidden sm:inline">Kamera Skaner</span>
             </button>
           </div>
@@ -612,7 +621,7 @@ export default function CashierPosPage() {
                       onClick={() => addToCart(med)}
                       className={`flex flex-col justify-between rounded-xl border p-3 text-left transition-all active:scale-[0.98] ${
                         hasStock
-                          ? "border-slate-200 bg-white hover:border-emerald-500 hover:shadow-md cursor-pointer"
+                          ? "border-slate-200 bg-white hover:border-primary-500 hover:shadow-md cursor-pointer"
                           : "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
                       }`}
                     >
@@ -626,7 +635,7 @@ export default function CashierPosPage() {
                       </div>
 
                       <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
-                        <span className="font-extrabold text-[#16A34A]">
+                        <span className="font-extrabold text-[#4F46E5]">
                           {formatCurrency(med.salePrice)}
                         </span>
                         <span
@@ -650,7 +659,7 @@ export default function CashierPosPage() {
           {/* Cart Header */}
           <div className="flex items-center justify-between border-b border-slate-100 p-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
                 <ShoppingCart className="h-4 w-4" />
               </div>
               <h3 className="font-extrabold text-slate-900 text-sm md:text-base">
@@ -687,7 +696,7 @@ export default function CashierPosPage() {
                     <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
                       <span>{formatCurrency(item.unitPrice)}</span>
                       <span>•</span>
-                      <span className="font-mono text-emerald-700">#{item.batchNumber}</span>
+                      <span className="font-mono text-primary-700">#{item.batchNumber}</span>
                       <span>•</span>
                       <span>Yaroqlilik: {formatDate(item.expiryDate)}</span>
                     </div>
@@ -743,7 +752,7 @@ export default function CashierPosPage() {
               <select
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-[#4F46E5] focus:outline-none"
               >
                 <option value="">Oddiy xaridor (Ro'yxatsiz)</option>
                 {customers.map((c) => (
@@ -784,7 +793,7 @@ export default function CashierPosPage() {
 
               <div className="flex justify-between items-baseline pt-2 border-t border-slate-200">
                 <span className="font-extrabold text-sm text-slate-900">Jami To‘lov:</span>
-                <span className="text-xl font-extrabold text-[#16A34A]">
+                <span className="text-xl font-extrabold text-[#4F46E5]">
                   {formatCurrency(cartTotal)}
                 </span>
               </div>
@@ -796,7 +805,7 @@ export default function CashierPosPage() {
                 type="button"
                 disabled={cart.length === 0}
                 onClick={handleOpenCheckout}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-emerald-600/20 hover:bg-[#15803D] active:scale-[0.98] transition-all disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-primary-600/20 hover:bg-[#4338CA] active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 <CheckCircle className="h-5 w-5" />
                 <span>To‘lovga O‘tish ({formatCurrency(cartTotal)})</span>
@@ -837,11 +846,11 @@ export default function CashierPosPage() {
                     onClick={() => setPaymentMethod("CASH")}
                     className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-bold transition-all ${
                       paymentMethod === "CASH"
-                        ? "border-[#16A34A] bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20"
+                        ? "border-[#4F46E5] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
                         : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
-                    <Banknote className="h-5 w-5 text-emerald-600" />
+                    <Banknote className="h-5 w-5 text-primary-600" />
                     <span>Naqd pul</span>
                   </button>
 
@@ -850,11 +859,11 @@ export default function CashierPosPage() {
                     onClick={() => setPaymentMethod("CARD")}
                     className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-bold transition-all ${
                       paymentMethod === "CARD"
-                        ? "border-[#16A34A] bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20"
+                        ? "border-[#4F46E5] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
                         : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
-                    <CreditCard className="h-5 w-5 text-emerald-600" />
+                    <CreditCard className="h-5 w-5 text-primary-600" />
                     <span>Bank kartasi</span>
                   </button>
 
@@ -863,11 +872,11 @@ export default function CashierPosPage() {
                     onClick={() => setPaymentMethod("ELECTRONIC")}
                     className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-bold transition-all ${
                       paymentMethod === "ELECTRONIC"
-                        ? "border-[#16A34A] bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20"
+                        ? "border-[#4F46E5] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
                         : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
-                    <Smartphone className="h-5 w-5 text-emerald-600" />
+                    <Smartphone className="h-5 w-5 text-primary-600" />
                     <span>Elektron to‘lov</span>
                   </button>
                 </div>
@@ -886,7 +895,7 @@ export default function CashierPosPage() {
 
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-slate-600 font-medium">To‘lanadigan summa:</span>
-                  <span className="text-base font-extrabold text-emerald-700">
+                  <span className="text-base font-extrabold text-primary-700">
                     {formatCurrency(cartTotal)}
                   </span>
                 </div>
@@ -901,7 +910,7 @@ export default function CashierPosPage() {
                     step="1000"
                     value={paidAmount}
                     onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-base font-extrabold text-slate-900 focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-base font-extrabold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
                   />
                 </div>
 
@@ -929,7 +938,7 @@ export default function CashierPosPage() {
                 type="button"
                 disabled={isProcessing || paidAmount < cartTotal}
                 onClick={handleCompleteSale}
-                className="flex items-center gap-2 rounded-xl bg-[#16A34A] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#15803D] disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#4338CA] disabled:opacity-50"
               >
                 {isProcessing ? (
                   <span>Saqlanmoqda...</span>

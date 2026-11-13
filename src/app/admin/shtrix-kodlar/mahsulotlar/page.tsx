@@ -90,7 +90,7 @@ export default function ProductCodesListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Package className="w-6 h-6 text-[#16A34A]" />
+            <Package className="w-6 h-6 text-[#4F46E5]" />
             Mahsulot Kodlari Ro'yxati
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -108,7 +108,7 @@ export default function ProductCodesListPage() {
           </Link>
           <Link
             href="/admin/shtrix-kodlar/yaratish"
-            className="px-4 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+            className="px-4 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
           >
             <PlusCircle className="w-4 h-4" />
             Yangi kod yaratish
@@ -125,7 +125,7 @@ export default function ProductCodesListPage() {
             placeholder="Nomi, SKU yoki shtrix-kod bo'yicha qidirish..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#16A34A]"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#4F46E5]"
           />
         </div>
 
@@ -216,7 +216,7 @@ export default function ProductCodesListPage() {
                           {codeType === "QR" ? (
                             <QrCode className="w-3 h-3 text-blue-600" />
                           ) : (
-                            <Barcode className="w-3 h-3 text-[#16A34A]" />
+                            <Barcode className="w-3 h-3 text-[#4F46E5]" />
                           )}
                           {codeType}
                         </span>
@@ -238,13 +238,13 @@ export default function ProductCodesListPage() {
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-[10px] ${
                             p.status === "ACTIVE"
-                              ? "bg-emerald-50 text-emerald-700"
+                              ? "bg-primary-50 text-primary-700"
                               : "bg-slate-100 text-slate-500"
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              p.status === "ACTIVE" ? "bg-emerald-500" : "bg-slate-400"
+                              p.status === "ACTIVE" ? "bg-primary-500" : "bg-slate-400"
                             }`}
                           ></span>
                           {p.status === "ACTIVE" ? "Faol" : "Nofaol"}
@@ -255,7 +255,7 @@ export default function ProductCodesListPage() {
                         <div className="inline-flex items-center gap-1">
                           <button
                             onClick={() => setSelectedProduct(p)}
-                            className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-600 hover:text-primary-700 hover:bg-primary-50 transition-colors"
                             title="Etiketka & Kod"
                           >
                             <Eye className="w-4 h-4" />
@@ -274,7 +274,7 @@ export default function ProductCodesListPage() {
                             className={`p-1.5 rounded-lg transition-colors ${
                               p.status === "ACTIVE"
                                 ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                                : "text-emerald-600 hover:bg-emerald-50"
+                                : "text-primary-600 hover:bg-primary-50"
                             }`}
                             title={p.status === "ACTIVE" ? "Nofaol qilish" : "Faollashtirish"}
                           >

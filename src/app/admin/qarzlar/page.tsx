@@ -204,7 +204,7 @@ export default function DebtsPage() {
               setFormData(emptyForm);
               setShowAddModal(true);
             }}
-            className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D]"
+            className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA]"
           >
             <Plus className="h-4 w-4" />
             <span>Qarz Qo‘shish</span>
@@ -213,7 +213,7 @@ export default function DebtsPage() {
       </div>
 
       {successMsg && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800 flex items-center justify-between">
+        <div className="rounded-xl border border-primary-200 bg-primary-50 p-4 text-xs font-bold text-primary-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
             <span>{successMsg}</span>
@@ -292,7 +292,7 @@ export default function DebtsPage() {
                       <span
                         className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
                           debt.status === "PAID"
-                            ? "bg-emerald-100 text-emerald-700"
+                            ? "bg-primary-100 text-primary-700"
                             : debt.status === "CANCELLED"
                               ? "bg-slate-200 text-slate-700"
                               : "bg-red-100 text-red-700"
@@ -312,7 +312,7 @@ export default function DebtsPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenPay(debt)}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors shadow-sm"
+                            className="flex items-center gap-1 rounded-lg bg-primary-50 border border-primary-200 px-2.5 py-1.5 text-xs font-bold text-primary-700 hover:bg-primary-100 transition-colors shadow-sm"
                             title="To‘lov qabul qilish"
                           >
                             <Banknote className="h-3.5 w-3.5" />
@@ -381,7 +381,7 @@ export default function DebtsPage() {
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     placeholder="Masalan: Sardor"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                   />
                 </div>
 
@@ -393,7 +393,7 @@ export default function DebtsPage() {
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     placeholder="Masalan: Rahimov"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                   />
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function DebtsPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+998 90 123 45 67"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                   />
                 </div>
 
@@ -419,7 +419,7 @@ export default function DebtsPage() {
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value || 0) })}
                     placeholder="500000"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                   />
                 </div>
               </div>
@@ -431,7 +431,7 @@ export default function DebtsPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Qarzning sababi yoki izohi..."
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                 />
               </div>
 
@@ -450,7 +450,7 @@ export default function DebtsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-[#16A34A] px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+                  className="rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : editingDebtId ? "Yangilash" : "Saqlash"}
                 </button>
@@ -466,7 +466,7 @@ export default function DebtsPage() {
           <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center">
                   <Banknote className="h-5 w-5" />
                 </div>
                 <div>
@@ -498,7 +498,7 @@ export default function DebtsPage() {
                   <span className="text-slate-500">To‘lovdan keyingi qoldiq:</span>
                   <span className={`font-extrabold text-sm ${
                     Math.max(0, Number(payingDebt.amount || 0) - Number(payAmount || 0)) === 0
-                      ? "text-emerald-600"
+                      ? "text-primary-600"
                       : "text-amber-600"
                   }`}>
                     {formatCurrency(Math.max(0, Number(payingDebt.amount || 0) - Number(payAmount || 0)))}
@@ -519,7 +519,7 @@ export default function DebtsPage() {
                     value={payAmount || ""}
                     onChange={(e) => setPayAmount(Number(e.target.value || 0))}
                     placeholder="Masalan: 250000"
-                    className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-[#16A34A] focus:outline-none"
+                    className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
                   />
                   <button
                     type="button"
@@ -545,7 +545,7 @@ export default function DebtsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || Number(payAmount) <= 0}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
                 >
                   <CheckCircle className="h-4 w-4" />
                   <span>{isSubmitting ? "Saqlanmoqda..." : "To‘lovni tasdiqlash"}</span>

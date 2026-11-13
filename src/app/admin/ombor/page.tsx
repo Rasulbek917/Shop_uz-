@@ -67,7 +67,7 @@ export default function InventoryPage() {
 
         <Link
           href="/omborchi/kirim"
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] transition-colors"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors"
         >
           <ArrowDownToLine className="h-4 w-4" />
           <span>Omborga Kirim Qilish</span>
@@ -83,7 +83,7 @@ export default function InventoryPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Mahsulot nomi yoki partiya raqami bo‘yicha qidirish..."
-            className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2 text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:border-[#16A34A] focus:outline-none"
+            className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2 text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:border-[#4F46E5] focus:outline-none"
           />
         </div>
 
@@ -91,7 +91,7 @@ export default function InventoryPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#16A34A] focus:outline-none"
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#4F46E5] focus:outline-none"
           >
             <option value="ALL">Barcha partiyalar</option>
             <option value="NORMAL">Normal (Muddati yetarli)</option>
@@ -173,7 +173,7 @@ export default function InventoryPage() {
                       {formatCurrency(batch.purchasePrice)}
                     </td>
 
-                    <td className="px-4 py-3.5 font-bold text-emerald-700">
+                    <td className="px-4 py-3.5 font-bold text-primary-700">
                       {formatCurrency(batch.salePrice)}
                     </td>
 

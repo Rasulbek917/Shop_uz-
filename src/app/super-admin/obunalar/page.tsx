@@ -86,7 +86,7 @@ export default function SubscriptionsPage() {
           <select
             value={planId}
             onChange={(e) => setPlanId(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:border-emerald-500 focus:outline-none shadow-sm"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:border-primary-500 focus:outline-none shadow-sm"
             title="Faollashtirish uchun tarif"
           >
             {PLANS.map((p) => (
@@ -175,7 +175,7 @@ export default function SubscriptionsPage() {
                         ) : (
                           <span
                             className={
-                              shop.daysRemaining <= 3 ? "text-red-600" : "text-emerald-700"
+                              shop.daysRemaining <= 3 ? "text-red-600" : "text-primary-700"
                             }
                           >
                             {shop.daysRemaining} kun qoldi
@@ -187,7 +187,7 @@ export default function SubscriptionsPage() {
                         <button
                           onClick={() => handleActivate(shop)}
                           disabled={activatingId === shop.id}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                          className="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
                         >
                           <Zap className="h-3.5 w-3.5" />
                           <span>{selectedPlan.durationDays} Kun Faollashtirish</span>

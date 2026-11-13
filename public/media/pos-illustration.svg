@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="title desc">
+<title id="title">Savdoza POS — namunaviy ko‘rinish</title><desc id="desc">Mahsulotlar, savat va savdo nazorati uchun original interfeys illyustratsiyasi. Haqiqiy mijoz ma’lumotlari ishlatilmagan.</desc>
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#e1ebdb"/><stop offset="1" stop-color="#f5f7ef"/></linearGradient><filter id="shadow"><feDropShadow dx="0" dy="20" stdDeviation="22" flood-color="#193e33" flood-opacity=".12"/></filter></defs>
+<rect width="1200" height="780" rx="32" fill="url(#bg)"/>
+<g filter="url(#shadow)"><rect x="50" y="50" width="1100" height="670" rx="20" fill="white"/></g>
+<path d="M70 50H246V720H70Q50 720 50 700V70Q50 50 70 50" fill="#193e33"/>
+<g font-family="Arial, sans-serif">
+<text x="78" y="97" font-size="24" font-weight="700" fill="white">savdoza.</text>
+<text x="78" y="121" font-size="10" letter-spacing="2" fill="#a8beb1">DEMO DO‘KON</text>
+<text x="82" y="182" font-size="14" fill="#b2c5b8">Dashboard</text>
+<rect x="66" y="209" width="164" height="40" rx="9" fill="#699374"/>
+<text x="82" y="234" font-size="14" fill="white">POS terminal</text>
+<text x="82" y="286" font-size="14" fill="#b2c5b8">Mahsulotlar</text>
+<text x="82" y="338" font-size="14" fill="#b2c5b8">Ombor</text>
+<text x="82" y="390" font-size="14" fill="#b2c5b8">Mijozlar</text>
+<text x="82" y="442" font-size="14" fill="#b2c5b8">Hisobotlar</text>
+<text x="278" y="102" fill="#193e33" font-size="27" font-weight="700">POS terminal</text>
+<rect x="953" y="75" width="164" height="30" rx="15" fill="#e1ebdb"/><text x="971" y="95" font-size="10" fill="#699374" letter-spacing="1">NAMUNAVIY DEMO</text>
+<rect x="278" y="132" width="540" height="44" rx="11" fill="#f0f3ed"/><text x="296" y="159" fill="#708177" font-size="14">Mahsulot nomi yoki shtrix-kod...</text>
+<rect x="278" y="198" width="170" height="194" rx="12" fill="white" stroke="#dfe6da"/>
+<rect x="288" y="208" width="150" height="112" rx="8" fill="#e7ede1"/>
+<rect x="335" y="227" width="57" height="80" rx="7" fill="white"/><rect x="335" y="253" width="57" height="28" fill="#699374"/><rect x="346" y="261" width="35" height="3" fill="white" opacity=".8"/>
+<text x="292" y="348" font-size="15" fill="#193e33" font-weight="700">Sut 1 L</text>
+<text x="292" y="374" font-size="14" fill="#708177">12 000 so‘m</text>
+<rect x="463" y="198" width="170" height="194" rx="12" fill="white" stroke="#dfe6da"/>
+<rect x="473" y="208" width="150" height="112" rx="8" fill="#fff1d8"/>
+<rect x="499" y="253" width="98" height="38" rx="19" fill="#d8a269"/><path d="M525 261l-6 19M550 261l-6 19M574 261l-6 19" stroke="#f5d4ac" stroke-width="5"/>
+<text x="477" y="348" font-size="15" fill="#193e33" font-weight="700">Non</text>
+<text x="477" y="374" font-size="14" fill="#708177">4 000 so‘m</text>
+<rect x="648" y="198" width="170" height="194" rx="12" fill="white" stroke="#dfe6da"/>
+<rect x="658" y="208" width="150" height="112" rx="8" fill="#e5f5e9"/>
+<circle cx="735" cy="271" r="29" fill="#59a876"/><path d="M735 243q0-20 18-18" stroke="#386d4d" stroke-width="5" fill="none"/>
+<text x="662" y="348" font-size="15" fill="#193e33" font-weight="700">Olma 1 kg</text>
+<text x="662" y="374" font-size="14" fill="#708177">18 000 so‘m</text>
+<rect x="278" y="412" width="170" height="194" rx="12" fill="white" stroke="#dfe6da"/>
+<rect x="288" y="422" width="150" height="112" rx="8" fill="#e4f3ef"/>
+<rect x="335" y="441" width="57" height="80" rx="7" fill="white"/><rect x="335" y="467" width="57" height="28" fill="#699374"/><rect x="346" y="475" width="35" height="3" fill="white" opacity=".8"/>
+<text x="292" y="562" font-size="15" fill="#193e33" font-weight="700">Choy</text>
+<text x="292" y="588" font-size="14" fill="#708177">16 000 so‘m</text>
+<rect x="463" y="412" width="170" height="194" rx="12" fill="white" stroke="#dfe6da"/>
+<rect x="473" y="422" width="150" height="112" rx="8" fill="#fff1d7"/>
+<rect x="520" y="441" width="57" height="80" rx="7" fill="white"/><rect x="520" y="467" width="57" height="28" fill="#699374"/><rect x="531" y="475" width="35" height="3" fill="white" opacity=".8"/>
+<text x="477" y="562" font-size="15" fill="#193e33" font-weight="700">Yog‘ 1 L</text>
+<text x="477" y="588" font-size="14" fill="#708177">22 000 so‘m</text>
+<rect x="648" y="412" width="170" height="194" rx="12" fill="white" stroke="#dfe6da"/>
+<rect x="658" y="422" width="150" height="112" rx="8" fill="#f1e9dc"/>
+<rect x="705" y="441" width="57" height="80" rx="7" fill="white"/><rect x="705" y="467" width="57" height="28" fill="#699374"/><rect x="716" y="475" width="35" height="3" fill="white" opacity=".8"/>
+<text x="662" y="562" font-size="15" fill="#193e33" font-weight="700">Shakar 1 kg</text>
+<text x="662" y="588" font-size="14" fill="#708177">14 000 so‘m</text>
+<path d="M845 132V676" stroke="#dfe6da"/>
+<text x="870" y="159" font-size="20" font-weight="700" fill="#193e33">Joriy savat</text>
+<text x="870" y="219" font-size="15" fill="#193e33">Sut 1 L</text>
+<text x="870" y="244" font-size="12" fill="#708177">1 dona</text>
+<text x="1108" y="219" text-anchor="end" font-size="15" fill="#193e33">12 000</text>
+<path d="M870 262H1110" stroke="#e3e9de"/>
+<text x="870" y="299" font-size="15" fill="#193e33">Non</text>
+<text x="870" y="324" font-size="12" fill="#708177">1 dona</text>
+<text x="1108" y="299" text-anchor="end" font-size="15" fill="#193e33">4 000</text>
+<path d="M870 342H1110" stroke="#e3e9de"/>
+<text x="870" y="379" font-size="15" fill="#193e33">Olma 1 kg</text>
+<text x="870" y="404" font-size="12" fill="#708177">1 dona</text>
+<text x="1108" y="379" text-anchor="end" font-size="15" fill="#193e33">18 000</text>
+<path d="M870 422H1110" stroke="#e3e9de"/>
+<text x="870" y="510" font-size="14" fill="#708177">Jami</text>
+<text x="1110" y="510" text-anchor="end" font-size="24" font-weight="700" fill="#193e33">34 000 so‘m</text>
+<rect x="870" y="546" width="112" height="42" rx="9" fill="#e1ebdb"/><text x="926" y="572" text-anchor="middle" font-size="14" fill="#699374">Naqd</text>
+<rect x="994" y="546" width="116" height="42" rx="9" fill="#f0f3ed"/><text x="1052" y="572" text-anchor="middle" font-size="14" fill="#708177">Karta</text>
+<rect x="870" y="612" width="240" height="48" rx="10" fill="#699374"/><text x="990" y="642" text-anchor="middle" font-size="14" fill="white" font-weight="700">To‘lovni yakunlash</text>
+</g><text x="363" y="274" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700" fill="white">SUT</text><text x="363" y="488" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700" fill="white">CHOY</text><text x="548" y="488" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700" fill="white">YOG‘</text><text x="733" y="488" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" font-weight="700" fill="white">SHAKAR</text></svg>

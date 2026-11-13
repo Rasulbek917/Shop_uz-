@@ -35,6 +35,7 @@ export interface EscPosOptions {
   paperWidth?: PaperWidth;
   openDrawer?: boolean;
   cutPaper?: boolean;
+  qrData?: string;
 }
 
 // ESC/POS Byte Commands
@@ -208,6 +209,19 @@ export function generateEscPosBytes(receipt: ReceiptData, options: EscPosOptions
   addBytes(CMD.ALIGN_CENTER);
   addText("Xaridingiz uchun tashakkur!\n");
   addText("Salomat bo'ling!\n\n");
+
+  // QR kod (GS ( k): chek raqami, qaytarishda skaner bilan tez topish uchun
+  if (options.qrData) {
+    const data = new TextEncoder().encode(options.qrData);
+    const len = data.length + 3;
+    addBytes([0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00]); // model 2
+    addBytes([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, paperWidth === "80mm" ? 6 : 5]); // o'lcham
+    addBytes([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x31]); // xatoni tuzatish: M
+    addBytes([0x1d, 0x28, 0x6b, len & 0xff, (len >> 8) & 0xff, 0x31, 0x50, 0x30]);
+    for (let i = 0; i < data.length; i++) buffer.push(data[i]);
+    addBytes([0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]); // chop etish
+    addText("\n" + options.qrData + "\n\n");
+  }
 
   // 7. Cut Paper
   if (options.cutPaper !== false) {

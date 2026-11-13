@@ -1,5 +1,6 @@
+import { hasShopAccess, isMax, MAX_API_PREFIXES } from "./plans";
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser, verifyJwtToken, getAuthCookieName } from "./auth";
+import { getCurrentUser, verifyJwtToken, getAuthCookieName, resolveUser } from "./auth";
 import { prisma } from "./prisma";
 import { AuthUser, UserRole } from "@/types";
 
@@ -13,7 +14,7 @@ export async function authenticateApi(req: NextRequest): Promise<AuthUser | null
   const cookieToken = req.cookies.get(getAuthCookieName())?.value;
   if (cookieToken) {
     const user = verifyJwtToken(cookieToken);
-    if (user) return user;
+    if (user) return resolveUser(user);
   }
 
   // 2. Try Authorization header
@@ -21,7 +22,7 @@ export async function authenticateApi(req: NextRequest): Promise<AuthUser | null
   if (authHeader && authHeader.startsWith("Bearer ")) {
     const token = authHeader.substring(7);
     const user = verifyJwtToken(token);
-    if (user) return user;
+    if (user) return resolveUser(user);
   }
 
   return null;
@@ -92,40 +93,11 @@ export async function requireTenantContext(
     };
   }
 
-  // Automatic subscription / trial expiration check
-  const now = new Date();
-  let isExpired = false;
-
-  if (shop.status === "TRIAL" && shop.trialEndDate) {
-    if (new Date(shop.trialEndDate) < now) {
-      isExpired = true;
-    }
-  } else if (shop.status === "ACTIVE" && shop.subscriptionEndDate) {
-    if (new Date(shop.subscriptionEndDate) < now) {
-      isExpired = true;
-    }
+  if (!hasShopAccess(shop) || !user.hasAccess) {
+    return { errorResponse: NextResponse.json({ success: false, needsSubscription: true, error: "Tarifni yangilang. Ish bo‘limlaridan foydalanish uchun hisob tasdig‘i va faol obuna kerak." }, { status: 403 }) };
   }
-
-  if (isExpired && shop.status !== "BLOCKED") {
-    // Automatically transition to BLOCKED in database
-    await prisma.shop.update({
-      where: { id: shop.id },
-      data: { status: "BLOCKED" },
-    });
-    shop.status = "BLOCKED";
-  }
-
-  if (shop.status === "BLOCKED") {
-    return {
-      errorResponse: NextResponse.json(
-        {
-          success: false,
-          isBlocked: true,
-          error: "Obunangiz tugagan. Tizimdan foydalanishni davom ettirish uchun obunani yangilang.",
-        },
-        { status: 403 }
-      ),
-    };
+  if (MAX_API_PREFIXES.some(prefix => req.nextUrl.pathname === prefix || req.nextUrl.pathname.startsWith(prefix + "/")) && !isMax(shop.planCode)) {
+    return { errorResponse: NextResponse.json({ success: false, error: "Bu imkoniyat Max tarifiga kiradi", requiredPlan: "MAX" }, { status: 403 }) };
   }
 
   return { context: { user, shopId: shop.id } };

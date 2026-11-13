@@ -154,7 +154,7 @@ export default function SuppliersPage() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D]"
+            className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA]"
           >
             <Plus className="h-4 w-4" />
             <span>Ta'minotchi Qo‘shish</span>
@@ -163,7 +163,7 @@ export default function SuppliersPage() {
       </div>
 
       {successMsg && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800 flex items-center justify-between">
+        <div className="rounded-xl border border-primary-200 bg-primary-50 p-4 text-xs font-bold text-primary-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             <span>{successMsg}</span>
@@ -235,7 +235,7 @@ export default function SuppliersPage() {
                       {formatCurrency(sup.totalPurchases)}
                     </td>
 
-                    <td className="px-4 py-3.5 font-semibold text-emerald-700">
+                    <td className="px-4 py-3.5 font-semibold text-primary-700">
                       {formatCurrency(sup.totalPaid)}
                     </td>
 
@@ -256,13 +256,13 @@ export default function SuppliersPage() {
                             setPayingSupplier(sup);
                             setPayAmount(sup.debt);
                           }}
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors"
+                          className="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-primary-700 transition-colors"
                         >
                           <CreditCard className="h-3 w-3" />
                           <span>Qarzni To‘lash</span>
                         </button>
                       ) : (
-                        <span className="text-[11px] font-semibold text-emerald-600">
+                        <span className="text-[11px] font-semibold text-primary-600">
                           Qarz yo‘q ✓
                         </span>
                       )}
@@ -307,7 +307,7 @@ export default function SuppliersPage() {
                   required
                   value={payAmount}
                   onChange={(e) => setPayAmount(Number(e.target.value) || 0)}
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-bold text-emerald-700 focus:border-[#16A34A] focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-bold text-primary-700 focus:border-[#4F46E5] focus:outline-none"
                 />
               </div>
 
@@ -322,7 +322,7 @@ export default function SuppliersPage() {
                 <button
                   type="submit"
                   disabled={isProcessingPay}
-                  className="rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                  className="rounded-xl bg-primary-600 px-5 py-2 text-xs font-bold text-white hover:bg-primary-700 disabled:opacity-50"
                 >
                   {isProcessingPay ? "Saqlanmoqda..." : "To‘lovni Saqlash"}
                 </button>
@@ -358,7 +358,7 @@ export default function SuppliersPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Masalan: Oziq-Ovqat Trade MChJ"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                 />
               </div>
 
@@ -369,7 +369,7 @@ export default function SuppliersPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+998 71 123 45 67"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                 />
               </div>
 
@@ -380,7 +380,7 @@ export default function SuppliersPage() {
                   value={formData.contactPerson}
                   onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                   placeholder="Farhod aka"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                 />
               </div>
 
@@ -391,7 +391,7 @@ export default function SuppliersPage() {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Toshkent sh., Olmazor tumani"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#16A34A] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
                 />
               </div>
 
@@ -406,7 +406,7 @@ export default function SuppliersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white hover:bg-[#15803D] disabled:opacity-50"
+                  className="rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white hover:bg-[#4338CA] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
                 </button>

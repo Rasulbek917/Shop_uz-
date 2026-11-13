@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import QRCode from "qrcode";
 import { Printer, Check, X, AlertTriangle, RefreshCw, Cpu, FileText } from "lucide-react";
 import { formatCurrency, formatDateTime, getPaymentMethodLabel } from "@/lib/formatters";
 import {
@@ -50,6 +52,15 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
     message: string;
   } | null>(null);
 
+  const [qrUrl, setQrUrl] = useState("");
+  const receiptNumber = receipt?.receiptNumber;
+  useEffect(() => {
+    if (!receiptNumber) return;
+    QRCode.toDataURL(receiptNumber, { margin: 0, width: 240, errorCorrectionLevel: "M" })
+      .then(setQrUrl)
+      .catch(() => setQrUrl(""));
+  }, [receiptNumber]);
+
   if (!isOpen || !receipt) return null;
 
   // 1. Direct ESC/POS printing (Web Serial / USB / Local Bridge)
@@ -76,7 +87,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
           paymentMethod: receipt.paymentMethod,
           items: receipt.items,
         },
-        { paperWidth, openDrawer: true, cutPaper: true }
+        { paperWidth, openDrawer: receipt.paymentMethod === "CASH", cutPaper: true, qrData: receipt.receiptNumber }
       );
 
       // Try local bridge first (fastest and most reliable for POS terminals)
@@ -109,19 +120,20 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
 
   // 2. Standard Browser Print (Continuous Thermal Receipt)
   const handleStandardPrint = () => {
-    document.body.classList.add("printing-receipt");
+    const widthClass = paperWidth === "58mm" ? "receipt-58" : "receipt-80";
+    const cleanup = () => document.body.classList.remove("printing-receipt", "receipt-58", "receipt-80");
+    document.body.classList.add("printing-receipt", widthClass);
+    window.addEventListener("afterprint", cleanup, { once: true });
     window.print();
-    setTimeout(() => {
-      document.body.classList.remove("printing-receipt");
-    }, 1000);
   };
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
       <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
         {/* Header Actions */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-3.5 no-print">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1.5">
+          <span className="text-xs font-bold uppercase tracking-wider text-primary-700 flex items-center gap-1.5">
             <Check className="h-4 w-4" />
             {isReprint ? "Chekni Qayta Chop Etish" : "Sotuv Muvaffaqiyatli"}
           </span>
@@ -163,7 +175,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
           <div
             className={`px-4 py-2.5 text-xs font-medium no-print flex items-center justify-between ${
               printStatus.type === "success"
-                ? "bg-emerald-50 text-emerald-800 border-b border-emerald-100"
+                ? "bg-primary-50 text-primary-800 border-b border-primary-100"
                 : printStatus.type === "error"
                 ? "bg-amber-50 text-amber-900 border-b border-amber-200"
                 : "bg-blue-50 text-blue-800 border-b border-blue-100"
@@ -171,7 +183,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
           >
             <div className="flex items-center gap-2">
               {printStatus.type === "error" && <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />}
-              {printStatus.type === "success" && <Check className="h-4 w-4 shrink-0 text-emerald-600" />}
+              {printStatus.type === "success" && <Check className="h-4 w-4 shrink-0 text-primary-600" />}
               <span>{printStatus.message}</span>
             </div>
             {printStatus.type === "error" && (
@@ -190,7 +202,6 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
           className={`p-6 bg-white max-h-[65vh] overflow-y-auto transition-all ${
             paperWidth === "58mm" ? "max-w-[280px] mx-auto text-[11px]" : "max-w-full text-xs"
           }`}
-          id="printable-receipt"
         >
           {/* Shop Header */}
           <div className="text-center border-b border-dashed border-slate-300 pb-3">
@@ -280,7 +291,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
 
             <div className="flex justify-between text-xs md:text-sm font-extrabold text-slate-900 pt-1 border-t border-slate-200">
               <span>To‘lov summasi:</span>
-              <span className="text-emerald-700">{formatCurrency(receipt.payableAmount)}</span>
+              <span className="text-primary-700">{formatCurrency(receipt.payableAmount)}</span>
             </div>
 
             <div className="flex justify-between text-slate-600 pt-1 text-[11px]">
@@ -300,6 +311,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
           <div className="mt-5 text-center text-[10px] text-slate-400 border-t border-dashed border-slate-200 pt-3">
             <p>Xaridingiz uchun tashakkur!</p>
             <p className="mt-0.5 font-medium text-slate-500">Salomat bo‘ling!</p>
+            {qrUrl && <img src={qrUrl} alt="Chek QR kodi" className="mx-auto mt-2 h-20 w-20" style={{ imageRendering: "pixelated" }} />}
           </div>
         </div>
 
@@ -309,7 +321,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
             <button
               onClick={handleDirectEscPosPrint}
               disabled={isPrintingEscPos}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-primary-600 px-3 py-2 text-xs font-bold text-white hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-50"
             >
               <Cpu className="h-4 w-4" />
               <span>{isPrintingEscPos ? "Yuborilmoqda..." : "ESC/POS Termal"}</span>
@@ -332,6 +344,52 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
           </button>
         </div>
       </div>
+    </div>
+    {createPortal(
+      <PrintReceipt receipt={receipt} qrUrl={qrUrl} isReprint={isReprint} />,
+      document.body
+    )}
+    </>
+  );
+}
+
+// Faqat chop etishda ko'rinadigan chek (58 mm / 80 mm termal printer uchun). <body> ga portal qilinadi.
+function PrintReceipt({ receipt, qrUrl, isReprint }: { receipt: NonNullable<ReceiptModalProps["receipt"]>; qrUrl: string; isReprint: boolean }) {
+  const f = (n: number) => formatCurrency(n);
+  return (
+    <div className="receipt-print-area">
+      <div className="rp-center rp-shop">{receipt.shopName}</div>
+      {receipt.shopAddress && <div className="rp-center">{receipt.shopAddress}</div>}
+      {receipt.shopPhone && <div className="rp-center">Tel: {receipt.shopPhone}</div>}
+      <hr className="rp-line" />
+      <div className="rp-wrap">Chek: {receipt.receiptNumber}</div>
+      <div>{formatDateTime(receipt.createdAt || new Date())}</div>
+      <div>Kassir: {receipt.cashierName}</div>
+      <div>To‘lov: {getPaymentMethodLabel(receipt.paymentMethod)}</div>
+      {isReprint && <div className="rp-center rp-bold">* NUSXA *</div>}
+      <hr className="rp-line" />
+      {receipt.items.map((item, i) => (
+        <div key={i} className="rp-item">
+          <div className="rp-name">{item.productName}</div>
+          <div className="rp-row"><span>{item.quantity} x {f(item.unitPrice)}</span><span>{f(item.totalPrice)}</span></div>
+          {item.discount > 0 && <div className="rp-row"><span>Chegirma</span><span>-{f(item.discount)}</span></div>}
+        </div>
+      ))}
+      <hr className="rp-line" />
+      <div className="rp-row"><span>Jami:</span><span>{f(receipt.totalAmount)}</span></div>
+      {receipt.discountAmount > 0 && <div className="rp-row"><span>Chegirma:</span><span>-{f(receipt.discountAmount)}</span></div>}
+      {!!receipt.taxAmount && receipt.taxAmount > 0 && <div className="rp-row"><span>QQS{receipt.taxRate ? ` ${receipt.taxRate}%` : ""}:</span><span>{f(receipt.taxAmount)}</span></div>}
+      <div className="rp-row rp-total"><span>TO‘LOV:</span><span>{f(receipt.payableAmount)}</span></div>
+      <div className="rp-row"><span>Qabul qilindi:</span><span>{f(receipt.paidAmount)}</span></div>
+      {receipt.changeAmount > 0 && <div className="rp-row rp-bold"><span>Qaytim:</span><span>{f(receipt.changeAmount)}</span></div>}
+      <hr className="rp-line" />
+      <div className="rp-center">Xaridingiz uchun tashakkur!</div>
+      {qrUrl && (
+        <div className="rp-center">
+          <img className="rp-qr" src={qrUrl} alt="" />
+          <div className="rp-small">{receipt.receiptNumber}</div>
+        </div>
+      )}
     </div>
   );
 }

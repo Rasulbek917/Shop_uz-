@@ -1,5 +1,5 @@
 // Local development PostgreSQL (zero-install, binaries from embedded-postgres).
-// Usage: npm run db:start  ->  http://localhost:5432, db "shop_market"
+// Usage: npm run db:start  ->  http://localhost:5432, db "savdoza"
 import EmbeddedPostgres from "embedded-postgres";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -10,7 +10,7 @@ const { Client } = require("pg");
 
 const dataDir = join(process.cwd(), ".pgdata");
 const PORT = Number(process.env.PG_PORT || 5432);
-const DB_NAME = process.env.PG_DB || "shop_market";
+const DB_NAME = process.env.PG_DB || "savdoza";
 
 const pg = new EmbeddedPostgres({
   databaseDir: dataDir,

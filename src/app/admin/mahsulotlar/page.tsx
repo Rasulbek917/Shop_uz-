@@ -290,7 +290,7 @@ export default function ProductsPage() {
             });
             setShowAddModal(true);
           }}
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] transition-colors"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors"
         >
           <Plus className="h-4 w-4" />
           <span>Yangi Mahsulot Qo‘shish</span>
@@ -299,7 +299,7 @@ export default function ProductsPage() {
 
       {/* Success Notification */}
       {successMessage && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800 flex items-center justify-between">
+        <div className="rounded-xl border border-primary-200 bg-primary-50 p-4 text-xs font-bold text-primary-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             <span>{successMessage}</span>
@@ -319,7 +319,7 @@ export default function ProductsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Mahsulot nomi, shtrix-kod yoki QR kod orqali qidirish (yoki USB skanerlang)..."
-            className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:border-[#16A34A] focus:outline-none"
+            className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:border-[#4F46E5] focus:outline-none"
           />
         </div>
 
@@ -332,7 +332,7 @@ export default function ProductsPage() {
           className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
           title="Telefon kamerasi orqali skanerlash"
         >
-          <Camera className="h-4 w-4 text-emerald-600" />
+          <Camera className="h-4 w-4 text-primary-600" />
           <span className="hidden sm:inline">Kamera Skaner</span>
         </button>
 
@@ -380,7 +380,7 @@ export default function ProductsPage() {
                     <tr key={med.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 font-bold">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700 font-bold">
                             <Package className="h-4 w-4" />
                           </div>
                           <div>
@@ -423,7 +423,7 @@ export default function ProductsPage() {
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border ${
                             isLow
                               ? "bg-red-50 text-red-700 border-red-200"
-                              : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              : "bg-primary-50 text-primary-800 border-primary-200"
                           }`}
                         >
                           {med.totalStock} {med.unit}
@@ -439,7 +439,7 @@ export default function ProductsPage() {
                           {med.qrCode ? (
                             <button
                               onClick={() => setSelectedQrProduct(med)}
-                              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                              className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
                               title="QR-kodni ko‘rish va stiker chop etish"
                             >
                               <QrCode className="h-3.5 w-3.5" />
@@ -481,7 +481,7 @@ export default function ProductsPage() {
           <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
               <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-emerald-600" />
+                <Package className="h-5 w-5 text-primary-600" />
                 <h3 className="text-base font-bold text-slate-900">Yangi Mahsulot Qo‘shish</h3>
               </div>
               <button
@@ -510,7 +510,7 @@ export default function ProductsPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Masalan: Guruch 1 kg"
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
                 />
               </div>
 
@@ -526,7 +526,7 @@ export default function ProductsPage() {
                         setScanningTarget("form");
                         setShowCameraScanner(true);
                       }}
-                      className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                      className="text-[11px] font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1"
                     >
                       <Camera className="h-3 w-3" />
                       <span>Kamera</span>
@@ -537,10 +537,10 @@ export default function ProductsPage() {
                     value={formData.barcode}
                     onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                     placeholder="478000..."
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none font-mono"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-mono"
                   />
                   {scannedNotice && (
-                    <span className="mt-1 flex items-center gap-1 text-[11px] font-bold text-emerald-700 animate-in fade-in">
+                    <span className="mt-1 flex items-center gap-1 text-[11px] font-bold text-primary-700 animate-in fade-in">
                       <CheckCircle className="h-3 w-3" />
                       <span>{scannedNotice}</span>
                     </span>
@@ -556,7 +556,7 @@ export default function ProductsPage() {
                     value={formData.qrCode}
                     onChange={(e) => setFormData({ ...formData, qrCode: e.target.value })}
                     placeholder="PRD-001"
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none font-mono"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-mono"
                   />
                 </div>
               </div>
@@ -570,7 +570,7 @@ export default function ProductsPage() {
                   <select
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
                   >
                     <option value="">— Tanlang —</option>
                     {categories.map((c: any) => (
@@ -586,7 +586,7 @@ export default function ProductsPage() {
                   <select
                     value={formData.manufacturerId}
                     onChange={(e) => setFormData({ ...formData, manufacturerId: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
                   >
                     <option value="">— Tanlang —</option>
                     {manufacturers.map((m: any) => (
@@ -608,7 +608,7 @@ export default function ProductsPage() {
                     required
                     value={formData.salePrice}
                     onChange={(e) => setFormData({ ...formData, salePrice: Number(e.target.value) })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none font-bold text-emerald-700"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-bold text-primary-700"
                   />
                 </div>
 
@@ -619,7 +619,7 @@ export default function ProductsPage() {
                   <select
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
                   >
                     <option value="dona">dona</option>
                     <option value="quti">quti</option>
@@ -639,7 +639,7 @@ export default function ProductsPage() {
                     min="1"
                     value={formData.minStock}
                     onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
                   />
                 </div>
               </div>
@@ -653,7 +653,7 @@ export default function ProductsPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Mahsulot haqida qo‘shimcha ma'lumot..."
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
                 />
               </div>
 
@@ -668,7 +668,7 @@ export default function ProductsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
                 </button>
@@ -683,7 +683,7 @@ export default function ProductsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
           <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-primary-700">
                 <CheckCircle className="h-6 w-6" />
               </div>
               <div>
@@ -699,7 +699,7 @@ export default function ProductsPage() {
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-xs text-slate-700 space-y-1.5">
               <div className="flex justify-between">
                 <span className="text-slate-500">Sotuv narxi:</span>
-                <span className="font-bold text-emerald-700">{formatCurrency(createdProduct.salePrice)}</span>
+                <span className="font-bold text-primary-700">{formatCurrency(createdProduct.salePrice)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">O‘lchov birligi:</span>
@@ -738,7 +738,7 @@ export default function ProductsPage() {
                   await handleGenerateQrForProduct(targetMed);
                 }}
                 disabled={isGeneratingQr}
-                className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors disabled:opacity-50"
               >
                 <QrCode className="h-4 w-4" />
                 <span>{isGeneratingQr ? "Yaratilmoqda..." : "QR-kod Yaratish"}</span>

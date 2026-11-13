@@ -63,7 +63,7 @@ export default function OmborchiDashboard() {
         <div className="flex items-center gap-2.5">
           <Link
             href="/omborchi/kirim"
-            className="flex items-center gap-2 rounded-xl bg-[#16A34A] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors"
           >
             <ArrowDownToLine className="h-4 w-4" />
             <span>Tezkor Kirim Qilish</span>
@@ -145,7 +145,7 @@ export default function OmborchiDashboard() {
             </h3>
             <Link
               href="/omborchi/partiyalar"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800"
+              className="text-xs font-bold text-primary-700 hover:text-primary-800"
             >
               Hammasi
             </Link>
@@ -183,7 +183,7 @@ export default function OmborchiDashboard() {
             </h3>
             <Link
               href="/admin/ombor"
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800"
+              className="text-xs font-bold text-primary-700 hover:text-primary-800"
             >
               Omborni ko‘rish
             </Link>

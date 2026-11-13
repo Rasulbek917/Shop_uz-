@@ -18,5 +18,7 @@ export default async function OmborchiLayout({
     redirect("/login");
   }
 
+  if (user.role !== "SUPER_ADMIN" && !user.hasAccess) redirect("/account");
+
   return <AppShell user={user}>{children}</AppShell>;
 }

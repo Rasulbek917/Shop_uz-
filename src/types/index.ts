@@ -1,6 +1,6 @@
 export type UserRole = 'SUPER_ADMIN' | 'SHOP_ADMIN' | 'WAREHOUSEMAN' | 'CASHIER';
 
-export type ShopStatus = 'ACTIVE' | 'TRIAL' | 'BLOCKED' | 'DELETED';
+export type ShopStatus = 'ACTIVE' | 'TRIAL' | 'BLOCKED' | 'DELETED' | 'PENDING' | 'AWAITING_PAYMENT' | 'REJECTED' | 'EXPIRED';
 
 export type PaymentMethod = 'CASH' | 'CARD' | 'ELECTRONIC' | 'DEBT';
 
@@ -16,6 +16,10 @@ export type NotificationType =
   | 'SYSTEM';
 
 export interface AuthUser {
+  subscriptionEndDate?: string | null;
+  tokenVersion?: number;
+  planCode?: string | null;
+  hasAccess?: boolean;
   id: string;
   username: string;
   fullName: string;

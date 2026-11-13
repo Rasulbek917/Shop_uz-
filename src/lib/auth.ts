@@ -1,16 +1,18 @@
+import { prisma } from "./prisma";
+import { hasShopAccess, isMax } from "./plans";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { AuthUser, UserRole } from "@/types";
 
-const JWT_SECRET = (() => {
+function getSecret(): string {
   const secret = process.env.JWT_SECRET;
-  if (!secret && process.env.NODE_ENV === "production") {
-    throw new Error("JWT_SECRET environment variable is required in production");
+  if (process.env.NODE_ENV === "production" && (!secret || secret.length < 32)) {
+    throw new Error("JWT_SECRET sozlanmagan yoki 32 belgidan qisqa (.env faylini tekshiring)");
   }
   return secret || "dev_only_insecure_secret_do_not_use_in_production";
-})();
-const COOKIE_NAME = "shop_market_auth_token";
+}
+const COOKIE_NAME = "savdoza_auth_token";
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10);
@@ -22,12 +24,12 @@ export async function comparePassword(password: string, hash: string): Promise<b
 }
 
 export function signJwtToken(payload: AuthUser): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, getSecret(), { expiresIn: "7d", algorithm: "HS256" });
 }
 
 export function verifyJwtToken(token: string): AuthUser | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
+    const decoded = jwt.verify(token, getSecret(), { algorithms: ["HS256"] }) as AuthUser;
     return decoded;
   } catch (error) {
     return null;
@@ -38,9 +40,21 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   const cookieStore = cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
-  return verifyJwtToken(token);
+  return resolveUser(verifyJwtToken(token));
 }
 
 export function getAuthCookieName(): string {
   return COOKIE_NAME;
+}
+
+export async function resolveUser(claims: AuthUser | null): Promise<AuthUser | null> {
+  if (!claims?.id) return null;
+  const user = await prisma.user.findUnique({ where: { id: claims.id }, include: { shop: true } });
+  if (!user || user.status !== "ACTIVE" || user.shop?.status === "DELETED" || (claims.tokenVersion || 0) !== user.tokenVersion) return null;
+  const access = user.role === "SUPER_ADMIN" || (hasShopAccess(user.shop) && (user.role === "SHOP_ADMIN" || isMax(user.shop?.planCode)));
+  return { id: user.id, username: user.username, fullName: user.fullName, role: user.role as UserRole,
+    shopId: user.shopId, shopName: user.shop?.name, shopStatus: user.shop?.status as AuthUser["shopStatus"],
+    subscriptionEndDate: user.shop?.subscriptionEndDate?.toISOString() || null,
+    subscriptionDaysLeft: user.shop?.subscriptionEndDate ? Math.max(0, Math.ceil((user.shop.subscriptionEndDate.getTime() - Date.now()) / 86400000)) : null,
+    planCode: user.shop?.planCode, hasAccess: access, tokenVersion: user.tokenVersion };
 }

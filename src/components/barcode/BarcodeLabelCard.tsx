@@ -91,7 +91,7 @@ export default function BarcodeLabelCard({
       <div className="print-label-area barcode-print-container w-full border-2 border-dashed border-slate-300 rounded-xl p-3 bg-white flex flex-col items-center text-center">
         {/* Header: Store Name */}
         <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-0.5 truncate max-w-full">
-          {product.shopName || "SHOP MARKET"}
+          {product.shopName || "SAVDOZA"}
         </div>
 
         {/* Product Name */}
@@ -126,7 +126,7 @@ export default function BarcodeLabelCard({
           </div>
           <div className="text-right">
             <span className="block text-[9px] uppercase font-bold text-slate-400">Narx</span>
-            <span className="text-sm font-extrabold text-[#16A34A]">{formatCurrency(product.salePrice)}</span>
+            <span className="text-sm font-extrabold text-[#4F46E5]">{formatCurrency(product.salePrice)}</span>
           </div>
         </div>
       </div>
@@ -139,7 +139,7 @@ export default function BarcodeLabelCard({
             type="button"
             className="flex-1 py-2 px-3 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-primary-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
             {copied ? "Nusxalandi" : "Kodni olish"}
           </button>
 
@@ -156,7 +156,7 @@ export default function BarcodeLabelCard({
           <button
             onClick={handleDirectPrint}
             type="button"
-            className="flex-1 py-2 px-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+            className="flex-1 py-2 px-3 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
           >
             <Printer className="w-3.5 h-3.5" />
             Chop etish
@@ -169,7 +169,7 @@ export default function BarcodeLabelCard({
         createPortal(
           <div className="barcode-thermal-print-area">
             <div className="thermal-store-name">
-              {product.shopName || "SHOP MARKET"}
+              {product.shopName || "SAVDOZA"}
             </div>
             <div className="thermal-product-name">
               {product.name}

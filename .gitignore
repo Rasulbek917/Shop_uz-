@@ -51,3 +51,6 @@ logs/
 *.swp
 *.swo
 .env*
+
+.pgdata-local/
+.local-credentials.json

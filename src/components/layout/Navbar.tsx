@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
@@ -207,12 +208,12 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
         </button>
 
         <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
             <Building2 className="h-5 w-5" />
           </div>
           <div>
             <h1 className="text-sm md:text-base font-bold text-slate-900 leading-tight">
-              {user.shopName || (user.role === "SUPER_ADMIN" ? "Super Admin Boshqaruvi" : "Shop Market Tizimi")}
+              {user.shopName || (user.role === "SUPER_ADMIN" ? "Super Admin Boshqaruvi" : "Savdoza Tizimi")}
             </h1>
             <p className="text-xs text-slate-500 font-medium">
               {getRoleLabel(user.role)}
@@ -223,6 +224,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
 
       {/* Right side: Subscription Badge, Notifications, User Profile & Logout */}
       <div className="flex items-center gap-2 md:gap-4">
+        {user.role !== "SUPER_ADMIN" && <Link href="/account" className={`flex flex-col rounded-xl border px-3 py-1 text-xs font-semibold ${user.hasAccess ? "border-primary-200 bg-primary-50 text-primary-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}><span>{user.planCode === "PRO" ? "Pro · 299 000 so‘m / oy" : user.planCode === "MAX" ? "Max · 499 000 so‘m / oy" : "Mening tarifim"}</span><small>{!user.hasAccess ? "Tarifni yangilang" : user.subscriptionEndDate ? new Date(user.subscriptionEndDate).toLocaleDateString("uz-UZ") + " gacha" : "Tarifni ko‘rish"}</small></Link>}
         {/* Trial or Subscription Status Badge */}
         {user.trialDaysLeft !== null && user.trialDaysLeft !== undefined && (
           <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
@@ -232,7 +234,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
         )}
 
         {user.subscriptionDaysLeft !== null && user.subscriptionDaysLeft !== undefined && (
-          <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+          <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 border border-primary-200">
             <CheckCircle className="h-3.5 w-3.5" />
             <span>Obuna: {user.subscriptionDaysLeft} kun faol</span>
           </div>
@@ -267,7 +269,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
               >
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Bell className="h-4 w-4 text-emerald-600" />
+                    <Bell className="h-4 w-4 text-primary-600" />
                     Bildirishnomalar
                     {notifications.length > 0 && (
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
@@ -420,7 +422,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
           >
             <div className="flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
-                <Lock className="h-5 w-5 text-emerald-600" />
+                <Lock className="h-5 w-5 text-primary-600" />
                 Parolni almashtirish
               </h3>
               <button
@@ -443,7 +445,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
                   onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
                   autoComplete="current-password"
                   required
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#24634F] focus:outline-none focus:ring-1 focus:ring-[#24634F]"
                 />
               </div>
 
@@ -458,7 +460,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
                   autoComplete="new-password"
                   required
                   minLength={5}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#24634F] focus:outline-none focus:ring-1 focus:ring-[#24634F]"
                 />
               </div>
 
@@ -473,7 +475,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
                   autoComplete="new-password"
                   required
                   minLength={5}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-800 focus:border-[#24634F] focus:outline-none focus:ring-1 focus:ring-[#24634F]"
                 />
               </div>
 
@@ -485,7 +487,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
               )}
 
               {pwdSuccess && (
-                <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-700">
+                <div className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 p-3 text-xs font-bold text-primary-700">
                   <CheckCircle className="h-4 w-4 shrink-0" />
                   <span>{pwdSuccess}</span>
                 </div>
@@ -502,7 +504,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
                 <button
                   type="submit"
                   disabled={isChangingPwd}
-                  className="flex items-center gap-2 rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-[#15803D] disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-xl bg-[#24634F] px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-[#4338CA] disabled:opacity-50"
                 >
                   {isChangingPwd ? (
                     <RefreshCw className="h-4 w-4 animate-spin" />

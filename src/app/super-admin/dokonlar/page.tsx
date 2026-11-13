@@ -292,7 +292,7 @@ export default function ShopsPage() {
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] transition-colors"
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors"
         >
           <Plus className="h-4 w-4" />
           <span>Yangi Do‘kon Qo‘shish</span>
@@ -301,7 +301,7 @@ export default function ShopsPage() {
 
       {/* Success banner */}
       {successMessage && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800 flex items-center justify-between">
+        <div className="rounded-xl border border-primary-200 bg-primary-50 p-4 text-xs font-bold text-primary-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             <span>{successMessage}</span>
@@ -321,7 +321,7 @@ export default function ShopsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Do‘kon nomi, admin yoki telefon bo‘yicha qidirish..."
-            className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2 text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+            className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2 text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
           />
         </div>
 
@@ -329,7 +329,7 @@ export default function ShopsPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#16A34A] focus:outline-none"
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus:border-[#4F46E5] focus:outline-none"
           >
             <option value="ALL">Barcha holatlar</option>
             <option value="ACTIVE">Aktiv</option>
@@ -419,7 +419,7 @@ export default function ShopsPage() {
                             </span>
                           </div>
                         ) : shop.status === "ACTIVE" ? (
-                          <div className="text-emerald-700">
+                          <div className="text-primary-700">
                             <span className="font-bold">Oylik Obuna</span>
                             <span className="block text-slate-500">
                               Qolgan: {shop.daysRemaining} kun
@@ -449,7 +449,7 @@ export default function ShopsPage() {
                           {/* Activate Button */}
                           <button
                             onClick={() => handleActivateSubscription(shop)}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors"
+                            className="flex items-center gap-1 rounded-lg bg-primary-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-primary-700 transition-colors"
                             title="Obunani faollashtirish (30 kun)"
                           >
                             <Zap className="h-3 w-3" />
@@ -461,7 +461,7 @@ export default function ShopsPage() {
                             onClick={() => handleToggleBlock(shop)}
                             className={`rounded-lg p-1.5 transition-colors ${
                               shop.status === "BLOCKED"
-                                ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                ? "bg-primary-50 text-primary-700 hover:bg-primary-100"
                                 : "bg-amber-50 text-amber-700 hover:bg-amber-100"
                             }`}
                             title={shop.status === "BLOCKED" ? "Blokdan chiqarish" : "Bloklash"}
@@ -498,7 +498,7 @@ export default function ShopsPage() {
           <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
               <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-emerald-600" />
+                <Building2 className="h-5 w-5 text-primary-600" />
                 <h3 className="text-base font-bold text-slate-900">Yangi Do‘kon Qo‘shish</h3>
               </div>
               <button
@@ -527,7 +527,7 @@ export default function ShopsPage() {
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                   placeholder="Masalan: BARAKA MARKET"
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                 />
               </div>
 
@@ -542,7 +542,7 @@ export default function ShopsPage() {
                     value={createForm.phone}
                     onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
                     placeholder="+998 90 123 45 67"
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                   />
                 </div>
 
@@ -567,7 +567,7 @@ export default function ShopsPage() {
                       onClick={() => setCreateForm({ ...createForm, subscriptionType: "MONTHLY" })}
                       className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition-all ${
                         createForm.subscriptionType === "MONTHLY"
-                          ? "border-emerald-500 bg-emerald-50 text-emerald-700 shadow-sm"
+                          ? "border-primary-500 bg-primary-50 text-primary-700 shadow-sm"
                           : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
                       }`}
                     >
@@ -594,9 +594,9 @@ export default function ShopsPage() {
                         min="1"
                         value={createForm.subscriptionDays}
                         onChange={(e) => setCreateForm({ ...createForm, subscriptionDays: Number(e.target.value) })}
-                        className="w-full rounded-xl border border-emerald-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                        className="w-full rounded-xl border border-primary-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                       />
-                      <p className="mt-1 text-xs text-emerald-600">Do'kon aktiv holda ochiladi</p>
+                      <p className="mt-1 text-xs text-primary-600">Do'kon aktiv holda ochiladi</p>
                     </div>
                   )}
                 </div>
@@ -612,12 +612,12 @@ export default function ShopsPage() {
                   value={createForm.address}
                   onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
                   placeholder="Toshkent sh., Yunusobod tumani..."
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                 />
               </div>
 
               <div className="border-t border-slate-100 pt-3">
-                <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-2">
+                <p className="text-xs font-extrabold text-primary-800 uppercase tracking-wider mb-2">
                   Do‘kon Administratori Hisobi
                 </p>
 
@@ -632,7 +632,7 @@ export default function ShopsPage() {
                       value={createForm.adminName}
                       onChange={(e) => setCreateForm({ ...createForm, adminName: e.target.value })}
                       placeholder="Jasur Qosimov"
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                     />
                   </div>
 
@@ -647,7 +647,7 @@ export default function ShopsPage() {
                         value={createForm.adminUsername}
                         onChange={(e) => setCreateForm({ ...createForm, adminUsername: e.target.value })}
                         placeholder="baraka_admin"
-                        className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                        className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                       />
                     </div>
 
@@ -661,7 +661,7 @@ export default function ShopsPage() {
                         value={createForm.adminPassword}
                         onChange={(e) => setCreateForm({ ...createForm, adminPassword: e.target.value })}
                         placeholder="••••••••"
-                        className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                        className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                       />
                     </div>
                   </div>
@@ -679,7 +679,7 @@ export default function ShopsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : createForm.subscriptionType === "TRIAL" ? "Saqlash va Sinov Boshlash" : "Saqlash va Obuna Boshlash"}
                 </button>
@@ -695,7 +695,7 @@ export default function ShopsPage() {
           <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4 sticky top-0 z-10">
               <div className="flex items-center gap-2">
-                <Edit className="h-5 w-5 text-emerald-600" />
+                <Edit className="h-5 w-5 text-primary-600" />
                 <h3 className="text-base font-bold text-slate-900">Do‘konni Tahrirlash</h3>
               </div>
               <button
@@ -724,7 +724,7 @@ export default function ShopsPage() {
                   required
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                 />
               </div>
 
@@ -738,7 +738,7 @@ export default function ShopsPage() {
                     required
                     value={editForm.phone}
                     onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                   />
                 </div>
 
@@ -751,7 +751,7 @@ export default function ShopsPage() {
                     required
                     value={editForm.address}
                     onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                   />
                 </div>
               </div>
@@ -765,12 +765,12 @@ export default function ShopsPage() {
                   onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                   rows={2}
                   placeholder="Qo‘shimcha ma'lumot (ixtiyoriy)"
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                 />
               </div>
 
               <div className="border-t border-slate-100 pt-3">
-                <p className="text-xs font-extrabold text-emerald-800 uppercase tracking-wider mb-2">
+                <p className="text-xs font-extrabold text-primary-800 uppercase tracking-wider mb-2">
                   Do‘kon Administratori Hisobi
                 </p>
 
@@ -784,7 +784,7 @@ export default function ShopsPage() {
                       required
                       value={editForm.adminName}
                       onChange={(e) => setEditForm({ ...editForm, adminName: e.target.value })}
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                     />
                   </div>
 
@@ -799,7 +799,7 @@ export default function ShopsPage() {
                       onChange={(e) => setEditForm({ ...editForm, adminUsername: e.target.value })}
                       disabled={editLoading}
                       placeholder={editLoading ? "Yuklanmoqda..." : "admin_login"}
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A] disabled:bg-slate-50 disabled:text-slate-400"
+                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5] disabled:bg-slate-50 disabled:text-slate-400"
                     />
                   </div>
 
@@ -813,7 +813,7 @@ export default function ShopsPage() {
                       onChange={(e) => setEditForm({ ...editForm, adminPassword: e.target.value })}
                       placeholder="O‘zgartirmasangiz bo‘sh qoldiring"
                       autoComplete="new-password"
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none focus:ring-1 focus:ring-[#16A34A]"
+                      className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none focus:ring-1 focus:ring-[#4F46E5]"
                     />
                     <p className="mt-1 text-[11px] text-slate-500">
                       Bo‘sh qoldirilsa parol o‘zgarmaydi. Yangi parol kamida 5 ta belgi bo‘lsin.
@@ -833,7 +833,7 @@ export default function ShopsPage() {
                 <button
                   type="submit"
                   disabled={isEditSubmitting || editLoading}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-5 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
                 >
                   {isEditSubmitting ? "Saqlanmoqda..." : "O‘zgarishlarni Saqlash"}
                 </button>

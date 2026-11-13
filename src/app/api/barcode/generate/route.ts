@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
         sku: finalCode,
         barcodeType: codeType,
         barcodeValue: finalCode,
-        shopName: product.shop?.name || "Shop Market",
+        shopName: product.shop?.name || "Savdoza",
       },
     });
   } catch (error: any) {

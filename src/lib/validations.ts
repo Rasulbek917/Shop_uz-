@@ -2,13 +2,13 @@ import { z } from "zod";
 
 export const loginSchema = z.object({
   username: z.string().min(3, "Login kamida 3 ta belgidan iborat bo‘lishi kerak"),
-  password: z.string().min(5, "Parol kamida 5 ta belgidan iborat bo‘lishi kerak"),
+  password: z.string().max(72).min(5, "Parol kamida 5 ta belgidan iborat bo‘lishi kerak"),
 });
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Joriy parolni kiriting"),
-    newPassword: z.string().min(5, "Yangi parol kamida 5 ta belgidan iborat bo‘lishi kerak"),
+    newPassword: z.string().min(10, "Yangi parol kamida 10 ta belgidan iborat bo‘lishi kerak").max(72),
     confirmPassword: z.string().min(1, "Yangi parolni qayta kiriting"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {

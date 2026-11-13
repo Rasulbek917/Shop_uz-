@@ -325,7 +325,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        shop: shop || { name: user.shopName || "Shop Market", address: "", phone: "" },
+        shop: shop || { name: user.shopName || "Savdoza", address: "", phone: "" },
         today: {
           revenue: todayTotalRevenue,
           salesCount: todaySalesCount,

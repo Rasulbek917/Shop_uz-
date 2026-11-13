@@ -120,7 +120,7 @@ export default function ReturnsPage() {
 
       {/* Success Notification */}
       {successMsg && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800 flex items-center justify-between">
+        <div className="rounded-xl border border-primary-200 bg-primary-50 p-4 text-xs font-bold text-primary-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             <span>{successMsg}</span>
@@ -149,14 +149,14 @@ export default function ReturnsPage() {
             value={receiptNumber}
             onChange={(e) => setReceiptNumber(e.target.value)}
             placeholder="Chek raqamini kiriting (masalan: CHK-20260922-1001)..."
-            className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 text-xs md:text-sm text-slate-800 font-mono focus:border-[#16A34A] focus:outline-none"
+            className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 text-xs md:text-sm text-slate-800 font-mono focus:border-[#4F46E5] focus:outline-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-xl bg-[#16A34A] px-6 py-2.5 text-xs md:text-sm font-bold text-white shadow-md hover:bg-[#15803D] disabled:opacity-50"
+          className="rounded-xl bg-[#4F46E5] px-6 py-2.5 text-xs md:text-sm font-bold text-white shadow-md hover:bg-[#4338CA] disabled:opacity-50"
         >
           {isLoading ? "Qidirilmoqda..." : "Chekni Topish"}
         </button>
@@ -180,7 +180,7 @@ export default function ReturnsPage() {
 
             <div className="text-right">
               <span className="text-xs text-slate-500">Chek bo‘yicha to‘lov:</span>
-              <p className="text-lg font-extrabold text-emerald-700">
+              <p className="text-lg font-extrabold text-primary-700">
                 {formatCurrency(sale.payableAmount)}
               </p>
             </div>
@@ -220,7 +220,7 @@ export default function ReturnsPage() {
                             const val = Math.max(0, Math.min(item.quantity, Number(e.target.value) || 0));
                             setSelectedItems((prev) => ({ ...prev, [item.id]: val }));
                           }}
-                          className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 focus:border-[#16A34A] focus:outline-none"
+                          className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
                         />
                         <span className="text-slate-400">/ {item.quantity} dona</span>
                       </div>
@@ -244,7 +244,7 @@ export default function ReturnsPage() {
               value={returnReason}
               onChange={(e) => setReturnReason(e.target.value)}
               placeholder="Masalan: Noto‘g‘ri o‘lcham yoki mijoz rad etdi"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#16A34A] focus:outline-none"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
             />
           </div>
 

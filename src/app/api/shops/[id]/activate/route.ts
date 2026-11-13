@@ -27,6 +27,8 @@ export async function POST(
       return NextResponse.json({ success: false, error: "Do‘kon topilmadi" }, { status: 404 });
     }
 
+    if (shop.planCode !== "LEGACY") return NextResponse.json({ success: false, error: "Yangi hisoblar uchun Xabarlar panelidagi xarid so‘rovini tasdiqlang" }, { status: 409 });
+    if (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 366 || !Number.isFinite(price) || price < 0) return NextResponse.json({ success: false, error: "Tarif muddati yoki narxi noto‘g‘ri" }, { status: 400 });
     const now = new Date();
     // If shop already has an active subscription that hasn't expired yet, extend from existing end date, otherwise from now
     let startDate = now;

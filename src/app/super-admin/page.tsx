@@ -97,7 +97,7 @@ export default function SuperAdminDashboard() {
 
           <Link
             href="/super-admin/dokonlar?yangi=1"
-            className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D] transition-colors"
+            className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>Yangi Do‘kon Qo‘shish</span>
@@ -110,7 +110,7 @@ export default function SuperAdminDashboard() {
         <div
           className={`rounded-xl p-4 text-xs font-bold animate-in fade-in ${
             actionMsg.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+              ? "bg-primary-50 text-primary-800 border border-primary-200"
               : "bg-red-50 text-red-800 border border-red-200"
           }`}
         >
@@ -138,12 +138,12 @@ export default function SuperAdminDashboard() {
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
               Aktiv Obunada
             </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-primary-700">
               <CheckCircle className="h-5 w-5" />
             </div>
           </div>
-          <p className="mt-3 text-2xl font-extrabold text-emerald-700">{activeCount}</p>
-          <p className="mt-1 text-[11px] text-emerald-600 font-medium">To‘lov qilgan do‘konlar</p>
+          <p className="mt-3 text-2xl font-extrabold text-primary-700">{activeCount}</p>
+          <p className="mt-1 text-[11px] text-primary-600 font-medium">To‘lov qilgan do‘konlar</p>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -186,7 +186,7 @@ export default function SuperAdminDashboard() {
           </div>
           <Link
             href="/super-admin/dokonlar"
-            className="flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800"
+            className="flex items-center gap-1 text-xs font-bold text-primary-700 hover:text-primary-800"
           >
             <span>Barchasini ko‘rish</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -210,7 +210,7 @@ export default function SuperAdminDashboard() {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
                     <div className="flex items-center justify-center gap-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
                       <span>Yuklanmoqda...</span>
                     </div>
                   </td>
@@ -261,7 +261,7 @@ export default function SuperAdminDashboard() {
                           </div>
                         ) : shop.status === "ACTIVE" ? (
                           <div>
-                            <span className="font-semibold text-emerald-700">Oylik Obuna</span>
+                            <span className="font-semibold text-primary-700">Oylik Obuna</span>
                             <span className="block text-slate-500">
                               Tugaydi: {formatDate(shop.subscriptionEndDate)}
                             </span>
@@ -291,7 +291,7 @@ export default function SuperAdminDashboard() {
                           <button
                             onClick={() => handleActivate(shop.id, shop.name)}
                             disabled={isActivating}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                            className="flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-primary-700 disabled:opacity-50 transition-colors"
                             title="Obunani 30 kunga uzaytirish va faollashtirish"
                           >
                             <Zap className="h-3.5 w-3.5" />

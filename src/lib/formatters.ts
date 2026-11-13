@@ -73,7 +73,7 @@ export function getExpiryStatus(expiryDate: string | Date): {
     return {
       status: 'NORMAL',
       label: 'Normal',
-      badgeClass: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      badgeClass: 'bg-primary-100 text-primary-700 border-primary-200',
     };
   }
 }
@@ -81,7 +81,7 @@ export function getExpiryStatus(expiryDate: string | Date): {
 export function getShopStatusBadge(status: string): { label: string; badgeClass: string } {
   switch (status) {
     case 'ACTIVE':
-      return { label: 'Aktiv', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
+      return { label: 'Aktiv', badgeClass: 'bg-primary-100 text-primary-800 border-primary-300' };
     case 'TRIAL':
       return { label: 'Sinov', badgeClass: 'bg-blue-100 text-blue-800 border-blue-300' };
     case 'BLOCKED':

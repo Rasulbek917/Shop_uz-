@@ -47,6 +47,8 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       case "SUPER_ADMIN":
         return [
           { label: "Boshqaruv paneli", href: "/super-admin", icon: LayoutDashboard },
+          { label: "Xabarlar va arizalar", href: "/super-admin/xabarlar", icon: ScrollText },
+          { label: "Tarif sozlamalari", href: "/super-admin/tariflar", icon: CreditCard },
           { label: "Do‘konlar", href: "/super-admin/dokonlar", icon: Building2 },
           { label: "QR / Shtrix-kodlar", href: "/admin/shtrix-kodlar", icon: QrCode },
           { label: "Obuna va Sinov", href: "/super-admin/obunalar", icon: CreditCard },
@@ -56,7 +58,9 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
       case "SHOP_ADMIN":
         return [
-          { label: "Bosh sahifa", href: "/admin", icon: LayoutDashboard },
+          { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+          { label: "POS · Savdo terminali", href: "/admin/pos", icon: BadgePercent },
+          { label: "Mening tarifim", href: "/account", icon: CreditCard },
           { label: "Mahsulotlar katalogi", href: "/admin/mahsulotlar", icon: Package },
           { label: "QR / Shtrix-kodlar", href: "/admin/shtrix-kodlar", icon: QrCode },
           { label: "Ombor va partiyalar", href: "/admin/ombor", icon: Boxes },
@@ -68,7 +72,6 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Yetkazib beruvchilar", href: "/admin/yetkazib-beruvchilar", icon: Truck },
           { label: "Xodimlar boshqaruvi", href: "/admin/xodimlar", icon: UserCog },
           { label: "Hisobotlar va Tahlil", href: "/admin/hisobotlar", icon: BarChart3 },
-          { label: "Do‘kon sozlamalari", href: "/admin/sozlamalar", icon: Settings },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
 
@@ -109,19 +112,19 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col bg-[#0F172A] text-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col bg-[#142D25] text-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand header */}
         <div className="flex h-16 items-center justify-between border-b border-slate-800 px-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#16A34A] text-white shadow-md">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#24634F] text-white shadow-md">
               <Package className="h-5 w-5" />
             </div>
             <div>
               <span className="font-extrabold text-base tracking-wide text-white">
-                SHOP <span className="text-[#16A34A]">MARKET</span>
+                SAVDO<span className="text-[#24634F]">ZA</span>
               </span>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider">
                 Boshqaruv Tizimi
@@ -154,7 +157,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
                 onClick={() => onClose()}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-[#16A34A] text-white shadow-sm"
+                    ? "bg-[#24634F] text-white shadow-sm"
                     : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
                 }`}
               >
@@ -168,7 +171,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         {/* Security badge at bottom */}
         <div className="border-t border-slate-800 p-4">
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <ShieldCheck className="h-4 w-4 text-[#16A34A]" />
+            <ShieldCheck className="h-4 w-4 text-[#24634F]" />
             <span>Multi-tenant Xavfsiz Tizim</span>
           </div>
         </div>

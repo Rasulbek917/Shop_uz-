@@ -81,7 +81,7 @@ export async function GET(
         totalStock,
         nearestBatch,
         sku: product.barcode || product.qrCode || product.id,
-        shopName: product.shop?.name || "Shop Market",
+        shopName: product.shop?.name || "Savdoza",
       },
     });
   } catch (error: any) {

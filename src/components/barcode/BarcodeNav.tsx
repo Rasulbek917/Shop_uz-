@@ -37,7 +37,7 @@ export default function BarcodeNav() {
               href={link.href}
               className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                 isActive
-                  ? "bg-[#16A34A] text-white shadow-sm"
+                  ? "bg-[#4F46E5] text-white shadow-sm"
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >

@@ -47,7 +47,7 @@ export default function ReportsPage() {
     }
   };
 
-  const shop = reports?.shop || { name: "Shop Market Boshqaruv Tizimi", address: "", phone: "" };
+  const shop = reports?.shop || { name: "Savdoza Boshqaruv Tizimi", address: "", phone: "" };
   const today = reports?.today || { revenue: 0, salesCount: 0, profit: 0, discountTotal: 0, taxTotal: 0 };
   const month = reports?.month || { revenue: 0, salesCount: 0, profit: 0, taxTotal: 0 };
   const topProducts = reports?.topProducts || [];
@@ -124,7 +124,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("ANALYTICS")}
           className={`flex-1 min-w-[130px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "ANALYTICS"
-              ? "bg-[#16A34A] text-white shadow-sm"
+              ? "bg-[#4F46E5] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -135,7 +135,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("DAILY")}
           className={`flex-1 min-w-[120px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "DAILY"
-              ? "bg-[#16A34A] text-white shadow-sm"
+              ? "bg-[#4F46E5] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -146,7 +146,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("MONTHLY")}
           className={`flex-1 min-w-[140px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "MONTHLY"
-              ? "bg-[#16A34A] text-white shadow-sm"
+              ? "bg-[#4F46E5] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -157,7 +157,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("CASHIERS")}
           className={`flex-1 min-w-[130px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "CASHIERS"
-              ? "bg-[#16A34A] text-white shadow-sm"
+              ? "bg-[#4F46E5] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -168,7 +168,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("INVENTORY")}
           className={`flex-1 min-w-[150px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "INVENTORY"
-              ? "bg-[#16A34A] text-white shadow-sm"
+              ? "bg-[#4F46E5] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -193,14 +193,14 @@ export default function ReportsPage() {
               </span>
             </div>
 
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm">
-              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">
+            <div className="rounded-2xl border border-primary-200 bg-primary-50/50 p-5 shadow-sm">
+              <span className="text-xs font-bold text-primary-800 uppercase tracking-wider block">
                 Hisoblangan Sof Foyda
               </span>
-              <p className="mt-2 text-2xl font-extrabold text-[#16A34A]">
+              <p className="mt-2 text-2xl font-extrabold text-[#4F46E5]">
                 {formatCurrency(totalAnalyticsProfit)}
               </p>
-              <span className="text-[11px] text-emerald-600 mt-1 block">
+              <span className="text-[11px] text-primary-600 mt-1 block">
                 Savdo marjasi: {totalAnalyticsRevenue > 0 ? ((totalAnalyticsProfit / totalAnalyticsRevenue) * 100).toFixed(1) : 0}%
               </span>
             </div>
@@ -290,7 +290,7 @@ export default function ReportsPage() {
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
                     placeholder="Qidirish (nomi, shtrix-kod)..."
-                    className="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-[#16A34A] focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-[#4F46E5] focus:outline-none"
                   />
                 </div>
 
@@ -298,7 +298,7 @@ export default function ReportsPage() {
                 <select
                   value={sortBy}
                   onChange={(e: any) => setSortBy(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-[#16A34A] focus:outline-none"
+                  className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-[#4F46E5] focus:outline-none"
                 >
                   <option value="revenue">Tushum bo‘yicha</option>
                   <option value="quantity">Miqdor bo‘yicha</option>
@@ -312,7 +312,7 @@ export default function ReportsPage() {
                   className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-sm"
                   title="A4 qog‘ozga tahlil jadvalini chop etish"
                 >
-                  <Printer className="h-3.5 w-3.5 text-emerald-400" />
+                  <Printer className="h-3.5 w-3.5 text-primary-400" />
                   <span>Chop Etish (A4)</span>
                 </button>
               </div>
@@ -373,7 +373,7 @@ export default function ReportsPage() {
                           <td className="px-3 py-2.5 text-right font-extrabold text-slate-900 print:text-black">
                             {formatCurrency(item.totalRevenue)}
                           </td>
-                          <td className="px-3 py-2.5 text-right font-bold text-emerald-700 print:text-black">
+                          <td className="px-3 py-2.5 text-right font-bold text-primary-700 print:text-black">
                             {formatCurrency(item.totalProfit)}
                           </td>
                           <td className="px-4 py-2.5 text-center">
@@ -403,10 +403,10 @@ export default function ReportsPage() {
                       <td className="px-3 py-3 text-center">
                         {totalAnalyticsQty} dona
                       </td>
-                      <td className="px-3 py-3 text-right font-extrabold text-emerald-800 print:text-black">
+                      <td className="px-3 py-3 text-right font-extrabold text-primary-800 print:text-black">
                         {formatCurrency(totalAnalyticsRevenue)}
                       </td>
-                      <td className="px-3 py-3 text-right font-extrabold text-emerald-700 print:text-black">
+                      <td className="px-3 py-3 text-right font-extrabold text-primary-700 print:text-black">
                         {formatCurrency(totalAnalyticsProfit)}
                       </td>
                       <td className="px-4 py-3 text-center text-slate-500">
@@ -441,7 +441,7 @@ export default function ReportsPage() {
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                 Bugungi Tushum
               </span>
-              <p className="mt-2 text-2xl font-extrabold text-[#16A34A]">
+              <p className="mt-2 text-2xl font-extrabold text-[#4F46E5]">
                 {formatCurrency(today.revenue)}
               </p>
               <span className="text-[11px] text-slate-400 mt-1 block">Xaridorlar to‘lagan summa</span>
@@ -461,7 +461,7 @@ export default function ReportsPage() {
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                 Sof Foyda
               </span>
-              <p className="mt-2 text-2xl font-extrabold text-emerald-700">
+              <p className="mt-2 text-2xl font-extrabold text-primary-700">
                 {formatCurrency(today.profit)}
               </p>
               <span className="text-[11px] text-slate-400 mt-1 block">Xarid narxidan ortiqcha summa</span>
@@ -510,7 +510,7 @@ export default function ReportsPage() {
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                 Oylik Sof Foyda
               </span>
-              <p className="mt-2 text-2xl font-extrabold text-emerald-700">
+              <p className="mt-2 text-2xl font-extrabold text-primary-700">
                 {formatCurrency(month.profit)}
               </p>
               <span className="text-[11px] text-slate-400 mt-1 block">Mahsulot marjasi hisobidan</span>
@@ -559,7 +559,7 @@ export default function ReportsPage() {
                       <td className="px-4 py-3 font-semibold text-slate-800">
                         {m.totalQuantity} {m.unit}
                       </td>
-                      <td className="px-4 py-3 text-right font-extrabold text-emerald-700">
+                      <td className="px-4 py-3 text-right font-extrabold text-primary-700">
                         {formatCurrency(m.totalRevenue)}
                       </td>
                     </tr>
@@ -592,7 +592,7 @@ export default function ReportsPage() {
                     <td className="px-4 py-3.5 font-mono text-slate-500">{c.username}</td>
                     <td className="px-4 py-3.5 font-bold text-slate-800">{c.salesCount} ta</td>
                     <td className="px-4 py-3.5 text-slate-600">{c.totalItemsSold} dona</td>
-                    <td className="px-5 py-3.5 text-right font-extrabold text-emerald-700 text-sm">
+                    <td className="px-5 py-3.5 text-right font-extrabold text-primary-700 text-sm">
                       {formatCurrency(c.totalRevenue)}
                     </td>
                   </tr>

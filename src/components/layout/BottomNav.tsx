@@ -39,7 +39,7 @@ export default function BottomNav({ user }: { user: AuthUser }) {
   } else {
     items = [
       { label: "Bosh sahifa", href: "/admin", icon: LayoutDashboard },
-      { label: "Mahsulotlar", href: "/admin/mahsulotlar", icon: Package },
+      { label: "POS", href: "/admin/pos", icon: BadgePercent },
       { label: "Kirim", href: "/omborchi/kirim", icon: ArrowDownToLine },
       { label: "Hisobot", href: "/admin/hisobotlar", icon: BarChart3 },
     ];
@@ -56,7 +56,7 @@ export default function BottomNav({ user }: { user: AuthUser }) {
             key={item.href}
             href={item.href}
             className={`flex flex-1 flex-col items-center justify-center gap-1 transition-colors ${
-              isActive ? "text-[#16A34A] font-bold" : "text-slate-500 hover:text-slate-900"
+              isActive ? "text-[#24634F] font-bold" : "text-slate-500 hover:text-slate-900"
             }`}
           >
             <Icon className="h-5 w-5" />

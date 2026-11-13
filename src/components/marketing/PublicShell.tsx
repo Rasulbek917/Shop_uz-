@@ -1,0 +1,8 @@
+import Link from "next/link";
+import { ArrowUpRight, Layers3 } from "lucide-react";
+export function PublicHeader() {
+  return <header className="public-header"><Link href="/" className="wordmark"><Layers3 size={27} /> savdoza<span>®</span></Link><nav aria-label="Asosiy menyu"><Link href="/#imkoniyatlar">Imkoniyatlar</Link><Link href="/#demo">Qanday ishlaydi</Link><Link href="/#tariflar">Tariflar</Link><Link href="/download">Yuklab olish</Link></nav><div className="header-actions"><Link href="/login">Kirish</Link><Link className="public-button" href="/register">Boshlash <ArrowUpRight size={16}/></Link></div></header>;
+}
+export function PublicFooter() {
+  return <footer className="public-footer"><div><Link className="wordmark" href="/">savdoza®</Link><p>Savdo aniq. Boshqaruv oson.</p><small>Do‘koningizning kundalik ishlari bir joyda.</small></div><div><b>Mahsulot</b><Link href="/#imkoniyatlar">Imkoniyatlar</Link><Link href="/#tariflar">Pro va Max</Link><Link href="/#demo">Video namoyish</Link><Link href="/download">Android va Windows</Link></div><div><b>Hisob</b><Link href="/register">Ro‘yxatdan o‘tish</Link><Link href="/login">Tizimga kirish</Link><Link href="/account">Mening tarifim</Link></div><div><b>Ishonch va xavfsizlik</b><Link href="/security">Xavfsizlik</Link><Link href="/privacy">Maxfiylik</Link><Link href="/terms">Foydalanish shartlari</Link></div><div className="footer-bottom">© {new Date().getFullYear()} Savdoza <span>O‘zbek tilida. Do‘konlar uchun.</span></div></footer>;
+}

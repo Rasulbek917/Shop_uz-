@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/kassir"
-            className="flex items-center gap-1.5 rounded-xl bg-[#16A34A] px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-[#15803D]"
+            className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA]"
           >
             <ShoppingCart className="h-4 w-4" />
             <span>Savdo (POS)</span>
@@ -91,7 +91,7 @@ export default function AdminDashboardPage() {
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
             Bugungi Savdo
           </span>
-          <p className="mt-2 text-lg sm:text-xl font-extrabold text-[#16A34A]">
+          <p className="mt-2 text-lg sm:text-xl font-extrabold text-[#4F46E5]">
             {formatCurrency(today.revenue)}
           </p>
           <span className="text-[10px] text-slate-400 mt-0.5 block">Jami tushum</span>
@@ -146,7 +146,7 @@ export default function AdminDashboardPage() {
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
             Bugungi Sof Foyda
           </span>
-          <p className="mt-2 text-lg sm:text-xl font-extrabold text-emerald-700">
+          <p className="mt-2 text-lg sm:text-xl font-extrabold text-primary-700">
             {formatCurrency(today.profit)}
           </p>
           <span className="text-[10px] text-slate-400 mt-0.5 block">
@@ -166,7 +166,7 @@ export default function AdminDashboardPage() {
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">Kunlar bo‘yicha tushum dinamikasi</p>
             </div>
-            <TrendingUp className="h-5 w-5 text-emerald-600" />
+            <TrendingUp className="h-5 w-5 text-primary-600" />
           </div>
 
           <div className="mt-6 flex h-48 items-end gap-2 sm:gap-4 pt-6">
@@ -181,7 +181,7 @@ export default function AdminDashboardPage() {
                   </span>
                   <div
                     style={{ height: `${heightPercent}%` }}
-                    className="w-full max-w-[42px] rounded-t-lg bg-emerald-600 hover:bg-emerald-700 transition-all duration-300 relative group cursor-pointer"
+                    className="w-full max-w-[42px] rounded-t-lg bg-primary-600 hover:bg-primary-700 transition-all duration-300 relative group cursor-pointer"
                   >
                     <div className="absolute -top-8 left-1/2 -translate-x-1/2 hidden group-hover:block rounded bg-slate-900 px-2 py-1 text-[10px] text-white whitespace-nowrap z-20">
                       {formatCurrency(item.revenue)} ({item.count} ta sotuv)
@@ -199,7 +199,7 @@ export default function AdminDashboardPage() {
           <div>
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900">Eng Ko‘p Sotilgan Mahsulotlar</h3>
-              <Package className="h-5 w-5 text-emerald-600" />
+              <Package className="h-5 w-5 text-primary-600" />
             </div>
 
             <div className="mt-4 divide-y divide-slate-100">
@@ -221,7 +221,7 @@ export default function AdminDashboardPage() {
                         </p>
                       </div>
                     </div>
-                    <span className="font-bold text-emerald-700">
+                    <span className="font-bold text-primary-700">
                       {formatCurrency(med.totalRevenue)}
                     </span>
                   </div>
@@ -259,7 +259,7 @@ export default function AdminDashboardPage() {
           </div>
           <Link
             href="/admin/xodimlar"
-            className="flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800"
+            className="flex items-center gap-1 text-xs font-bold text-primary-700 hover:text-primary-800"
           >
             <span>Xodimlarni boshqarish</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -291,7 +291,7 @@ export default function AdminDashboardPage() {
                     <td className="px-4 py-3.5 text-slate-500 font-mono text-[11px]">{c.username}</td>
                     <td className="px-4 py-3.5 font-semibold text-slate-800">{c.salesCount} ta</td>
                     <td className="px-4 py-3.5 text-slate-600">{c.totalItemsSold} dona</td>
-                    <td className="px-5 py-3.5 text-right font-extrabold text-emerald-700 text-sm">
+                    <td className="px-5 py-3.5 text-right font-extrabold text-primary-700 text-sm">
                       {formatCurrency(c.totalRevenue)}
                     </td>
                   </tr>

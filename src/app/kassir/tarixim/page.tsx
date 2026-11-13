@@ -32,16 +32,21 @@ export default function KassirHistoryPage() {
   };
 
   const handleViewReceipt = async (sale: any) => {
+    let shopInfo: any = {};
     try {
-      // Log reprint in audit logs
-      await fetch(`/api/sales/${sale.id}/reprint`, { method: "POST" });
+      // Audit logga yozadi va do'kon ma'lumotini qaytaradi
+      const res = await fetch(`/api/sales/${sale.id}/reprint`, { method: "POST" });
+      const json = await res.json();
+      if (json?.data) shopInfo = json.data;
     } catch (e) {
-      // Ignore network failure
+      // Tarmoq xatosi bo'lsa ham chekni ko'rsatamiz
     }
 
     setSelectedReceipt({
       receiptNumber: sale.receiptNumber,
-      shopName: "Shop Market",
+      shopName: shopInfo.shopName || "Savdoza",
+      shopPhone: shopInfo.shopPhone || undefined,
+      shopAddress: shopInfo.shopAddress || undefined,
       cashierName: sale.cashier?.fullName || "Kassir",
       createdAt: sale.createdAt,
       totalAmount: sale.totalAmount,
@@ -90,7 +95,7 @@ export default function KassirHistoryPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-800">
+          <div className="rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 text-xs font-bold text-primary-800">
             <span>Jami sotuv tushumi: </span>
             <span className="text-sm font-extrabold">{formatCurrency(totalRevenue)}</span>
           </div>
@@ -173,7 +178,7 @@ export default function KassirHistoryPage() {
                       {sale.discountAmount > 0 ? `-${formatCurrency(sale.discountAmount)}` : "-"}
                     </td>
 
-                    <td className="px-4 py-3.5 font-extrabold text-emerald-700 text-sm">
+                    <td className="px-4 py-3.5 font-extrabold text-primary-700 text-sm">
                       {formatCurrency(sale.payableAmount)}
                     </td>
 

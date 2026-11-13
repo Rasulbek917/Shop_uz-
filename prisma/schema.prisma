@@ -19,6 +19,11 @@ model Shop {
   subscriptionType      String?   @default("TRIAL") // TRIAL, MONTHLY
   subscriptionStartDate DateTime?
   subscriptionEndDate   DateTime?
+  planCode              String    @default("LEGACY")
+  approvedAt            DateTime?
+  approvalNote          String?
+  checkoutOrders        CheckoutOrder[]
+  purchaseRequests      PurchaseRequest[]
   taxRate               Float     @default(0)
   taxIncluded           Boolean   @default(false)
   notes                 String?
@@ -49,6 +54,8 @@ model User {
   role         String // SUPER_ADMIN, SHOP_ADMIN, WAREHOUSEMAN, CASHIER
   fullName     String
   username     String   @unique
+  email        String?  @unique
+  tokenVersion Int      @default(0)
   passwordHash String
   phone        String?
   status       String   @default("ACTIVE") // ACTIVE, INACTIVE, BLOCKED
@@ -392,4 +399,47 @@ model AuditLog {
 
   @@index([shopId])
   @@index([createdAt])
+}
+
+model Plan {
+  code String @id
+  name String
+  price Int @default(0)
+  enabled Boolean @default(false)
+  paymentInstructions String @default("")
+  updatedAt DateTime @updatedAt
+}
+
+model PurchaseRequest {
+  id String @id @default(uuid())
+  shopId String
+  planCode String
+  amount Int
+  reference String
+  status String @default("PENDING")
+  reviewNote String?
+  reviewedBy String?
+  reviewedAt DateTime?
+  createdAt DateTime @default(now())
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  @@index([shopId, status])
+  @@index([status, createdAt])
+}
+
+model CheckoutOrder {
+  id String @id @default(uuid())
+  shopId String
+  planCode String
+  amount Int
+  providerCode String
+  activeKey String? @unique
+  billId String? @unique
+  paymentId String? @unique
+  paymentUrl String?
+  returnUrl String
+  status String @default("PENDING")
+  createdAt DateTime @default(now())
+  paidAt DateTime?
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  @@index([shopId, status])
 }

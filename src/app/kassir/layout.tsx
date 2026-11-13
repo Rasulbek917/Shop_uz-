@@ -18,5 +18,7 @@ export default async function KassirLayout({
     redirect("/login");
   }
 
+  if (user.role !== "SUPER_ADMIN" && !user.hasAccess) redirect("/account");
+
   return <AppShell user={user}>{children}</AppShell>;
 }
