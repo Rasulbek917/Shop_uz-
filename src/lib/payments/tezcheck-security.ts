@@ -37,3 +37,40 @@ export const paymentMethodSchema = z.object({
   min_amount_minor: z.number().int().nonnegative().safe().nullable().transform(value => value ?? 0),
   max_amount_minor: z.number().int().nonnegative().safe().nullable().transform(value => value ?? Number.MAX_SAFE_INTEGER),
 });
+
+export function paymentErrorMessage(status: number, value: unknown): string {
+  const parsed = z.object({ error: z.object({
+    code: z.string().optional(),
+    request_id: z.string().optional(),
+    details: z.array(z.object({ field: z.string().optional(), code: z.string().optional() })).optional(),
+  }) }).safeParse(value);
+  const error = parsed.success ? parsed.data.error : undefined;
+  const safeCode = (value?: string) => value && /^[a-z_]+(?:\.[a-z_]+)+$/.test(value) ? value : "";
+  const code = safeCode(error?.code);
+  const details = error?.details || [];
+  let message = "Tezcheck so‘rovni rad etdi";
+  if (details.some(d => d.code === "cash_desk.default_link_not_active")) {
+    message = "Tezcheck kassasining asosiy to‘lov havolasi faol emas. Kassa sozlamalarida uni yoqing";
+  } else if (details.some(d => d.field === "return_url")) {
+    message = "Tezcheck’da shop.aminboyevrasulbek.uz domeni va to‘lovdan qaytish manziliga ruxsatni tekshiring";
+  } else if (code === "request.validation_failed") {
+    message = "Tezcheck to‘lov ma’lumotlarini qabul qilmadi";
+  } else if (code === "payment_link.amount_out_of_range") {
+    message = "Tarif summasi Tezcheck kassangizning ruxsat etilgan chegarasiga mos emas";
+  } else if (code === "request.idempotency_key_reused") {
+    message = "Oldingi to‘lov hisobining ma’lumotlari o‘zgargan. Administrator tekshirishi kerak";
+  } else if (code === "resource.conflict" || code === "request.nonce_replayed") {
+    message = "Oldingi so‘rov hali tekshirilmoqda. Bir necha soniyadan keyin qayta urinib ko‘ring";
+  } else if (code === "resource.state_invalid") {
+    message = "Tezcheck kassasi yoki to‘lov havolasi holatini tekshiring";
+  } else if (code === "resource.not_found") {
+    message = "Tezcheck kassasi topilmadi. Kassa kodi API tokeniga tegishli ekanini tekshiring";
+  } else if (status === 401 || status === 403) {
+    message = "Tezcheck API tokeni, kassa ruxsatlari va IP cheklovlarini tekshiring";
+  } else if (status === 429) {
+    message = "Tezcheck so‘rovlar chegarasiga yetildi. Biroz kutib qayta urinib ko‘ring";
+  }
+  const codes = [code, ...details.map(d => safeCode(d.code))].filter(Boolean);
+  const reference = error?.request_id && /^req_[A-Za-z0-9_-]{1,100}$/.test(error.request_id) ? ` · ${error.request_id}` : "";
+  return `${message} (HTTP ${status}${codes.length ? " · " + codes.join(", ") : ""}${reference})`;
+}

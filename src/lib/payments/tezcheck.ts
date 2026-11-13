@@ -2,7 +2,7 @@ import { createHash, createHmac } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { BusinessError } from "@/lib/onboarding";
-import { verifiedPayment, paymentMethodSchema } from "./tezcheck-security";
+import { verifiedPayment, paymentMethodSchema, paymentErrorMessage } from "./tezcheck-security";
 
 const baseUrl = "https://api.tezcheck.uz/api/merchant/v1";
 export function paymentConfigured() {
@@ -35,8 +35,8 @@ async function sendTezcheck(path: string, body?: unknown, idempotencyKey?: strin
     body: raw || undefined,
   });
   if (!response.ok) {
-    // Provider response bodies can contain payment links or credential hints.
-    throw new BusinessError(response.status === 401 || response.status === 403 ? "Tezcheck tokeni yoki kassa ruxsatlarini tekshiring" : "To‘lov xizmatiga so‘rov bajarilmadi. Qayta urinib ko‘ring", 502);
+    const failure: unknown = await response.json().catch(() => null);
+    throw new BusinessError(paymentErrorMessage(response.status, failure), 502);
   }
   return (await response.json()).data;
 }
