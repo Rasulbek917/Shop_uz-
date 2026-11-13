@@ -21,7 +21,14 @@ const workflows = [
 ];
 export function WorkflowExplorer() {
  const [active,setActive]=useState(0); const item=workflows[active];
- return <section className="public-section workflow-section"><div className="section-heading"><div><span className="eyebrow">BIR PLATFORMADA</span><h2>Bir kunlik ishni<br/>bir joydan boshqaring.</h2></div><p>Bo‘limni tanlang va Savdoza do‘koningizdagi kundalik vazifalarni qanday birlashtirishini ko‘ring.</p></div><div className="workflow-tabs" role="tablist" aria-label="Ish jarayonlari">{workflows.map((w,i)=><button key={w.title} id={`flow-tab-${i}`} role="tab" aria-selected={i===active} aria-controls="flow-panel" onClick={()=>setActive(i)}><w.icon size={19}/>{w.title}{i===2&&<small>MAX</small>}</button>)}</div><div id="flow-panel" role="tabpanel" aria-labelledby={`flow-tab-${active}`} className="workflow-panel" key={active}><div><span className="eyebrow">0{active+1} / ISH JARAYONI</span><h3>{item.heading}</h3><p>{item.text}</p><ul>{item.steps.map(s=><li key={s}><Check size={17}/>{s}</li>)}</ul><a href="/register">Hisob yaratish <ArrowRight size={17}/></a></div><figure><img src={`/media/${item.image}`} alt={`${item.title} — namunaviy interfeys`} loading="lazy" width="1280" height="720"/><figcaption>Namunaviy ko‘rinish · Haqiqiy do‘kon ma’lumotlari emas</figcaption></figure></div></section>;
+ return <section className="public-section workflow-section"><div className="section-heading"><div><span className="eyebrow">BIR PLATFORMADA</span><h2>Bir kunlik ishni<br/>bir joydan boshqaring.</h2></div><p>Bo‘limni tanlang va Savdoza do‘koningizdagi kundalik vazifalarni qanday birlashtirishini ko‘ring.</p></div><div className="workflow-tabs" role="tablist" aria-label="Ish jarayonlari">{workflows.map((w,i)=><button key={w.title} id={`flow-tab-${i}`} role="tab" aria-selected={i===active} tabIndex={i===active?0:-1} aria-controls="flow-panel" onKeyDown={event=>{
+   const keys=["ArrowRight","ArrowLeft","Home","End"];
+   if(!keys.includes(event.key)) return;
+   event.preventDefault();
+   const next=event.key==="Home"?0:event.key==="End"?workflows.length-1:(i+(event.key==="ArrowRight"?1:workflows.length-1))%workflows.length;
+   setActive(next);
+   document.getElementById(`flow-tab-${next}`)?.focus();
+ }} onClick={()=>setActive(i)}><w.icon size={19}/>{w.title}{i===2&&<small>MAX</small>}</button>)}</div><div id="flow-panel" role="tabpanel" aria-labelledby={`flow-tab-${active}`} className="workflow-panel" key={active}><div><span className="eyebrow">0{active+1} / ISH JARAYONI</span><h3>{item.heading}</h3><p>{item.text}</p><ul>{item.steps.map(s=><li key={s}><Check size={17}/>{s}</li>)}</ul><a href="/register">Hisob yaratish <ArrowRight size={17}/></a></div><figure><img src={`/media/${item.image}`} alt={`${item.title} — namunaviy interfeys`} loading="lazy" width="1280" height="720"/><figcaption>Namunaviy ko‘rinish · Haqiqiy do‘kon ma’lumotlari emas</figcaption></figure></div></section>;
 }
 export function DemoPlayer() {
  const ref=useRef<HTMLVideoElement>(null);const [chapter,setChapter]=useState(0);

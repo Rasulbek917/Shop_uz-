@@ -1,4 +1,4 @@
-import { createHash, createHmac } from "crypto";
+import { createHash, createHmac, randomUUID } from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { BusinessError } from "@/lib/onboarding";
@@ -59,8 +59,12 @@ export async function createCheckout(shopId: string, planCode: "PRO" | "MAX", pr
   const activeKey = `${shopId}:${planCode}:${providerCode}:${amount}`;
   let order = await prisma.checkoutOrder.findUnique({ where: { activeKey } });
   if (!order) {
+    const id = randomUUID();
+    const returnUrl = new URL("/checkout", origin);
+    returnUrl.searchParams.set("plan", planCode);
+    returnUrl.searchParams.set("order", id);
     try {
-      order = await prisma.checkoutOrder.create({ data: { shopId, planCode, providerCode, amount, activeKey, returnUrl: `${new URL(origin).origin}/checkout?plan=${planCode}` } });
+      order = await prisma.checkoutOrder.create({ data: { id, shopId, planCode, providerCode, amount, activeKey, returnUrl: returnUrl.toString() } });
     } catch (error) {
       if ((error as { code?: string }).code !== "P2002") throw error;
       order = await prisma.checkoutOrder.findUniqueOrThrow({ where: { activeKey } });

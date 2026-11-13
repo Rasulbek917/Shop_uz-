@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { clientApi, jsonOptions } from "@/lib/client-api";
 
 interface Method { provider_code: string; name: string; min_amount_minor: number; max_amount_minor: number; }
-export default function OnlineCheckout({ planCode, price, enabled, username }: { planCode: "PRO" | "MAX"; price: number; enabled: boolean; username: string }) {
+export default function OnlineCheckout({ planCode, price, enabled, username, pendingOrderId }: { planCode: "PRO" | "MAX"; price: number; enabled: boolean; username: string; pendingOrderId?: string }) {
   const [login, setLogin] = useState(username);
   const [methods, setMethods] = useState<Method[]>([]);
   const [providerCode, setProviderCode] = useState("");
@@ -12,15 +12,20 @@ export default function OnlineCheckout({ planCode, price, enabled, username }: {
   const [busy, setBusy] = useState(false);
   const [orderId, setOrderId] = useState("");
   const [status, setStatus] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     let active = true;
     clientApi("/api/checkout/methods").then(result => {
       if (active) { setMethods(result.methods); setConfigured(result.configured); }
     }).catch(e => { if (active) setError(e.message); });
-    const saved = sessionStorage.getItem(`savdoza-checkout-${planCode}`);
-    if (saved) setOrderId(saved);
+    const query = new URLSearchParams(window.location.search);
+    const returnedOrder = query.get("plan") === planCode ? query.get("order") : null;
+    let saved: string | null = null;
+    try { saved = sessionStorage.getItem(`savdoza-checkout-${planCode}`); } catch {}
+    setOrderId(returnedOrder || pendingOrderId || saved || "");
     return () => { active = false; };
-  }, [planCode]);
+  }, [planCode, pendingOrderId]);
   useEffect(() => {
     if (!orderId) return;
     let active = true;
@@ -28,22 +33,34 @@ export default function OnlineCheckout({ planCode, price, enabled, username }: {
     async function check() {
       if (running || document.visibilityState === "hidden") return;
       running = true;
+      setChecking(true);
       try {
         const result = await clientApi(`/api/checkout/${encodeURIComponent(orderId)}`);
         if (!active) return;
         setStatus(result.status);
+        setError("");
         if (result.status === "PAID") {
-          sessionStorage.removeItem(`savdoza-checkout-${planCode}`);
+          try { sessionStorage.removeItem(`savdoza-checkout-${planCode}`); } catch {}
           window.location.replace("/admin");
         }
-        if (result.status === "EXPIRED") sessionStorage.removeItem(`savdoza-checkout-${planCode}`);
+        if (result.status === "EXPIRED") {
+          try { sessionStorage.removeItem(`savdoza-checkout-${planCode}`); } catch {}
+        }
       } catch (e) { if (active) setError((e as Error).message); }
-      finally { running = false; }
+      finally { running = false; if (active) setChecking(false); }
     }
     check();
     const interval = setInterval(check, 10000);
-    return () => { active = false; clearInterval(interval); };
-  }, [orderId, planCode]);
+    const resume = () => { setBusy(false); void check(); };
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("pageshow", resume);
+    return () => {
+      active = false;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("pageshow", resume);
+    };
+  }, [orderId, planCode, refresh]);
   async function pay(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
@@ -54,7 +71,7 @@ export default function OnlineCheckout({ planCode, price, enabled, username }: {
     setBusy(true); setError("");
     try {
       const result = await clientApi("/api/checkout", jsonOptions("POST", { planCode, providerCode, username: login.trim() }));
-      sessionStorage.setItem(`savdoza-checkout-${planCode}`, result.id);
+      try { sessionStorage.setItem(`savdoza-checkout-${planCode}`, result.id); } catch {}
       setOrderId(result.id);
       window.location.assign(result.paymentUrl);
     } catch (e) { setError((e as Error).message); setBusy(false); }
@@ -68,6 +85,10 @@ export default function OnlineCheckout({ planCode, price, enabled, username }: {
     {configured === false && <p className="notice">To‘lov xizmati hali sozlanmoqda. Administrator Tezcheck API tokenini ulashi kerak.</p>}
     {configured === null && !error && <p>To‘lov usullari yuklanmoqda…</p>}
     {configured && available.length === 0 && <p className="notice">Hozir bu tarif uchun to‘lov usuli ochilmagan.</p>}
+    {orderId && <div className="notice" role="status">
+      <p>To‘lov qilgan bo‘lsangiz, natijani shu yerda tekshiring. Tasdiqlangan to‘lov hisobingizni avtomatik ochadi.</p>
+      <button type="button" className="public-button secondary" disabled={checking} onClick={() => setRefresh(value => value + 1)}>{checking ? "Tekshirilmoqda…" : "To‘lovni tekshirish"}</button>
+    </div>}
     <form onSubmit={pay} className="public-form"><label htmlFor="checkout-login">To‘lov qilinadigan hisob logini<input id="checkout-login" value={login} onChange={e => setLogin(e.target.value)} autoComplete="username" required minLength={3} maxLength={50} pattern="[A-Za-z0-9_.\-]+" aria-describedby="checkout-login-note" disabled={busy}/></label><p id="checkout-login-note" className="notice">Loginni eslab qoling: <b>{username}</b>. Tarif shu hisob uchun ochiladi. Login faqat lotin harflari (a–z), raqamlar, nuqta, pastki chiziq yoki chiziqdan iborat bo‘lsin. To‘lovdan qaytgach aynan shu hisobga kiring.</p><fieldset className="payment-methods" disabled={busy}><legend>To‘lov usuli</legend><div className="payment-method-grid">{available.map(method => <label key={method.provider_code} className={`payment-method ${providerCode === method.provider_code ? "chosen" : ""}`}><input type="radio" name="provider" value={method.provider_code} checked={providerCode === method.provider_code} onChange={() => setProviderCode(method.provider_code)} required/><span>{method.name}</span></label>)}</div></fieldset>
       {error && <p role="alert" className="form-error">{error}</p>}
       {orderId && status === "PENDING" && <p role="status" className="notice">To‘lov natijasi tekshirilmoqda.</p>}
