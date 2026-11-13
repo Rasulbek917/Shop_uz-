@@ -1,3 +1,15 @@
+let sessionCheck: Promise<boolean> | null = null;
+
+async function sessionExpired(): Promise<boolean> {
+  if (!sessionCheck) {
+    sessionCheck = fetch("/api/auth/me", { cache: "no-store", credentials: "same-origin" })
+      .then(response => response.status === 401)
+      .catch(() => false)
+      .finally(() => { sessionCheck = null; });
+  }
+  return sessionCheck;
+}
+
 export async function clientApi(url: string, options?: RequestInit) {
   let res: Response;
   try {
@@ -5,7 +17,7 @@ export async function clientApi(url: string, options?: RequestInit) {
   } catch {
     throw new Error("Serverga ulanib bo‘lmadi. Internet aloqasini tekshirib, qayta urinib ko‘ring.");
   }
-  if (res.status === 401) window.location.assign("/login");
+  if (res.status === 401 && await sessionExpired()) window.location.assign("/login");
   const data = await res.json().catch(() => null);
   if (!data) throw new Error("Server javobi olinmadi. Biroz kutib, qayta urinib ko‘ring.");
   if (!res.ok || !data.success) {

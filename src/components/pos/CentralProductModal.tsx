@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
+import { isMax } from "@/lib/plans";
 import {
   Sparkles,
   Package,
@@ -45,6 +47,18 @@ export default function CentralProductModal({
   const [initialStock, setInitialStock] = useState<number>(1);
   const [isImporting, setIsImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canImport, setCanImport] = useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+    setCanImport(null);
+    fetch("/api/auth/me", { cache: "no-store" }).then(async response => {
+      const result = await response.json();
+      if (active) setCanImport(Boolean(response.ok && result.success && (result.user?.role === "SUPER_ADMIN" || isMax(result.user?.planCode))));
+    }).catch(() => { if (active) setError("Tarifni tekshirib bo‘lmadi. Oynani qayta oching."); });
+    return () => { active = false; };
+  }, [isOpen]);
 
   // Sync state if centralProduct changes
   React.useEffect(() => {
@@ -60,6 +74,7 @@ export default function CentralProductModal({
   const isInactive = centralProduct.status === "INACTIVE";
 
   const handleImport = async (andAddToCart: boolean) => {
+    if (!canImport || isImporting) return;
     setError(null);
     setIsImporting(true);
 
@@ -122,6 +137,10 @@ export default function CentralProductModal({
         </div>
 
         <div className="p-6 space-y-5">
+          {canImport === null && !error && <p role="status" className="text-sm text-slate-500">Tarif tekshirilmoqda…</p>}
+          {canImport === false && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            Markaziy import Max tarifida ochiladi. <Link href="/checkout?plan=MAX" className="font-bold underline">Max tarifiga o‘ting</Link>
+          </div>}
           {error && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -223,7 +242,7 @@ export default function CentralProductModal({
 
             <button
               type="button"
-              disabled={isImporting}
+              disabled={isImporting || !canImport}
               onClick={() => handleImport(false)}
               className="w-full sm:flex-1 px-4 py-3 rounded-xl border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-800 text-xs font-bold transition-colors disabled:opacity-50"
             >
@@ -232,7 +251,7 @@ export default function CentralProductModal({
 
             <button
               type="button"
-              disabled={isImporting}
+              disabled={isImporting || !canImport}
               onClick={() => handleImport(true)}
               className="w-full sm:flex-1 px-4 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-extrabold shadow-sm transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
             >

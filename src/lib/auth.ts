@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { AuthUser, UserRole } from "@/types";
+import type { NextResponse } from "next/server";
 
 function getSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -13,6 +14,15 @@ function getSecret(): string {
   return secret || "dev_only_insecure_secret_do_not_use_in_production";
 }
 const COOKIE_NAME = "savdoza_auth_token";
+const SESSION_SECONDS = 7 * 86400;
+
+export function setAuthSession(response: NextResponse, user: AuthUser): NextResponse {
+  response.cookies.set(COOKIE_NAME, signJwtToken(user), {
+    httpOnly: true, secure: process.env.NODE_ENV === "production",
+    sameSite: "lax", path: "/", maxAge: SESSION_SECONDS,
+  });
+  return response;
+}
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10);
@@ -24,7 +34,7 @@ export async function comparePassword(password: string, hash: string): Promise<b
 }
 
 export function signJwtToken(payload: AuthUser): string {
-  return jwt.sign(payload, getSecret(), { expiresIn: "7d", algorithm: "HS256" });
+  return jwt.sign(payload, getSecret(), { expiresIn: SESSION_SECONDS, algorithm: "HS256" });
 }
 
 export function verifyJwtToken(token: string): AuthUser | null {

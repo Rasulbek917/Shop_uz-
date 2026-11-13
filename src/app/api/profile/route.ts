@@ -127,6 +127,7 @@ export async function PATCH(req: NextRequest) {
 
     // Yangilangan ma'lumotlar bilan JWT tokenni qayta berish (UI darhol yangilanishi uchun)
     const authUser: AuthUser = {
+      tokenVersion: updated.tokenVersion,
       id: updated.id,
       username: updated.username,
       fullName: updated.fullName,

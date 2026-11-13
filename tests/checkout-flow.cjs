@@ -10,7 +10,7 @@ function load(file, mocks = {}) {
   const filename = path.resolve(file);
   const requireFile = createRequire(filename);
   const compiled = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   const module = { exports: {} };
   const timer = (callback, milliseconds) => {
@@ -197,4 +197,150 @@ test('account restores payment history from its own shop without exposing provid
   assert.equal(shopQuery.where.id, 'own-shop');
   assert.equal(shopQuery.include.checkoutOrders.select.paymentUrl, undefined);
   assert.equal((await response.json()).data.shop.checkoutOrders[0].id, 'saved-order');
+});
+
+test('public header restores the account and keeps it during a temporary server error', async t => {
+  let state;
+  let effect;
+  const listeners = new Map();
+  const beforeDocument = global.document;
+  const beforeWindow = global.window;
+  global.document = { visibilityState: 'visible', addEventListener: (name, callback) => listeners.set(name, callback), removeEventListener() {} };
+  global.window = { addEventListener() {}, removeEventListener() {} };
+  t.after(() => { global.document = beforeDocument; global.window = beforeWindow; });
+  const { PublicHeader } = load('src/components/marketing/PublicShell.tsx', {
+    react: { useState: () => [state, value => { state = value; }], useEffect: callback => { effect = callback; } },
+    'next/link': { __esModule: true, default: props => require('react').createElement('a', props, props.children) },
+  });
+  const render = () => require('react-dom/server').renderToStaticMarkup(PublicHeader({}));
+  assert.match(render(), /Hisobim/);
+  assert.doesNotMatch(render(), />Kirish</);
+  t.mock.method(global, 'fetch', async () => Response.json({ success: true, user: { username: 'test.user', planCode: 'PRO' } }));
+  const cleanup = effect();
+  await new Promise(setImmediate);
+  assert.match(render(), /test.user/);
+  assert.match(render(), /Hisobim/);
+  assert.doesNotMatch(render(), />Kirish</);
+  global.fetch = async () => new Response('Unavailable', { status: 503 });
+  await listeners.get('visibilitychange')();
+  assert.match(render(), /test.user/);
+  global.fetch = async () => Response.json({ success: false }, { status: 401 });
+  await listeners.get('visibilitychange')();
+  assert.match(render(), />Kirish</);
+  cleanup();
+});
+
+test('Pro menu shows disabled Max sections and Max menu enables them', () => {
+  const { default: Sidebar } = load('src/components/layout/Sidebar.tsx', {
+    'next/navigation': { usePathname: () => '/admin' },
+    '@/lib/plans': { isMax },
+  });
+  const React = require('react');
+  const render = planCode => require('react-dom/server').renderToStaticMarkup(React.createElement(Sidebar, {
+    user: { role: 'SHOP_ADMIN', planCode }, isOpen: true, onClose() {},
+  }));
+  const pro = render('PRO');
+  assert.equal((pro.match(/<button[^>]*\sdisabled=""/g) || []).length, 3);
+  for (const label of ['Xodimlar boshqaruvi', 'Yetkazib beruvchilar', 'Amallar jurnali']) assert.ok(pro.includes(label));
+  assert.ok(pro.includes('Max tarifiga o‘ting'));
+  assert.doesNotMatch(pro, /href="\/admin\/xodimlar"/);
+  const max = render('MAX');
+  assert.match(max, /href="\/admin\/xodimlar"/);
+  assert.match(max, /href="\/admin\/yetkazib-beruvchilar"/);
+  assert.match(max, /href="\/admin\/audit-log"/);
+});
+
+test('profile edits preserve session version and password change renews the current session', async t => {
+  const oldSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = 'isolated-session-regression-secret-123456';
+  t.after(() => { if (oldSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = oldSecret; });
+  const user = { id: 'user-1', username: 'test.user', fullName: 'Test User', role: 'SHOP_ADMIN', shopId: 'shop-1', tokenVersion: 7, status: 'ACTIVE', shop: { status: 'AWAITING_PAYMENT', planCode: 'NONE' } };
+  const db = { user: {
+    findUnique: async () => user,
+    update: async ({ data }) => {
+      Object.assign(user, { ...data, tokenVersion: data.tokenVersion?.increment ? user.tokenVersion + data.tokenVersion.increment : user.tokenVersion });
+      return user;
+    },
+  } };
+  const auth = load('src/lib/auth.ts', { './prisma': { prisma: db }, './plans': { hasShopAccess, isMax } });
+  const initialToken = auth.signJwtToken({ ...user });
+  const routeMocks = {
+    '@/lib/prisma': { prisma: db },
+    '@/lib/auth': { ...auth, getCurrentUser: async () => ({ ...user }), comparePassword: async () => true, hashPassword: async () => 'test-hash' },
+    '@/lib/validations': load('src/lib/validations.ts'),
+    '@/lib/audit': { logAudit: async () => {} }, '@/lib/logger': { logger: { error() {} } },
+    '@/lib/formatters': {},
+  };
+  const profile = load('src/app/api/profile/route.ts', routeMocks);
+  const saved = await profile.PATCH(new Request('https://shop.example.uz/api/profile', { method: 'PATCH', body: JSON.stringify({ fullName: 'Updated User' }) }));
+  assert.equal(saved.status, 200);
+  const profileToken = saved.cookies.get(auth.getAuthCookieName()).value;
+  assert.equal(auth.verifyJwtToken(profileToken).tokenVersion, 7);
+  assert.ok(await auth.resolveUser(auth.verifyJwtToken(profileToken)));
+  const password = load('src/app/api/auth/change-password/route.ts', routeMocks);
+  const changed = await password.POST(new Request('https://shop.example.uz/api/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword: 'oldPassword123', newPassword: 'newPassword123', confirmPassword: 'newPassword123' }) }));
+  assert.equal(changed.status, 200);
+  const freshToken = changed.cookies.get(auth.getAuthCookieName()).value;
+  assert.equal(auth.verifyJwtToken(freshToken).tokenVersion, 8);
+  assert.ok(await auth.resolveUser(auth.verifyJwtToken(freshToken)));
+  assert.equal(await auth.resolveUser(auth.verifyJwtToken(initialToken)), null);
+});
+
+test('unrelated 401 responses and temporary session errors do not redirect to login', async t => {
+  const { clientApi } = load('src/lib/client-api.ts');
+  const before = global.window;
+  global.window = { location: { assign: () => assert.fail('An authenticated session must stay on the current page') } };
+  t.after(() => { global.window = before; });
+  t.mock.method(global, 'fetch', async url => url === '/api/auth/me'
+    ? Response.json({ success: true, user: { id: 'user-1' } })
+    : Response.json({ success: false, error: 'Joriy parol noto‘g‘ri' }, { status: 401 }));
+  await assert.rejects(clientApi('/api/auth/change-password'), /Joriy parol/);
+  global.fetch = async url => url === '/api/auth/me'
+    ? new Response('Unavailable', { status: 503 })
+    : Response.json({ success: false, error: 'Urinib ko‘ring' }, { status: 401 });
+  await assert.rejects(clientApi('/test'), /Urinib ko‘ring/);
+});
+
+test('Max APIs refuse Pro and accept Max on the server', async () => {
+  const { NextRequest } = require('next/server');
+  const plans = load('src/lib/plans.ts');
+  const user = { id: 'user-1', shopId: 'shop-1', role: 'SHOP_ADMIN', hasAccess: true };
+  const shop = { id: 'shop-1', status: 'ACTIVE', planCode: 'PRO', subscriptionEndDate: new Date(Date.now() + 86400000) };
+  const tenant = load('src/lib/tenant.ts', {
+    './plans': plans,
+    './auth': { getAuthCookieName: () => 'session', verifyJwtToken: () => user, resolveUser: async () => user },
+    './prisma': { prisma: { shop: { findUnique: async () => shop } } },
+  });
+  for (const path of plans.MAX_API_PREFIXES) {
+    shop.planCode = 'PRO';
+    const request = new NextRequest(`https://shop.example.uz${path}`, { headers: { authorization: 'Bearer test' } });
+    const locked = await tenant.requireTenantContext(request);
+    assert.equal(locked.errorResponse.status, 403);
+    assert.equal((await locked.errorResponse.json()).requiredPlan, 'MAX');
+    shop.planCode = 'MAX';
+    assert.equal((await tenant.requireTenantContext(request)).context.shopId, shop.id);
+  }
+});
+
+test('central import buttons remain visible and locked for Pro', () => {
+  const React = require('react');
+  let canImport = false;
+  let stateIndex = 0;
+  const states = () => [1000, 1, false, null, canImport];
+  const { default: CentralProductModal } = load('src/components/pos/CentralProductModal.tsx', {
+    react: { ...React, useState: () => [states()[stateIndex++], () => {}], useEffect() {} },
+    '@/lib/plans': { isMax }, '@/lib/formatters': { formatCurrency: value => String(value) },
+    'next/link': { __esModule: true, default: props => React.createElement('a', props, props.children) },
+  });
+  const render = () => {
+    stateIndex = 0;
+    return require('react-dom/server').renderToStaticMarkup(CentralProductModal({
+      isOpen: true, onClose() {}, onImportSuccess() {},
+      centralProduct: { id: 'product-1', sku: 'sku-1', name: 'Sample', price: 1000, shopName: 'Shop', barcodeType: 'EAN13', barcodeValue: '123', status: 'ACTIVE' },
+    }));
+  };
+  assert.equal((render().match(/<button[^>]*\sdisabled=""/g) || []).length, 2);
+  assert.ok(render().includes('Max tarifiga o‘ting'));
+  canImport = true;
+  assert.equal((render().match(/<button[^>]*\sdisabled=""/g) || []).length, 0);
 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser, comparePassword, hashPassword } from "@/lib/auth";
+import { getCurrentUser, comparePassword, hashPassword, setAuthSession } from "@/lib/auth";
 import { changePasswordSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await hashPassword(newPassword);
-    await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id: user.id },
       data: { passwordHash, tokenVersion: { increment: 1 } },
     });
@@ -76,10 +76,10 @@ export async function POST(req: NextRequest) {
       details: `${user.fullName} (${user.role}) o‘z parolini almashtirdi`,
     });
 
-    return NextResponse.json({
+    return setAuthSession(NextResponse.json({
       success: true,
       message: "Parol muvaffaqiyatli almashtirildi",
-    });
+    }), { ...currentUser, tokenVersion: updated.tokenVersion });
   } catch (error) {
     // Parollar hech qachon log qilinmaydi — faqat xato obyekti
     logger.error("POST /api/auth/change-password xatolik", { error, route: "/api/auth/change-password" });

@@ -24,8 +24,10 @@ import {
   ShieldCheck,
   Settings,
   QrCode,
+  LockKeyhole,
 } from "lucide-react";
 import { AuthUser, UserRole } from "@/types";
+import { isMax } from "@/lib/plans";
 
 interface SidebarProps {
   user: AuthUser;
@@ -37,6 +39,7 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  requiresMax?: boolean;
 }
 
 export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
@@ -69,8 +72,9 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Qaytarishlar", href: "/admin/qaytarishlar", icon: RotateCcw },
           { label: "Mijozlar bazasi", href: "/admin/mijozlar", icon: Users },
           { label: "Qarzlar", href: "/admin/qarzlar", icon: CreditCard },
-          { label: "Yetkazib beruvchilar", href: "/admin/yetkazib-beruvchilar", icon: Truck },
-          { label: "Xodimlar boshqaruvi", href: "/admin/xodimlar", icon: UserCog },
+          { label: "Yetkazib beruvchilar", href: "/admin/yetkazib-beruvchilar", icon: Truck, requiresMax: true },
+          { label: "Xodimlar boshqaruvi", href: "/admin/xodimlar", icon: UserCog, requiresMax: true },
+          { label: "Amallar jurnali", href: "/admin/audit-log", icon: ScrollText, requiresMax: true },
           { label: "Hisobotlar va Tahlil", href: "/admin/hisobotlar", icon: BarChart3 },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
@@ -150,6 +154,15 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
             const Icon = item.icon;
             const isActive = pathname === item.href;
 
+            if (item.requiresMax && !isMax(user.planCode)) {
+              return <button key={item.href} type="button" disabled title="Max tarifiga o‘ting"
+                className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-400">
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1">{item.label}<small className="block text-[10px] text-amber-200/80">Max tarifiga o‘ting</small></span>
+                <LockKeyhole className="h-3.5 w-3.5 shrink-0" />
+              </button>;
+            }
+
             return (
               <Link
                 key={item.href}
@@ -166,6 +179,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               </Link>
             );
           })}
+          {user.role === "SHOP_ADMIN" && !isMax(user.planCode) && (
+            <Link href="/checkout?plan=MAX" onClick={onClose} className="mt-4 block rounded-xl border border-amber-200/30 px-3 py-3 text-sm font-semibold text-amber-100 hover:bg-white/5">
+              Max tarifiga o‘tish
+            </Link>
+          )}
         </div>
 
         {/* Security badge at bottom */}
