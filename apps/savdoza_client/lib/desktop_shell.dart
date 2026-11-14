@@ -304,51 +304,68 @@ class _DesktopShellState extends State<DesktopShell> {
                                                   item.max && !widget.data.max
                                                   ? '${item.title} · Max tarifiga o‘ting'
                                                   : item.title,
-                                              child: ListTile(
-                                                dense: true,
-                                                selected:
-                                                    item.key == widget.section,
-                                                enabled: enabled(item),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                selectedTileColor: const Color(
-                                                  0xff31664f,
-                                                ),
-                                                selectedColor: Colors.white,
-                                                textColor: Colors.white70,
-                                                iconColor: Colors.white70,
-                                                contentPadding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 14,
+                                              child: Theme(
+                                                data: Theme.of(context)
+                                                    .copyWith(
+                                                      disabledColor:
+                                                          Colors.white38,
                                                     ),
-                                                leading: Icon(
-                                                  item.icon,
-                                                  size: 20,
-                                                ),
-                                                title: compact
-                                                    ? null
-                                                    : Text(
-                                                        item.title,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        style: const TextStyle(
-                                                          fontSize: 13,
+                                                child: Material(
+                                                  type:
+                                                      MaterialType.transparency,
+                                                  child: ListTile(
+                                                    dense: true,
+                                                    selected:
+                                                        item.key ==
+                                                        widget.section,
+                                                    enabled: enabled(item),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    selectedTileColor:
+                                                        const Color(0xff31664f),
+                                                    selectedColor: Colors.white,
+                                                    textColor: Colors.white70,
+                                                    iconColor: Colors.white70,
+                                                    contentPadding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 14,
                                                         ),
-                                                      ),
-                                                trailing:
-                                                    !compact &&
-                                                        item.max &&
-                                                        !widget.data.max
-                                                    ? const Icon(
-                                                        Icons.lock_outline,
-                                                        size: 15,
-                                                        color: Colors.white38,
-                                                      )
-                                                    : null,
-                                                onTap: () => navigate(item.key),
+                                                    leading: Icon(
+                                                      item.icon,
+                                                      size: 20,
+                                                    ),
+                                                    title: compact
+                                                        ? null
+                                                        : Text(
+                                                            item.title,
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontSize: 13,
+                                                                ),
+                                                          ),
+                                                    trailing:
+                                                        !compact &&
+                                                            item.max &&
+                                                            !widget.data.max
+                                                        ? const Icon(
+                                                            Icons.lock_outline,
+                                                            size: 15,
+                                                            color:
+                                                                Colors.white38,
+                                                          )
+                                                        : null,
+                                                    onTap: () =>
+                                                        navigate(item.key),
+                                                  ),
+                                                ),
                                               ),
                                             ),
                                           );
