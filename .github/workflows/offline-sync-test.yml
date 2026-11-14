@@ -45,7 +45,8 @@ jobs:
         if: github.actor != 'github-actions[bot]'
         run: |
           if node -e 'process.exit(require("./package.json").dependencies.next.includes("14.") ? 0 : 1)'; then
-            npm install --package-lock-only --ignore-scripts next@15 'react@^19.2.0' 'react-dom@^19.2.0' zod@4.6.7 'postcss@^8.5.23' '@types/react@^19' '@types/react-dom@^19'
+            npm install --package-lock-only --ignore-scripts next@16.4.6 'react@^19.2.0' 'react-dom@^19.2.0' zod@4.6.7 'postcss@^8.5.23' '@types/react@^19' '@types/react-dom@^19'
+            node -e 'const fs=require("fs"),p=require("./package.json");p.scripts.build="prisma generate && next build --webpack";delete p.scripts.lint;p.scripts.check="tsc --noEmit";fs.writeFileSync("package.json",JSON.stringify(p,null,2)+"\n")'
             npm audit fix --package-lock-only --ignore-scripts
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
