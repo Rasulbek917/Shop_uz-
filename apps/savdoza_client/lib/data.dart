@@ -118,7 +118,9 @@ class Api {
     if (response.statusCode != 200) {
       throw ApiError(response.statusCode, 'Faylni yuklab bo‘lmadi');
     }
-    return response.fold<List<int>>([], (all, bytes) => all..addAll(bytes));
+    return response
+        .fold<List<int>>([], (all, bytes) => all..addAll(bytes))
+        .timeout(const Duration(seconds: 25));
   }
 }
 
@@ -153,8 +155,8 @@ class DeviceStore {
     }
   }
 
-  Future<void> sync() async {
-    if (Platform.isAndroid) await device.invokeMethod('sync');
+  Future<void> sync({bool force = false}) async {
+    if (Platform.isAndroid) await device.invokeMethod('sync', {'force': force});
   }
 }
 
@@ -213,15 +215,12 @@ class AppData extends ChangeNotifier {
       orders.where((order) => order['status'] != 'synced').toList();
   List<Json> get products {
     final result = records(jsonDecode(jsonEncode(cache['products'] ?? [])));
-    final fetched = DateTime.tryParse('${cache['productsFetchedAt'] ?? ''}');
+    final acknowledged = Set<String>.from(
+      (cache['acknowledgedOrders'] as List?) ?? const [],
+    );
     for (final order in orders) {
-      final synced = DateTime.tryParse('${order['syncedAt'] ?? ''}');
-      if (order['status'] == 'synced' &&
-          synced != null &&
-          fetched != null &&
-          fetched.isAfter(synced)) {
+      if (order['status'] == 'synced' && acknowledged.contains(order['key']))
         continue;
-      }
       for (final item in records(object(order['payload'])['items'])) {
         for (final product in result.where(
           (p) => p['id'] == item['productId'],
@@ -264,8 +263,11 @@ class AppData extends ChangeNotifier {
   Future<void> persist() async {
     if (session == null) return;
     session!['cookie'] = api.cookie;
-    await store.mutate('session', {'session': session});
-    await store.mutate('cache', {'scope': scope, 'cache': cache});
+    final sessionSnapshot = object(jsonDecode(jsonEncode(session)));
+    final cacheSnapshot = object(jsonDecode(jsonEncode(cache)));
+    final targetScope = '${sessionSnapshot['scope']}';
+    await store.mutate('session', {'session': sessionSnapshot});
+    await store.mutate('cache', {'scope': targetScope, 'cache': cacheSnapshot});
   }
 
   Future<void> login(String username, String password) async {
@@ -276,6 +278,7 @@ class AppData extends ChangeNotifier {
       body: {'username': username.trim(), 'password': password},
     );
     final user = object(result['user']);
+    cache = {};
     session = {
       'cookie': api.cookie,
       'scope': '$serverUrl|${user['id']}|${user['shopId']}',
@@ -287,6 +290,7 @@ class AppData extends ChangeNotifier {
     await store.mutate('session', {'session': session});
     await reload();
     await refresh();
+    await store.sync(force: true);
   }
 
   Future<void> registered(Json body) async {
@@ -294,6 +298,7 @@ class AppData extends ChangeNotifier {
     final result = await api.call('/api/account');
     final account = object(result['data']);
     final user = object(account['user']);
+    cache = {};
     session = {
       'cookie': api.cookie,
       'scope': '$serverUrl|${user['id']}|${user['shopId']}',
@@ -310,8 +315,28 @@ class AppData extends ChangeNotifier {
     if (session == null || refreshing) return;
     refreshing = true;
     final originalScope = scope;
+    final wasOnline = online;
+    final hadAccess = access;
     try {
-      final accountResult = await api.call('/api/account');
+      var accountResult = await api.call('/api/account');
+      if (session == null || scope != originalScope) return;
+      final accountData = object(accountResult['data']);
+      if (object(accountData['user'])['role'] == 'SHOP_ADMIN') {
+        final pendingPayment = records(
+          object(accountData['shop'])['checkoutOrders'],
+        ).where((order) => order['status'] == 'PENDING').firstOrNull;
+        if (pendingPayment != null) {
+          try {
+            final result = object(
+              (await api.call('/api/checkout/${pendingPayment['id']}'))['data'],
+            );
+            if (result['status'] == 'PAID')
+              accountResult = await api.call('/api/account');
+          } catch (_) {
+            /* A provider outage does not close the native POS. */
+          }
+        }
+      }
       if (session == null || scope != originalScope) return;
       session!['account'] = object(accountResult['data']);
       online = true;
@@ -319,6 +344,15 @@ class AppData extends ChangeNotifier {
       await persist();
       if (access && user['role'] != 'SUPER_ADMIN') {
         final started = DateTime.now().toUtc().toIso8601String();
+        final beforeCatalog = await store.read();
+        final acknowledged = records(beforeCatalog['outbox'])
+            .where(
+              (order) =>
+                  order['scope'] == originalScope &&
+                  order['status'] == 'synced',
+            )
+            .map((order) => '${order['key']}')
+            .toList();
         final results = await Future.wait([
           api.call('/api/products'),
           api.call('/api/categories'),
@@ -336,10 +370,11 @@ class AppData extends ChangeNotifier {
           'reports': results[4]['data'],
           'manufacturers': results[5]['data'],
           'productsFetchedAt': started,
+          'acknowledgedOrders': acknowledged,
         });
         await persist();
       }
-      await store.sync();
+      await store.sync(force: !wasOnline || (!hadAccess && access));
     } on ApiError catch (error) {
       connectionError = error.message;
       if (error.status == 401) {

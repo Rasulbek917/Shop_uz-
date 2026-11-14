@@ -152,6 +152,7 @@ void main() {
         {
           'scope': data.scope,
           'status': 'synced',
+          'key': 'completed-key',
           'syncedAt': now.toIso8601String(),
           'payload': {
             'items': [
@@ -164,6 +165,7 @@ void main() {
       data.cache['productsFetchedAt'] = now
           .add(const Duration(seconds: 1))
           .toIso8601String();
+      data.cache['acknowledgedOrders'] = ['completed-key'];
       data.cache['products'][0]['batches'][0]['currentQuantity'] = 3;
       expect(data.products.first['totalStock'], 3);
       data.outbox.first['scope'] = 'different-owner';

@@ -35,7 +35,7 @@ class MainActivity : FlutterActivity() {
                         Handler(Looper.getMainLooper()).post { result.success(value) }
                     } catch (_: Exception) { Handler(Looper.getMainLooper()).post { result.error("STORE", "Telefon ma’lumotlarini saqlash yoki ochish bajarilmadi", null) } }
                 }
-                "sync" -> { SyncWorker.schedule(this); result.success(null) }
+                "sync" -> { SyncWorker.schedule(this, call.argument<Boolean>("force") == true); result.success(null) }
                 "saveFile" -> {
                     if (saveResult != null) result.error("BUSY", "Fayl saqlash oynasi ochiq", null)
                     else {

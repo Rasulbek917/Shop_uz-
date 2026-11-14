@@ -69,11 +69,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : Worker(context, p
     }
     companion object {
         private fun constraints() = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
-        fun schedule(context: Context) {
+        fun schedule(context: Context, force: Boolean = false) {
             val manager = WorkManager.getInstance(context)
-            manager.enqueueUniqueWork("savdoza-sync-now", ExistingWorkPolicy.KEEP,
+            manager.enqueueUniqueWork("savdoza-sync-now", if (force) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP,
                 OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints()).setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS).build())
-            manager.enqueueUniquePeriodicWork("savdoza-sync-periodic", ExistingPeriodicWorkPolicy.KEEP,
+            manager.enqueueUniquePeriodicWork("savdoza-sync-periodic", ExistingPeriodicWorkPolicy.UPDATE,
                 PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES).setConstraints(constraints()).build())
         }
     }

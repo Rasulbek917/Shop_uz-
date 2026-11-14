@@ -310,6 +310,7 @@ class SettingsPage extends StatelessWidget {
           ),
         ),
       ),
+      Text('Katalog yangilangan ${dateText(data.cache['productsFetchedAt'])}'),
       const Padding(
         padding: EdgeInsets.all(16),
         child: Text(
@@ -331,7 +332,7 @@ class OutboxPage extends StatelessWidget {
       children: [
         FilledButton.icon(
           onPressed: () async {
-            await data.store.sync();
+            await data.store.sync(force: true);
             await data.reload();
           },
           icon: const Icon(Icons.sync),
@@ -368,7 +369,7 @@ class OutboxPage extends StatelessWidget {
                       icon: const Icon(Icons.refresh),
                       onPressed: () async {
                         await data.store.mutate('retry', {'key': order['key']});
-                        await data.store.sync();
+                        await data.store.sync(force: true);
                         await data.reload();
                       },
                     )

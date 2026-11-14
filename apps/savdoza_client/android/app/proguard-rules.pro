@@ -1,0 +1,1 @@
+-keep class uz.savdoza.savdoza_client.SyncWorker { *; }
