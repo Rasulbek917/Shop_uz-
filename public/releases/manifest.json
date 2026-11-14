@@ -1,9 +1,9 @@
 {
   "android": {
     "url": "https://github.com/Rasulbek917/Shop_uz-/releases/download/android-latest/savdoza-android.apk",
-    "version": "2.0.0+17",
-    "bytes": 68987460,
-    "sha256": "6153b4314424bdd7977881078e1fdb5b0af20ad5144cd408d1c35b2f593c90ac",
+    "version": "2.0.0+18",
+    "bytes": 69003912,
+    "sha256": "775a8c44e81126a2cc2804be0c52e333495e5d22a03268e32803c7fd2b4fd8ea",
     "channel": "preview"
   },
   "windows": {
