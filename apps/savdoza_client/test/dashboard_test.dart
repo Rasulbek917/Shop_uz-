@@ -106,6 +106,7 @@ void main() {
       expect(find.text('Tezkor bo‘limlar'), findsNothing);
       await tester.tap(find.text('Savdo (POS)'));
       expect(destination, 'pos');
+      await tester.pumpAndSettle();
       final preview = Platform.environment['SAVDOZA_DASHBOARD_PREVIEW'];
       if (preview != null && width == 390) {
         final image =
