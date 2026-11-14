@@ -46,8 +46,9 @@ class AppUpdates extends ChangeNotifier {
     if (!Platform.isAndroid || checking || downloading) return;
     if (!force &&
         lastChecked != null &&
-        DateTime.now().difference(lastChecked!) < const Duration(hours: 6))
+        DateTime.now().difference(lastChecked!) < const Duration(hours: 6)) {
       return;
+    }
     checking = true;
     error = '';
     notifyListeners();
@@ -66,8 +67,9 @@ class AppUpdates extends ChangeNotifier {
       final response = await request.close().timeout(
         const Duration(seconds: 20),
       );
-      if (response.statusCode != 200)
+      if (response.statusCode != 200) {
         throw const HttpException('Yangilanishni tekshirib bo‘lmadi');
+      }
       final text = await response
           .transform(utf8.decoder)
           .join()

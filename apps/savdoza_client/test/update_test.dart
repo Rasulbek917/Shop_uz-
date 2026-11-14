@@ -49,20 +49,20 @@ void main() {
       ),
     );
     expect(
-      tester.widget<TextFormField>(find.byType(TextFormField)).obscureText,
+      tester.widget<EditableText>(find.byType(EditableText)).obscureText,
       true,
     );
     await tester.tap(find.byTooltip('Parolni ko‘rsatish'));
     await tester.pumpAndSettle();
     expect(
-      tester.widget<TextFormField>(find.byType(TextFormField)).obscureText,
+      tester.widget<EditableText>(find.byType(EditableText)).obscureText,
       false,
     );
     expect(controller.text, 'TestPassword!');
     await tester.tap(find.byTooltip('Parolni yashirish'));
     await tester.pumpAndSettle();
     expect(
-      tester.widget<TextFormField>(find.byType(TextFormField)).obscureText,
+      tester.widget<EditableText>(find.byType(EditableText)).obscureText,
       true,
     );
     await tester.pumpWidget(const SizedBox());
