@@ -147,7 +147,11 @@ const { createHmac } = require('node:crypto');
   } finally {
     global.fetch = originalFetch;
     Date.now = originalNow;
-    for (const shop of shops.reverse()) await prisma.shop.delete({ where: { id: shop.id } });
+    for (const shop of shops.reverse()) {
+      await prisma.payment.deleteMany({ where: { shopId: shop.id } });
+      await prisma.sale.deleteMany({ where: { shopId: shop.id } });
+      await prisma.shop.delete({ where: { id: shop.id } });
+    }
     await prisma.$disconnect();
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });

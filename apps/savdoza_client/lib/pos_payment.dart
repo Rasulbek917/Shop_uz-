@@ -170,7 +170,7 @@ class _ElectronicPaymentDialogState extends State<ElectronicPaymentDialog> {
   }
 
   Future<void> check({bool cancel = false}) async {
-    if (busy || order['status'] != 'PENDING') return;
+    if (busy || order['status'] == 'CANCELLED') return;
     setState(() => busy = true);
     try {
       final current = object(
@@ -282,16 +282,16 @@ class _ElectronicPaymentDialogState extends State<ElectronicPaymentDialog> {
   );
 }
 
-Future<void> pendingElectronicPayments(
+Future<String?> pendingElectronicPayments(
   BuildContext context,
   AppData data,
 ) async {
   try {
     final rows = records((await data.api.call('/api/pos/payments'))['data']);
-    if (!context.mounted) return;
+    if (!context.mounted) return null;
     if (rows.isEmpty) {
       await message(context, 'Kutilayotgan elektron to‘lovlar yo‘q');
-      return;
+      return null;
     }
     final selected = await showDialog<Json>(
       context: context,
@@ -308,12 +308,15 @@ Future<void> pendingElectronicPayments(
         ],
       ),
     );
-    if (selected == null || !context.mounted) return;
+    if (selected == null || !context.mounted) return null;
     final receipt = await showElectronicPayment(context, data, selected);
     await data.refresh();
-    if (receipt != null && context.mounted)
+    if (receipt != null && context.mounted) {
       await showReceipt(context, data, receipt);
+    }
+    return selected['idempotencyKey'] as String?;
   } catch (e) {
     if (context.mounted) await message(context, e);
+    return null;
   }
 }

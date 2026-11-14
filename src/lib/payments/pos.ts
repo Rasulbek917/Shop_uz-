@@ -63,6 +63,9 @@ export async function startPosPayment(input: z.infer<typeof posSaleSchema>, cont
             order = await prisma.posPayment.findUniqueOrThrow({ where: { requestKey }, include: includeSale });
         }
     }
+    if (context.user.role === "CASHIER" && order.sale.cashierId !== context.user.id) {
+        throw new BusinessError("To‘lov bu kassirga tegishli emas", 403);
+    }
     const replay = await saleReplay(context.shopId, `POS-${requestKey}`);
     if (!replay)
         throw new BusinessError("Savdo topilmadi", 404);
@@ -150,5 +153,5 @@ export async function cancelPosPayment(order: Order): Promise<Order> {
     return prisma.posPayment.findUniqueOrThrow({ where: { id: order.id }, include: includeSale });
 }
 export function posPaymentView(order: Order) {
-    return { id: order.id, saleId: order.saleId, receiptNumber: order.sale.receiptNumber, amount: order.sale.payableAmount, paymentUrl: order.paymentUrl, status: order.status, createdAt: order.createdAt };
+    return { idempotencyKey: order.requestKey.slice(order.shopId.length + 1), id: order.id, saleId: order.saleId, receiptNumber: order.sale.receiptNumber, amount: order.sale.payableAmount, paymentUrl: order.paymentUrl, status: order.status, createdAt: order.createdAt };
 }

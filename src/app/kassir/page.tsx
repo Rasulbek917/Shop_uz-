@@ -350,7 +350,7 @@ export default function CashierPosPage() {
       alert("Savatcha bo‘sh!");
       return;
     }
-    setCheckoutKey(`CHK_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
+    if (!checkoutKey) setCheckoutKey(`CHK_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
     setPaidAmount(cartTotal);
     setShowCheckoutModal(true);
   };
@@ -405,6 +405,7 @@ export default function CashierPosPage() {
       }
 
       if (paymentMethod === "ELECTRONIC") {
+        setCheckoutKey("");
         setElectronicOrder(data.data);
         setShowCheckoutModal(false);
         setCart([]);
@@ -414,6 +415,7 @@ export default function CashierPosPage() {
         return;
       }
       // Success!
+      setCheckoutKey("");
       setShowCheckoutModal(false);
       setCompletedReceipt(data.data);
       setShowReceiptModal(true);
@@ -538,7 +540,15 @@ export default function CashierPosPage() {
 
   return (
     <div className="space-y-4">
-      <PendingPayments onOpen={setElectronicOrder}/>
+      <PendingPayments onOpen={order => {
+        if (order.idempotencyKey === checkoutKey) {
+          setCart([]);
+          setDiscountAmount(0);
+          setSelectedCustomerId("");
+          setCheckoutKey("");
+        }
+        setElectronicOrder(order);
+      }}/>
       <div className="rounded-2xl border border-primary-200 bg-white p-5 flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-bold text-slate-900">POS · Savdo terminali</h1><p className="mt-1 text-sm text-slate-500">Mahsulotni toping, savatga qo‘shing va to‘lovni yakunlang.</p></div><div className="rounded-xl bg-primary-50 px-4 py-2 text-primary-800 text-sm font-semibold">Savatda {cart.reduce((sum, item) => sum + item.quantity, 0)} ta · {formatCurrency(cartTotal)}</div></div>
       <div className="flex flex-wrap gap-3 items-center"><label className="sr-only" htmlFor="pos-category">Kategoriya</label><select id="pos-category" className="rounded-xl border bg-white px-4 py-3 text-sm" value={categoryId} onChange={e => setCategoryId(e.target.value)}><option value="">Barcha kategoriyalar</option>{categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={stockOnly} onChange={e => setStockOnly(e.target.checked)}/>Faqat qoldig‘i bor mahsulotlar</label><button className="btn-secondary" onClick={loadProducts} disabled={isLoading}>Qoldiqni yangilash</button></div>
       {/* USB Hardware Barcode Detector */}

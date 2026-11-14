@@ -26,9 +26,7 @@ export async function POST(req: NextRequest) {
         // stock hold visible and resume it instead of inviting a second checkout.
         if (input) {
             const saved = await prisma.posPayment.findUnique({ where: { requestKey: `${context!.shopId}:${input.idempotencyKey}` }, include: { sale: { include: { items: true } } } });
-            if (saved && (error as {
-                status?: number;
-            }).status !== 409)
+            if (saved && (context!.user.role !== "CASHIER" || saved.sale.cashierId === context!.user.id) && ![403, 409].includes((error as { status?: number }).status || 0))
                 return NextResponse.json({ success: true, data: { ...posPaymentView(saved), warning: (error as Error).message } });
         }
         return NextResponse.json({ success: false, error: error instanceof z.ZodError ? "Savat ma’lumotlari noto‘g‘ri" : (error as Error).message }, { status: 400 });

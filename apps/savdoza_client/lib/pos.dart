@@ -179,21 +179,23 @@ class _PosPageState extends State<PosPage> {
       await message(context, 'Kassir uchun chegirma chegarasi 15%');
       return;
     }
-    for (final line in cart) {
-      final product = widget.data.products
-          .where((p) => p['id'] == line.product['id'])
-          .firstOrNull;
-      final batch = records(product?['batches'])
-          .where((b) => b['id'] == line.batch['id'])
-          .firstOrNull;
-      if (batch == null ||
-          (batch['currentQuantity'] as num) < line.quantity ||
-          !DateTime.parse('${batch['expiryDate']}').isAfter(DateTime.now())) {
-        await message(
-          context,
-          '${line.product['name']} qoldig‘ini yoki muddatini tekshiring',
-        );
-        return;
+    if (electronicKey == null || debt || payment != 'ELECTRONIC') {
+      for (final line in cart) {
+        final product = widget.data.products
+            .where((p) => p['id'] == line.product['id'])
+            .firstOrNull;
+        final batch = records(product?['batches'])
+            .where((b) => b['id'] == line.batch['id'])
+            .firstOrNull;
+        if (batch == null ||
+            (batch['currentQuantity'] as num) < line.quantity ||
+            !DateTime.parse('${batch['expiryDate']}').isAfter(DateTime.now())) {
+          await message(
+            context,
+            '${line.product['name']} qoldig‘ini yoki muddatini tekshiring',
+          );
+          return;
+        }
       }
     }
     setState(() => saving = true);
@@ -356,7 +358,22 @@ class _PosPageState extends State<PosPage> {
           child: TextButton.icon(
             onPressed: saving || !widget.data.online
                 ? null
-                : () => pendingElectronicPayments(context, widget.data),
+                : () async {
+                    final resumedKey = await pendingElectronicPayments(
+                      context,
+                      widget.data,
+                    );
+                    if (mounted &&
+                        resumedKey != null &&
+                        resumedKey == electronicKey) {
+                      setState(() {
+                        electronicKey = null;
+                        cart.clear();
+                        discount.text = '0';
+                        customer = '';
+                      });
+                    }
+                  },
             icon: const Icon(Icons.pending_actions),
             label: const Text('Kutilayotgan elektron to‘lovlar'),
           ),
