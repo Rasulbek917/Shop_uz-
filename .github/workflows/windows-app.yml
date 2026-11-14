@@ -51,6 +51,19 @@ jobs:
           if (!(Test-Path $compiler)) { choco install innosetup --yes --no-progress }
           & $compiler /DBuildNumber=${{ github.run_number }} windows/installer.iss
           if ($LASTEXITCODE -ne 0) { throw "O‘rnatish fayli yig‘ilmadi" }
+      - name: Verify installer and application startup
+        shell: pwsh
+        run: |
+          $installer = Resolve-Path apps/savdoza_client/build/installer/savdoza-windows-setup.exe
+          $setup = Start-Process -FilePath $installer -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw "Installer failed" }
+          $binary = Join-Path $env:LOCALAPPDATA 'Programs/Savdoza/Savdoza.exe'
+          if (!(Test-Path $binary)) { throw "Installed application is missing" }
+          $application = Start-Process -FilePath $binary -PassThru
+          Start-Sleep -Seconds 8
+          $application.Refresh()
+          if ($application.HasExited) { throw "Application exited during startup" }
+          Stop-Process -Id $application.Id
       - uses: actions/upload-artifact@v4
         with:
           name: savdoza-windows-setup

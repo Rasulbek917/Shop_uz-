@@ -17,12 +17,26 @@ const { prisma } = require('../src/lib/prisma.ts');
 const { signJwtToken, getAuthCookieName } = require('../src/lib/auth.ts');
 const sales = require('../src/app/api/sales/route.ts');
 const debts = require('../src/app/api/debts/sale/route.ts');
+const inbox = require('../src/app/api/platform/requests/route.ts');
 const { randomBytes } = require('node:crypto');
 (async () => {
-  let shop;
+  let shop, superadmin;
   try {
-    shop = await prisma.shop.create({ data: { name: 'Offline CI', adminName: 'CI owner', phone: '+998000000000', address: 'CI database', status: 'ACTIVE', planCode: 'PRO', subscriptionEndDate: new Date(Date.now() + 86400000) } });
+    shop = await prisma.shop.create({ data: { name: 'Offline CI', adminName: 'CI owner', phone: '+998000000000', address: 'CI database', status: 'AWAITING_PAYMENT', planCode: 'NONE', subscriptionType: 'PRO', subscriptionEndDate: new Date(Date.now() + 86400000) } });
     const user = await prisma.user.create({ data: { shopId: shop.id, role: 'SHOP_ADMIN', fullName: 'CI owner', username: `ci-${randomBytes(8).toString('hex')}`, passwordHash: 'isolated-test-hash' } });
+    superadmin = await prisma.user.create({ data: { role: 'SUPER_ADMIN', fullName: 'CI root', username: `ci-root-${randomBytes(8).toString('hex')}`, passwordHash: 'isolated-test-hash' } });
+    const rootToken = signJwtToken({ id: superadmin.id, username: superadmin.username, fullName: superadmin.fullName, role: 'SUPER_ADMIN', shopId: null, tokenVersion: superadmin.tokenVersion });
+    const inboxResponse = await inbox.GET(new NextRequest('https://shop.example.uz/api/platform/requests', { headers: { cookie: `${getAuthCookieName()}=${rootToken}` } }));
+    assert.equal(inboxResponse.status, 200);
+    const inboxData = (await inboxResponse.json()).data;
+    assert.ok(inboxData.registrations.some(item => item.id === shop.id && item.status === 'AWAITING_PAYMENT'));
+    assert.equal(inboxData.registrations.find(item => item.id === shop.id).users[0].username, user.username);
+    assert.equal(JSON.stringify(inboxData).includes('isolated-test-hash'), false);
+    const deniedToken = signJwtToken({ id: user.id, username: user.username, fullName: user.fullName, role: 'SHOP_ADMIN', shopId: shop.id, tokenVersion: user.tokenVersion });
+    const deniedInbox = await inbox.GET(new NextRequest('https://shop.example.uz/api/platform/requests', { headers: { cookie: `${getAuthCookieName()}=${deniedToken}` } }));
+    assert.equal(deniedInbox.status, 403);
+    await prisma.shop.update({ where: { id: shop.id }, data: { status: 'ACTIVE', planCode: 'PRO' } });
+    console.log('Superadmin inbox verified: unpaid registrations are visible and tenant users are denied.');
     const product = await prisma.product.create({ data: { shopId: shop.id, name: 'Test sut', salePrice: 5000 } });
     const batch = await prisma.productBatch.create({ data: { shopId: shop.id, productId: product.id, batchNumber: 'CI', initialQuantity: 100, currentQuantity: 100, salePrice: 5000, purchasePrice: 3000, expiryDate: new Date(Date.now() + 86400000) } });
     const token = signJwtToken({ id: user.id, username: user.username, fullName: user.fullName, role: 'SHOP_ADMIN', shopId: shop.id, tokenVersion: user.tokenVersion });
@@ -66,6 +80,7 @@ const { randomBytes } = require('node:crypto');
       await prisma.sale.deleteMany({ where: { shopId: shop.id } });
       await prisma.shop.delete({ where: { id: shop.id } });
     }
+    if (superadmin) await prisma.user.delete({ where: { id: superadmin.id } });
     await prisma.$disconnect();
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });

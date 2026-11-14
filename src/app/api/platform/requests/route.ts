@@ -8,9 +8,19 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const auth = await requireApiAuth(req, ["SUPER_ADMIN"]); if (auth.errorResponse) return auth.errorResponse;
   try {
-    const registrations = await prisma.shop.findMany({ where: { status: "PENDING" }, include: { users: { select: { fullName: true, username: true, email: true, phone: true } } }, orderBy: { createdAt: "asc" } });
-    const purchases = await prisma.purchaseRequest.findMany({ where: { status: "PENDING" }, include: { shop: { select: { name: true, adminName: true, phone: true } } }, orderBy: { createdAt: "asc" } });
-    return NextResponse.json({ success: true, data: { registrations, purchases } });
+    const [registrations, purchases, checkouts] = await Promise.all([
+      prisma.shop.findMany({
+        where: { status: { in: ["PENDING", "AWAITING_PAYMENT"] } },
+        include: { users: { where: { role: "SHOP_ADMIN" }, select: { fullName: true, username: true, email: true, phone: true } } },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.purchaseRequest.findMany({ where: { status: "PENDING" }, include: { shop: { select: { name: true, adminName: true, phone: true } } }, orderBy: { createdAt: "asc" } }),
+      prisma.checkoutOrder.findMany({
+        where: { status: "PAID" }, orderBy: { paidAt: "desc" }, take: 100,
+        select: { id: true, status: true, amount: true, planCode: true, paidAt: true, shop: { select: { name: true, adminName: true, phone: true } } },
+      }),
+    ]);
+    return NextResponse.json({ success: true, data: { registrations, purchases, checkouts } });
   } catch (e) { return platformError(e); }
 }
 export async function PATCH(req: NextRequest) {

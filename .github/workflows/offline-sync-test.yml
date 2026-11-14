@@ -5,6 +5,7 @@ on:
     paths:
       - 'src/app/api/sales/**'
       - 'src/app/api/debts/**'
+      - 'src/app/api/platform/requests/**'
       - 'src/lib/sale-replay.ts'
       - 'prisma/**'
       - 'tests/offline-database.cjs'

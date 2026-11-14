@@ -56,7 +56,7 @@ class AppUpdates extends ChangeNotifier {
       ..connectionTimeout = const Duration(seconds: 12);
     try {
       final current = object(await device.invokeMethod('appVersion'));
-      version = '${current['version']}';
+      version = '${current['version']}+${current['build']}';
       build = (current['build'] as num).toInt();
       final request = await client.getUrl(
         Uri.parse(

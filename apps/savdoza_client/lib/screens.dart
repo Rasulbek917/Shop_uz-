@@ -676,17 +676,29 @@ class AdminRequests extends StatefulWidget {
 
 class _AdminRequestsState extends State<AdminRequests> {
   Json rows = {};
+  Timer? refreshTimer;
   String? error;
   @override
   void initState() {
     super.initState();
     load();
+    refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) => load());
+  }
+
+  @override
+  void dispose() {
+    refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> load() async {
     try {
       final result = object(await widget.data.get('/api/platform/requests'));
-      if (mounted) setState(() => rows = result);
+      if (mounted)
+        setState(() {
+          rows = result;
+          error = null;
+        });
     } catch (e) {
       if (mounted) setState(() => error = '$e');
     }
@@ -719,7 +731,9 @@ class _AdminRequestsState extends State<AdminRequests> {
       if (error != null) Text(error!),
       for (final kind in ['registrations', 'purchases']) ...[
         Text(
-          kind == 'registrations' ? 'Arizalar' : 'To‘lov so‘rovlari',
+          kind == 'registrations'
+              ? 'Yangi hisoblar va arizalar'
+              : 'To‘lov so‘rovlari',
           style: const TextStyle(fontSize: 24),
         ),
         for (final row in records(rows[kind]))
@@ -731,31 +745,58 @@ class _AdminRequestsState extends State<AdminRequests> {
                 children: [
                   Text('${row['name'] ?? object(row['shop'])['name']}'),
                   Text('${row['reference'] ?? row['phone'] ?? ''}'),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => review(
-                          row,
-                          kind == 'registrations' ? 'registration' : 'purchase',
-                          false,
-                        ),
-                        child: const Text('Rad etish'),
+                  if (kind == 'registrations' &&
+                      row['status'] == 'AWAITING_PAYMENT')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        'To‘lov kutilmoqda · ${row['subscriptionType']}',
                       ),
-                      FilledButton(
-                        onPressed: () => review(
-                          row,
-                          kind == 'registrations' ? 'registration' : 'purchase',
-                          true,
+                    )
+                  else
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => review(
+                            row,
+                            kind == 'registrations'
+                                ? 'registration'
+                                : 'purchase',
+                            false,
+                          ),
+                          child: const Text('Rad etish'),
                         ),
-                        child: const Text('Tasdiqlash'),
-                      ),
-                    ],
-                  ),
+                        FilledButton(
+                          onPressed: () => review(
+                            row,
+                            kind == 'registrations'
+                                ? 'registration'
+                                : 'purchase',
+                            true,
+                          ),
+                          child: const Text('Tasdiqlash'),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
           ),
       ],
+      const Text(
+        'Tezcheck orqali to‘langan tariflar',
+        style: TextStyle(fontSize: 24),
+      ),
+      for (final payment in records(rows['checkouts']))
+        Card(
+          child: ListTile(
+            title: Text('${object(payment['shop'])['name']}'),
+            subtitle: Text(
+              'To‘langan · ${payment['planCode']} · ${dateText(payment['paidAt'])}',
+            ),
+            trailing: Text(money((payment['amount'] as num?) ?? 0)),
+          ),
+        ),
     ],
   );
 }
