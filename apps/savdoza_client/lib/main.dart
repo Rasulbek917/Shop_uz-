@@ -126,7 +126,6 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
         Destination('products', 'Mahsulotlar', Icons.inventory_2_outlined),
         Destination('categories', 'Kategoriyalar', Icons.category_outlined),
         Destination('batches', 'Ombor va partiyalar', Icons.warehouse_outlined),
-        Destination('inflow', 'Kirim', Icons.add_box_outlined),
         Destination('settings', 'Sozlamalar', Icons.settings_outlined),
       ];
     }
@@ -147,7 +146,6 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
       Destination('products', 'Mahsulotlar', Icons.inventory_2_outlined),
       Destination('categories', 'Kategoriyalar', Icons.category_outlined),
       Destination('batches', 'Ombor va partiyalar', Icons.warehouse_outlined),
-      Destination('inflow', 'Tezkor kirim', Icons.add_box_outlined),
       Destination(
         'manufacturers',
         'Ishlab chiqaruvchilar',
@@ -191,7 +189,7 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
         return ReportsPage(data: data);
       case 'receipts':
         return ReceiptHistory(data: data);
-      case 'inflow':
+      case 'batches':
         return InflowPage(data: data);
       case 'returns':
         return ReturnsPage(data: data);
@@ -276,7 +274,6 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
               'products',
               'categories',
               'receipts',
-              'inflow',
               'reports',
             ].contains(item.key),
           ))

@@ -9,7 +9,6 @@ import {
   BadgePercent,
   Receipt,
   Boxes,
-  ArrowDownToLine,
   Package,
   BarChart3,
 } from "lucide-react";
@@ -28,7 +27,6 @@ export default function BottomNav({ user }: { user: AuthUser }) {
   } else if (user.role === "WAREHOUSEMAN") {
     items = [
       { label: "Bosh sahifa", href: "/omborchi", icon: LayoutDashboard },
-      { label: "Kirim qilish", href: "/omborchi/kirim", icon: ArrowDownToLine },
       { label: "Ombor", href: "/admin/ombor", icon: Boxes },
     ];
   } else if (user.role === "SUPER_ADMIN") {

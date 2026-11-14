@@ -10,7 +10,6 @@ import {
   ScrollText,
   Package,
   Boxes,
-  ArrowDownToLine,
   ShoppingCart,
   RotateCcw,
   Users,
@@ -68,7 +67,6 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Cheklar", href: "/admin/cheklar", icon: Receipt },
           { label: "QR / Shtrix-kodlar", href: "/admin/shtrix-kodlar", icon: QrCode },
           { label: "Ombor va partiyalar", href: "/admin/ombor", icon: Boxes },
-          { label: "Tezkor kirim", href: "/omborchi/kirim", icon: ArrowDownToLine },
           { label: "Sotuvlar tarixi", href: "/admin/sotuvlar", icon: ShoppingCart },
           { label: "Qaytarishlar", href: "/admin/qaytarishlar", icon: RotateCcw },
           { label: "Mijozlar bazasi", href: "/admin/mijozlar", icon: Users },
@@ -84,7 +82,6 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         return [
           { label: "Bosh sahifa", href: "/omborchi", icon: LayoutDashboard },
           { label: "Ombor qoldiqlari", href: "/admin/ombor", icon: Boxes },
-          { label: "Tezkor kirim (Kamera/USB)", href: "/omborchi/kirim", icon: ArrowDownToLine },
           { label: "Partiyalar va muddat", href: "/omborchi/partiyalar", icon: CalendarClock },
           { label: "Mahsulot qo‘shish", href: "/admin/mahsulotlar", icon: Package },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
