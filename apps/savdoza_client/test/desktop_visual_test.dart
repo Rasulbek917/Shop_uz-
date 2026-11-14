@@ -24,24 +24,41 @@ void main() {
       tester.view.physicalSize = const Size(1280, 900);
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      final fonts = Platform.environment['SAVDOZA_MATERIAL_FONTS'];
+      final bodyFont = fonts == null
+          ? File('../../public/fonts/receipt.ttf')
+          : File('$fonts/Roboto-Regular.ttf');
       final font = FontLoader('SavdozaPreview')
         ..addFont(
-          Future.value(
-            ByteData.sublistView(
-              File('../../public/fonts/receipt.ttf').readAsBytesSync(),
-            ),
-          ),
+          Future.value(ByteData.sublistView(bodyFont.readAsBytesSync())),
         );
       await tester.runAsync(font.load);
+      if (fonts != null) {
+        final icon = Icons.dashboard_outlined;
+        final family = icon.fontPackage == null
+            ? icon.fontFamily!
+            : 'packages/${icon.fontPackage}/${icon.fontFamily}';
+        final icons = FontLoader(family)
+          ..addFont(
+            Future.value(
+              ByteData.sublistView(
+                File('$fonts/MaterialIcons-Regular.otf').readAsBytesSync(),
+              ),
+            ),
+          );
+        await tester.runAsync(icons.load);
+      }
       final data = sample();
       final statistics = dashboardData();
       data.cache['reports'] = statistics.cache['reports'];
       statistics.api.client.close();
       statistics.dispose();
       data.session!['account']['user'].addAll({
+        'username': 'demo_shop',
         'fullName': 'Rasulbek',
         'shopName': 'Savdoza do‘koni',
       });
+      data.online = true;
       final boundary = GlobalKey();
       final content = switch (section) {
         'dashboard' => DesktopDashboard(data: data, onNavigate: (_) {}),

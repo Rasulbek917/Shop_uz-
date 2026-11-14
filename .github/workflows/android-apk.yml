@@ -68,6 +68,7 @@ jobs:
       - name: Resolve, analyze and test native app
         env:
           SAVDOZA_DESKTOP_PREVIEW: "1"
+          SAVDOZA_MATERIAL_FONTS: ${{ runner.temp }}/flutter/bin/cache/artifacts/material_fonts
           SAVDOZA_DASHBOARD_PREVIEW: ${{ runner.temp }}/savdoza-dashboard.png
         working-directory: apps/savdoza_client
         run: |
