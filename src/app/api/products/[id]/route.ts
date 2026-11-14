@@ -9,8 +9,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req);
     if (errorResponse) return errorResponse;
@@ -63,8 +64,9 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
       "SUPER_ADMIN",
@@ -79,7 +81,7 @@ export async function PATCH(
 
     if (!validated.success) {
       return NextResponse.json(
-        { success: false, error: validated.error.errors[0]?.message || "Xato ma'lumot" },
+        { success: false, error: validated.error.issues[0]?.message || "Xato ma'lumot" },
         { status: 400 }
       );
     }
@@ -122,8 +124,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
       "SUPER_ADMIN",

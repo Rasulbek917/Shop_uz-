@@ -9,7 +9,7 @@ export const registrationSchema = z.object({
   password: z.string().min(10, "Parol kamida 10 belgidan iborat bo‘lsin").max(72).refine(v => /[a-zA-Z]/.test(v) && /[0-9]/.test(v), "Parolda harf va raqam bo‘lsin"),
   phone: z.string().transform(v => v.replace(/[\s()-]/g, "")).pipe(z.string().regex(/^\+998\d{9}$/, "Telefon: +998 va 9 ta raqam")),
   email: z.string().trim().toLowerCase().email("Email noto‘g‘ri").max(254),
-  consent: z.literal(true, { errorMap: () => ({ message: "Foydalanish shartlarini qabul qiling" }) }),
+  consent: z.literal(true, { error: "Foydalanish shartlarini qabul qiling" }),
 });
 export async function registerShop(db: PrismaClient, input: z.infer<typeof registrationSchema>, passwordHash: string) {
   return db.$transaction(async tx => {

@@ -9,8 +9,9 @@ import { logger } from "@/lib/logger";
 export const dynamic = "force-dynamic";
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
       "SUPER_ADMIN",
@@ -28,7 +29,7 @@ export async function PATCH(
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: validated.error.errors[0]?.message || "Xato ma'lumot",
+            message: validated.error.issues[0]?.message || "Xato ma'lumot",
           },
         },
         { status: 400 }
@@ -134,8 +135,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
       "SUPER_ADMIN",

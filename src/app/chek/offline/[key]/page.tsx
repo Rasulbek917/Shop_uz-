@@ -9,10 +9,11 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
 };
 export default async function OfflineReceipt({
-  params,
+  params: pendingParams,
 }: {
-  params: { key: string };
+  params: Promise<{ key: string }>;
 }) {
+  const params = await pendingParams;
   if (!/^MOB-[a-f0-9]{64}$/.test(params.key)) notFound();
   const sale = await prisma.sale.findUnique({
     where: { idempotencyKey: params.key },

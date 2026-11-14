@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: validated.error.errors[0]?.message || "Xato ma'lumotlar",
+          error: validated.error.issues[0]?.message || "Xato ma'lumotlar",
         },
         { status: 400 },
       );

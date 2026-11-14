@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { reconcileCheckout } from "@/lib/payments/tezcheck";
 import { platformError } from "@/lib/platform-api";
 export const dynamic = "force-dynamic";
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params: pendingParams }: { params: Promise<{ id: string }> }) {
+  const params = await pendingParams;
   try {
     const auth = await requireApiAuth(req, ["SHOP_ADMIN"]);
     if (auth.errorResponse) return auth.errorResponse;

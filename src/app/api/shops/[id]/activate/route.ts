@@ -7,8 +7,9 @@ import { logger } from "@/lib/logger";
 export const dynamic = "force-dynamic";
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { user, errorResponse } = await requireApiAuth(req, ["SUPER_ADMIN"]);
     if (errorResponse) return errorResponse;

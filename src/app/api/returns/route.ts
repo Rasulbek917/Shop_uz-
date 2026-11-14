@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: validated.error.errors[0]?.message || "Xato ma'lumotlar",
+            message: validated.error.issues[0]?.message || "Xato ma'lumotlar",
           },
         },
         { status: 400 }

@@ -10,10 +10,11 @@ export const metadata: Metadata = {
   referrer: "no-referrer",
 };
 export default async function ReceiptPage({
-  params,
+  params: pendingParams,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
+  const params = await pendingParams;
   const receipt = await publicReceipt(params.token);
   if (!receipt) notFound();
   const imageUrl = `/api/receipts/${encodeURIComponent(params.token)}/image?format=png`;

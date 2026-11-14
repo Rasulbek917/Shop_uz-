@@ -5,8 +5,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(
   req: NextRequest,
-  { params }: { params: { token: string } },
+  { params: pendingParams }: { params: Promise<{ token: string }> },
 ) {
+  const params = await pendingParams;
   try {
     const receipt = await publicReceipt(params.token);
     if (!receipt) return new NextResponse(null, { status: 404 });

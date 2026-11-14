@@ -6,7 +6,7 @@ import { registrationSchema, registerShop } from "@/lib/onboarding";
 import { platformError } from "@/lib/platform-api";
 import { checkLoginRateLimit, recordFailedLoginAttempt } from "@/lib/rateLimit";
 export async function POST(req: NextRequest) {
-  const key = "register:" + (req.ip || "local");
+  const key = "register:" + (req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local");
   if (!checkLoginRateLimit(key, 5, 15).allowed) return NextResponse.json({ success: false, error: "Juda ko‘p urinish. 15 daqiqadan keyin urinib ko‘ring" }, { status: 429 });
   recordFailedLoginAttempt(key, 5, 15);
   try {

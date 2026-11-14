@@ -6,8 +6,9 @@ import { logger } from "@/lib/logger";
 export const dynamic = "force-dynamic";
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req);
     if (errorResponse) return errorResponse;

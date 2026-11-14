@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     if (!validated.success) {
       return NextResponse.json(
-        { success: false, error: validated.error.errors[0]?.message || "Ma'lumotlar xato" },
+        { success: false, error: validated.error.issues[0]?.message || "Ma'lumotlar xato" },
         { status: 400 }
       );
     }

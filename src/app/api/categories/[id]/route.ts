@@ -6,8 +6,9 @@ import { platformError } from "@/lib/platform-api";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params: pendingParams }: { params: Promise<{ id: string }> },
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
       "SHOP_ADMIN",
@@ -38,8 +39,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params: pendingParams }: { params: Promise<{ id: string }> },
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
       "SHOP_ADMIN",

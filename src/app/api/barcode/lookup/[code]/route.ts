@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { code: string } }
+  { params: pendingParams }: { params: Promise<{ code: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { context, errorResponse } = await requireTenantContext(req);
     if (errorResponse) return errorResponse;

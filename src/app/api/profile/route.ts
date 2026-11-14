@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest) {
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: validated.error.errors[0]?.message || "Ma'lumotlar noto‘g‘ri kiritildi",
+            message: validated.error.issues[0]?.message || "Ma'lumotlar noto‘g‘ri kiritildi",
           },
         },
         { status: 400 }

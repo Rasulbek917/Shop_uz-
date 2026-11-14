@@ -11,8 +11,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { user, errorResponse } = await requireApiAuth(req, ["SUPER_ADMIN"]);
     if (errorResponse) return errorResponse;
@@ -71,8 +72,9 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { user, errorResponse } = await requireApiAuth(req, ["SUPER_ADMIN"]);
     if (errorResponse) return errorResponse;
@@ -86,7 +88,7 @@ export async function PATCH(
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: validated.error.errors[0]?.message || "Xato ma'lumot",
+            message: validated.error.issues[0]?.message || "Xato ma'lumot",
           },
         },
         { status: 400 }
@@ -215,8 +217,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: pendingParams }: { params: Promise<{ id: string }> }
 ) {
+  const params = await pendingParams;
   try {
     const { user, errorResponse } = await requireApiAuth(req, ["SUPER_ADMIN"]);
     if (errorResponse) return errorResponse;

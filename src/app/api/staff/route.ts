@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     if (!validated.success) {
       return NextResponse.json(
-        { success: false, error: validated.error.errors[0]?.message || "Xato ma'lumot" },
+        { success: false, error: validated.error.issues[0]?.message || "Xato ma'lumot" },
         { status: 400 }
       );
     }

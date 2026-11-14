@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
           error: {
             code: "VALIDATION_ERROR",
             message:
-              validated.error.errors[0]?.message || "Xato sotuv ma'lumotlari",
+              validated.error.issues[0]?.message || "Xato sotuv ma'lumotlari",
           },
         },
         { status: 400 },

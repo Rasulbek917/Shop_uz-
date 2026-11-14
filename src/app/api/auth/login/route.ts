@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: validated.error.errors[0]?.message || "Ma'lumotlar noto‘g‘ri kiritildi",
+            message: validated.error.issues[0]?.message || "Ma'lumotlar noto‘g‘ri kiritildi",
           },
         },
         { status: 400 }
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { username, password } = validated.data;
-    const ipAddress = req.headers.get("x-forwarded-for") || req.ip || "127.0.0.1";
+    const ipAddress = req.headers.get("x-forwarded-for") || "127.0.0.1";
     const rateLimitKey = `login:${username.toLowerCase()}`;
 
     // 1. Check rate limit
