@@ -556,7 +556,7 @@ class _ReceiptHistoryState extends State<ReceiptHistory> {
   Future<void> export() async {
     try {
       final bytes = await widget.data.api.bytes('/api/receipts/export?$query');
-      if (Platform.isAndroid) {
+      if (Platform.isAndroid || Platform.isWindows) {
         await device.invokeMethod('saveFile', {
           'bytes': Uint8List.fromList(bytes),
           'mime': 'text/csv',

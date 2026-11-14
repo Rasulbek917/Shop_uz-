@@ -156,7 +156,7 @@ Future<Json?> editForm(
   // Controllers stay alive until the dialog's closing transition has completed.
   await Future<void>.delayed(const Duration(milliseconds: 250));
   for (final controller in controllers.values) {
-    controller?.dispose();
+    controller.dispose();
   }
   return result;
 }
