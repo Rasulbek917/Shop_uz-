@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "uz.savdoza.savdoza_client",
+      "sha256_cert_fingerprints": [
+        "29:B9:1B:E0:C7:AE:5C:EB:A4:1D:3E:38:66:C1:15:CD:DB:D8:59:6D:35:73:11:AC:DF:54:AE:F5:A1:9A:86:02"
+      ]
+    }
+  }
+]
