@@ -10,7 +10,7 @@ permissions:
   contents: write
 concurrency:
   group: savdoza-android
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   build:
     if: github.actor != 'github-actions[bot]'

@@ -109,15 +109,15 @@ void main() {
       await tester.pumpAndSettle();
       final preview = Platform.environment['SAVDOZA_DASHBOARD_PREVIEW'];
       if (preview != null && width == 390) {
-        final image =
-            await (boundary.currentContext!.findRenderObject()
-                    as RenderRepaintBoundary)
-                .toImage();
-        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-        await tester.runAsync(
-          () => File(preview).writeAsBytes(bytes!.buffer.asUint8List()),
-        );
-        image.dispose();
+        await tester.runAsync(() async {
+          final image =
+              await (boundary.currentContext!.findRenderObject()
+                      as RenderRepaintBoundary)
+                  .toImage();
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          await File(preview).writeAsBytes(bytes!.buffer.asUint8List());
+          image.dispose();
+        });
       }
       await tester.drag(find.byType(ListView).first, const Offset(0, -1800));
       await tester.pumpAndSettle();
