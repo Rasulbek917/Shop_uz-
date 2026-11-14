@@ -18,12 +18,25 @@ import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
     private val io = Executors.newSingleThreadExecutor()
+    private val updateIo = Executors.newSingleThreadExecutor()
+    private val updater by lazy { AppUpdater(this) }
     private var saveResult: MethodChannel.Result? = null
     private var saveBytes: ByteArray? = null
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "savdoza/device").setMethodCallHandler { call, result ->
             when (call.method) {
+                "appVersion" -> result.success(updater.version())
+                "downloadUpdate" -> updateIo.execute {
+                    try {
+                        updater.download(call.argument<String>("url")!!, call.argument<String>("sha256")!!, call.argument<Number>("bytes")!!.toLong(), call.argument<Number>("build")!!.toLong())
+                        Handler(Looper.getMainLooper()).post { result.success(null) }
+                    } catch (error: Exception) { Handler(Looper.getMainLooper()).post { result.error("UPDATE", error.message ?: "Yangilanish yuklanmadi", null) } }
+                }
+                "installUpdate" -> {
+                    try { result.success(updater.install(call.argument<Number>("build")!!.toLong())) }
+                    catch (error: Exception) { result.error("UPDATE", error.message ?: "Yangilanish ochilmadi", null) }
+                }
                 "readStore", "store" -> io.execute {
                     try {
                         val value = if (call.method == "readStore") DeviceStore.read(this).toString() else {

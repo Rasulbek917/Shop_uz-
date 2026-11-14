@@ -8,6 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'data.dart';
+import 'password_field.dart';
 
 Future<void> message(BuildContext context, Object error) async {
   if (context.mounted) {
@@ -84,6 +85,15 @@ Future<Json?> editForm(
                                 field.required &&
                                     (value == null || value.isEmpty)
                                 ? 'Tanlang'
+                                : null,
+                          )
+                        : field.secret
+                        ? PasswordField(
+                            controller: controllers[field.key]!,
+                            label: field.label,
+                            validator: (value) =>
+                                field.required && (value ?? '').isEmpty
+                                ? 'To‘ldiring'
                                 : null,
                           )
                         : TextFormField(

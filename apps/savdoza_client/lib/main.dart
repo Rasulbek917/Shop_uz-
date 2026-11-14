@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
+import 'password_field.dart';
+import 'updates.dart';
 import 'dashboard.dart';
 import 'management.dart';
 import 'pos.dart';
@@ -66,6 +68,8 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     data.addListener(changed);
+    appUpdates.addListener(changed);
+    appUpdates.check();
     restore();
     timer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (data.session != null) data.refresh();
@@ -91,6 +95,7 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) appUpdates.check();
     if (state == AppLifecycleState.resumed && data.session != null) {
       data.reload().then((_) => data.refresh());
     }
@@ -101,6 +106,7 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
     timer?.cancel();
     localTimer?.cancel();
     data.removeListener(changed);
+    appUpdates.removeListener(changed);
     data.api.client.close();
     data.dispose();
     WidgetsBinding.instance.removeObserver(this);
@@ -368,6 +374,16 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
       ),
       body: Column(
         children: [
+          if (appUpdates.available)
+            Material(
+              color: const Color(0xffe7f3e8),
+              child: ListTile(
+                leading: const Icon(Icons.system_update),
+                title: Text('Yangi versiya ${appUpdates.release!.version}'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => openUpdates(context),
+              ),
+            ),
           if (data.refreshing) const LinearProgressIndicator(),
           if (!data.online || data.pending.isNotEmpty)
             Material(
@@ -495,22 +511,30 @@ class _AuthPageState extends State<AuthPage> {
 
   Widget input(String key, String label, {bool secret = false}) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
-    child: TextFormField(
-      controller: fields[key],
-      obscureText: secret,
-      keyboardType: key == 'email'
-          ? TextInputType.emailAddress
-          : key == 'phone'
-          ? TextInputType.phone
-          : TextInputType.text,
-      autofillHints: key == 'username'
-          ? const [AutofillHints.username]
-          : key == 'password'
-          ? const [AutofillHints.password]
-          : null,
-      decoration: InputDecoration(labelText: label),
-      validator: (value) => (value ?? '').trim().isEmpty ? 'To‘ldiring' : null,
-    ),
+    child: secret
+        ? PasswordField(
+            controller: fields[key]!,
+            label: label,
+            autofillHints: const [AutofillHints.password],
+            validator: (value) => (value ?? '').isEmpty ? 'To‘ldiring' : null,
+          )
+        : TextFormField(
+            controller: fields[key],
+            obscureText: false,
+            keyboardType: key == 'email'
+                ? TextInputType.emailAddress
+                : key == 'phone'
+                ? TextInputType.phone
+                : TextInputType.text,
+            autofillHints: key == 'username'
+                ? const [AutofillHints.username]
+                : key == 'password'
+                ? const [AutofillHints.password]
+                : null,
+            decoration: InputDecoration(labelText: label),
+            validator: (value) =>
+                (value ?? '').trim().isEmpty ? 'To‘ldiring' : null,
+          ),
   );
   @override
   Widget build(BuildContext context) => Scaffold(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
+import 'updates.dart';
 import 'widgets.dart';
 import 'management.dart';
 
@@ -258,6 +259,20 @@ class SettingsPage extends StatelessWidget {
         style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
       ),
       Text('${data.user['username']} · ${data.user['role']}'),
+      ListenableBuilder(
+        listenable: appUpdates,
+        builder: (context, _) => ListTile(
+          leading: const Icon(Icons.system_update),
+          title: const Text('Ilovani yangilash'),
+          subtitle: Text(
+            appUpdates.available
+                ? 'Yangi versiya ${appUpdates.release!.version}'
+                : 'Versiyani tekshirish',
+          ),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => openUpdates(context),
+        ),
+      ),
       Card(
         child: Column(
           children: [
