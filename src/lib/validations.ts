@@ -105,7 +105,13 @@ export const saleItemSchema = z.object({
   discount: z.number().min(0).default(0),
 });
 
+const offlineSaleFields = {
+  occurredAt: z.string().datetime().refine(value => new Date(value).getTime() <= Date.now() + 300000, "Telefon sanasi kelajakda. Vaqtni tekshiring.").optional(),
+  expectedTotal: z.number().finite().nonnegative().optional(),
+};
+
 export const saleSchema = z.object({
+  ...offlineSaleFields,
   customerId: z.string().optional().nullable(),
   paymentMethod: z.enum(["CASH", "CARD", "ELECTRONIC"]),
   discountAmount: z.number().min(0).default(0),
@@ -116,6 +122,7 @@ export const saleSchema = z.object({
 });
 
 export const debtSaleSchema = z.object({
+  ...offlineSaleFields,
   customerId: z.string().optional().nullable(),
   firstName: z.string().min(2, "Ism kamida 2 ta belgi bo‘lishi kerak"),
   lastName: z.string().min(2, "Familiya kamida 2 ta belgi bo‘lishi kerak"),

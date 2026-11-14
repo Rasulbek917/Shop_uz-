@@ -4,6 +4,7 @@ import { requireTenantContext } from "@/lib/tenant";
 import { saleSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { saleReplay, assertReplay } from "@/lib/sale-replay";
 import { generateReceiptNumber } from "@/lib/receipt";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,10 @@ export async function GET(req: NextRequest) {
     };
 
     if (receiptNumber) {
-      where.receiptNumber = { contains: receiptNumber.trim(), mode: "insensitive" };
+      where.receiptNumber = {
+        contains: receiptNumber.trim(),
+        mode: "insensitive",
+      };
     } else {
       // If role is CASHIER and not doing a specific receipt search, cashier views their own sales
       if (user.role === "CASHIER") {
@@ -68,13 +72,20 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     logger.error("Sales GET error", { error: error });
     return NextResponse.json(
-      { success: false, error: { code: "SERVER_ERROR", message: "Savdolarni yuklashda xatolik yuz berdi" } },
-      { status: 500 }
+      {
+        success: false,
+        error: {
+          code: "SERVER_ERROR",
+          message: "Savdolarni yuklashda xatolik yuz berdi",
+        },
+      },
+      { status: 500 },
     );
   }
 }
 
 export async function POST(req: NextRequest) {
+  let replay: { shopId: string; key: string; input: any } | null = null;
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
       "SUPER_ADMIN",
@@ -93,52 +104,30 @@ export async function POST(req: NextRequest) {
           success: false,
           error: {
             code: "VALIDATION_ERROR",
-            message: validated.error.errors[0]?.message || "Xato sotuv ma'lumotlari",
+            message:
+              validated.error.errors[0]?.message || "Xato sotuv ma'lumotlari",
           },
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const { customerId, paymentMethod, discountAmount, paidAmount, items, notes, idempotencyKey } = validated.data;
+    const {
+      customerId,
+      paymentMethod,
+      discountAmount,
+      paidAmount,
+      items,
+      notes,
+      idempotencyKey,
+    } = validated.data;
 
-    // 1. Idempotency Check: Prevent duplicate sales
     if (idempotencyKey) {
-      const existingSale = await prisma.sale.findFirst({
-        where: {
-          shopId,
-          idempotencyKey,
-        },
-        include: {
-          items: {
-            include: { product: true },
-          },
-          shop: true,
-          cashier: true,
-        },
-      });
-
-      if (existingSale) {
-        return NextResponse.json({
-          success: true,
-          message: "Ushbu savdo allaqachon muvaffaqiyatli saqlangan (Idempotent takrorlanish)",
-          data: {
-            ...existingSale,
-            shopName: existingSale.shop.name,
-            shopPhone: existingSale.shop.phone,
-            shopAddress: existingSale.shop.address,
-            cashierName: existingSale.cashier.fullName,
-            items: existingSale.items.map((i) => ({
-              productId: i.productId,
-              batchId: i.batchId,
-              quantity: i.quantity,
-              unitPrice: i.unitPrice,
-              discount: i.discount,
-              totalPrice: i.totalPrice,
-              productName: i.product.name,
-            })),
-          },
-        });
+      replay = { shopId, key: idempotencyKey, input: validated.data };
+      const existing = await saleReplay(shopId, idempotencyKey);
+      if (existing) {
+        assertReplay(existing, validated.data);
+        return NextResponse.json({ success: true, data: existing });
       }
     }
 
@@ -149,8 +138,11 @@ export async function POST(req: NextRequest) {
 
     if (!shop) {
       return NextResponse.json(
-        { success: false, error: { code: "SHOP_NOT_FOUND", message: "Do‘kon topilmadi" } },
-        { status: 404 }
+        {
+          success: false,
+          error: { code: "SHOP_NOT_FOUND", message: "Do‘kon topilmadi" },
+        },
+        { status: 404 },
       );
     }
 
@@ -185,24 +177,33 @@ export async function POST(req: NextRequest) {
         });
 
         if (!batch) {
-          throw new Error(`Partiya topilmadi yoki ushbu do‘konga tegishli emas`);
+          throw new Error(
+            `Partiya topilmadi yoki ushbu do‘konga tegishli emas`,
+          );
         }
 
         // Check if expired
-        if (new Date(batch.expiryDate) < now) {
+        if (
+          new Date(batch.expiryDate) <
+          (validated.data.occurredAt
+            ? new Date(validated.data.occurredAt)
+            : now)
+        ) {
           throw new Error(
-            `"${batch.product.name}" (Partiya #${batch.batchNumber}) ning yaroqlilik muddati tugagan (${new Date(batch.expiryDate).toLocaleDateString("uz-UZ")})! Muddati tugagan mahsulotni sotish qat'iyan taqiqlangan.`
+            `"${batch.product.name}" (Partiya #${batch.batchNumber}) ning yaroqlilik muddati tugagan (${new Date(batch.expiryDate).toLocaleDateString("uz-UZ")})! Muddati tugagan mahsulotni sotish qat'iyan taqiqlangan.`,
           );
         }
 
         // Check stock availability
         if (batch.currentQuantity < item.quantity) {
           throw new Error(
-            `"${batch.product.name}" partiyasida qoldiq yetarli emas! Mavjud: ${batch.currentQuantity} ta, so‘ralgan: ${item.quantity} ta.`
+            `"${batch.product.name}" partiyasida qoldiq yetarli emas! Mavjud: ${batch.currentQuantity} ta, so‘ralgan: ${item.quantity} ta.`,
           );
         }
 
-        const itemTotal = Math.round(item.unitPrice * item.quantity - item.discount);
+        const itemTotal = Math.round(
+          item.unitPrice * item.quantity - item.discount,
+        );
         totalAmount += Math.round(item.unitPrice * item.quantity);
 
         validatedItems.push({
@@ -220,7 +221,9 @@ export async function POST(req: NextRequest) {
 
       // 2. Validate discount
       if (discountAmount > totalAmount) {
-        throw new Error("Chegirma summasi savatdagi umumiy qiymatdan oshishi mumkin emas!");
+        throw new Error(
+          "Chegirma summasi savatdagi umumiy qiymatdan oshishi mumkin emas!",
+        );
       }
 
       // Cashier role max discount restriction (max 15%)
@@ -228,7 +231,7 @@ export async function POST(req: NextRequest) {
         const discountPct = (discountAmount / totalAmount) * 100;
         if (discountPct > 15) {
           throw new Error(
-            `Kassir uchun ruxsat etilgan maksimal chegirma 15%. Kiritilgan: ${discountPct.toFixed(1)}%. Chegirmali sotish uchun administrator ruxsati kerak.`
+            `Kassir uchun ruxsat etilgan maksimal chegirma 15%. Kiritilgan: ${discountPct.toFixed(1)}%. Chegirmali sotish uchun administrator ruxsati kerak.`,
           );
         }
       }
@@ -242,7 +245,9 @@ export async function POST(req: NextRequest) {
       if (shopTaxRate > 0) {
         if (taxIncluded) {
           payableAmount = Math.max(0, Math.round(totalAmount - discountAmount));
-          taxAmount = Math.round(payableAmount - payableAmount / (1 + shopTaxRate / 100));
+          taxAmount = Math.round(
+            payableAmount - payableAmount / (1 + shopTaxRate / 100),
+          );
         } else {
           const afterDiscount = Math.max(0, totalAmount - discountAmount);
           taxAmount = Math.round(afterDiscount * (shopTaxRate / 100));
@@ -252,10 +257,18 @@ export async function POST(req: NextRequest) {
         payableAmount = Math.max(0, Math.round(totalAmount - discountAmount));
       }
 
+      if (
+        validated.data.expectedTotal !== undefined &&
+        Math.abs(validated.data.expectedTotal - payableAmount) > 0.5
+      ) {
+        throw new Error(
+          "Telefondagi summa server hisobiga mos emas. Savdoni administrator tekshirishi kerak.",
+        );
+      }
       // 3. Strict Payment Validation (paid amount cannot be less than total)
       if (paidAmount < payableAmount) {
         throw new Error(
-          `To’langan summa (${Math.round(paidAmount).toLocaleString("uz-UZ")} so’m) to’lov summasidan (${payableAmount.toLocaleString("uz-UZ")} so’m) kam bo’lishi mumkin emas!`
+          `To’langan summa (${Math.round(paidAmount).toLocaleString("uz-UZ")} so’m) to’lov summasidan (${payableAmount.toLocaleString("uz-UZ")} so’m) kam bo’lishi mumkin emas!`,
         );
       }
 
@@ -266,6 +279,9 @@ export async function POST(req: NextRequest) {
         data: {
           shopId,
           receiptNumber,
+          ...(validated.data.occurredAt
+            ? { createdAt: new Date(validated.data.occurredAt) }
+            : {}),
           idempotencyKey: idempotencyKey || null,
           cashierId: user.id,
           customerId: customerId || null,
@@ -311,7 +327,7 @@ export async function POST(req: NextRequest) {
 
         if (updateResult.count === 0) {
           throw new Error(
-            `"${item.productName}" (Partiya #${item.batchNumber}) omborda yetarli emas yoki ayni vaqtda boshqa kassir tomonidan sotildi! Savdo bekor qilindi.`
+            `"${item.productName}" (Partiya #${item.batchNumber}) omborda yetarli emas yoki ayni vaqtda boshqa kassir tomonidan sotildi! Savdo bekor qilindi.`,
           );
         }
 
@@ -333,7 +349,10 @@ export async function POST(req: NextRequest) {
         const allBatches = await tx.productBatch.findMany({
           where: { productId: item.productId, shopId },
         });
-        const currentTotalStock = allBatches.reduce((acc, b) => acc + b.currentQuantity, 0);
+        const currentTotalStock = allBatches.reduce(
+          (acc, b) => acc + b.currentQuantity,
+          0,
+        );
 
         const product = await tx.product.findUnique({
           where: { id: item.productId },
@@ -343,7 +362,11 @@ export async function POST(req: NextRequest) {
           const refKey = `LOW_STOCK_${item.productId}`;
           await tx.notification.upsert({
             where: {
-              shopId_type_referenceKey: { shopId, type: "LOW_STOCK", referenceKey: refKey },
+              shopId_type_referenceKey: {
+                shopId,
+                type: "LOW_STOCK",
+                referenceKey: refKey,
+              },
             },
             update: {
               message: `Diqqat: "${product.name}" mahsulotining umumiy qoldig'i ${currentTotalStock} ${product.unit} qoldi (minimal chegara: ${product.minStock}).`,
@@ -411,6 +434,20 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
+    if (replay && error?.code === "P2002") {
+      const existing = await saleReplay(replay.shopId, replay.key);
+      if (existing) {
+        try {
+          assertReplay(existing, replay.input);
+          return NextResponse.json({ success: true, data: existing });
+        } catch (conflict) {
+          return NextResponse.json(
+            { success: false, error: (conflict as Error).message },
+            { status: 409 },
+          );
+        }
+      }
+    }
     logger.error("Sale POST error", { error: error });
     return NextResponse.json(
       {
@@ -420,7 +457,7 @@ export async function POST(req: NextRequest) {
           message: error.message || "Sotuvni yakunlashda xatolik yuz berdi",
         },
       },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

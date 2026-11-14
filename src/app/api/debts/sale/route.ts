@@ -4,6 +4,7 @@ import { requireTenantContext } from "@/lib/tenant";
 import { debtSaleSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { saleReplay, assertReplay } from "@/lib/sale-replay";
 import { generateReceiptNumber } from "@/lib/receipt";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 //  - umumiy summa "Qarzlar" bo'limiga qarz sifatida tushadi
 //  - statistika (savdo, foyda, top mahsulotlar) uchun Sale yozuvi ham yaratiladi
 export async function POST(req: NextRequest) {
+  let replay: { shopId: string; key: string; input: any } | null = null;
   try {
     const { context, errorResponse } = await requireTenantContext(req, [
       "SUPER_ADMIN",
@@ -28,18 +30,48 @@ export async function POST(req: NextRequest) {
 
     if (!validated.success) {
       return NextResponse.json(
-        { success: false, error: validated.error.errors[0]?.message || "Xato ma'lumotlar" },
-        { status: 400 }
+        {
+          success: false,
+          error: validated.error.errors[0]?.message || "Xato ma'lumotlar",
+        },
+        { status: 400 },
       );
     }
 
-    const { firstName, lastName, phone, discountAmount, notes, items } = validated.data;
+    const { firstName, lastName, phone, discountAmount, notes, items } =
+      validated.data;
+
+    if (validated.data.idempotencyKey) {
+      const key = validated.data.idempotencyKey;
+      replay = {
+        shopId,
+        key,
+        input: { ...validated.data, paymentMethod: "DEBT" },
+      };
+      const existing = await saleReplay(shopId, key);
+      if (existing) {
+        assertReplay(existing, replay.input);
+        const debt = await prisma.debt.findFirst({
+          where: { shopId, clientReference: key },
+        });
+        if (!debt) throw new Error("Qarz yozuvi tekshirilishi kerak");
+        return NextResponse.json({
+          success: true,
+          data: {
+            ...debt,
+            saleId: existing.id,
+            receiptNumber: existing.receiptNumber,
+            receipt: existing,
+          },
+        });
+      }
+    }
 
     const shop = await prisma.shop.findUnique({ where: { id: shopId } });
     if (!shop) {
       return NextResponse.json(
         { success: false, error: "Do‘kon topilmadi" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -69,22 +101,31 @@ export async function POST(req: NextRequest) {
         });
 
         if (!batch) {
-          throw new Error("Partiya topilmadi yoki ushbu do‘konga tegishli emas");
+          throw new Error(
+            "Partiya topilmadi yoki ushbu do‘konga tegishli emas",
+          );
         }
 
-        if (new Date(batch.expiryDate) < now) {
+        if (
+          new Date(batch.expiryDate) <
+          (validated.data.occurredAt
+            ? new Date(validated.data.occurredAt)
+            : now)
+        ) {
           throw new Error(
-            `"${batch.product.name}" (Partiya #${batch.batchNumber}) ning yaroqlilik muddati tugagan!`
+            `"${batch.product.name}" (Partiya #${batch.batchNumber}) ning yaroqlilik muddati tugagan!`,
           );
         }
 
         if (batch.currentQuantity < item.quantity) {
           throw new Error(
-            `"${batch.product.name}" partiyasida qoldiq yetarli emas! Mavjud: ${batch.currentQuantity} ta, so‘ralgan: ${item.quantity} ta.`
+            `"${batch.product.name}" partiyasida qoldiq yetarli emas! Mavjud: ${batch.currentQuantity} ta, so‘ralgan: ${item.quantity} ta.`,
           );
         }
 
-        const itemTotal = Math.round(item.unitPrice * item.quantity - item.discount);
+        const itemTotal = Math.round(
+          item.unitPrice * item.quantity - item.discount,
+        );
         totalAmount += Math.round(item.unitPrice * item.quantity);
 
         validatedItems.push({
@@ -103,14 +144,16 @@ export async function POST(req: NextRequest) {
 
       // 2. Chegirmani tekshirish
       if (discountAmount > totalAmount) {
-        throw new Error("Chegirma summasi savatdagi umumiy qiymatdan oshishi mumkin emas!");
+        throw new Error(
+          "Chegirma summasi savatdagi umumiy qiymatdan oshishi mumkin emas!",
+        );
       }
 
       if (user.role === "CASHIER" && totalAmount > 0) {
         const discountPct = (discountAmount / totalAmount) * 100;
         if (discountPct > 15) {
           throw new Error(
-            `Kassir uchun ruxsat etilgan maksimal chegirma 15%. Kiritilgan: ${discountPct.toFixed(1)}%.`
+            `Kassir uchun ruxsat etilgan maksimal chegirma 15%. Kiritilgan: ${discountPct.toFixed(1)}%.`,
           );
         }
       }
@@ -124,7 +167,9 @@ export async function POST(req: NextRequest) {
       if (shopTaxRate > 0) {
         if (taxIncluded) {
           payableAmount = Math.max(0, Math.round(totalAmount - discountAmount));
-          taxAmount = Math.round(payableAmount - payableAmount / (1 + shopTaxRate / 100));
+          taxAmount = Math.round(
+            payableAmount - payableAmount / (1 + shopTaxRate / 100),
+          );
         } else {
           const afterDiscount = Math.max(0, totalAmount - discountAmount);
           taxAmount = Math.round(afterDiscount * (shopTaxRate / 100));
@@ -139,8 +184,8 @@ export async function POST(req: NextRequest) {
         .map(
           (it, idx) =>
             `${idx + 1}) ${it.productName} — ${it.quantity} ${it.unit} × ${it.unitPrice.toLocaleString(
-              "uz-UZ"
-            )} = ${it.totalPrice.toLocaleString("uz-UZ")} so‘m`
+              "uz-UZ",
+            )} = ${it.totalPrice.toLocaleString("uz-UZ")} so‘m`,
         )
         .join("; ");
 
@@ -152,10 +197,22 @@ export async function POST(req: NextRequest) {
         description += ` | Izoh: ${notes.trim()}`;
       }
 
+      if (
+        validated.data.expectedTotal !== undefined &&
+        Math.abs(validated.data.expectedTotal - payableAmount) > 0.5
+      ) {
+        throw new Error(
+          "Telefondagi summa server hisobiga mos emas. Savdoni administrator tekshirishi kerak.",
+        );
+      }
       // 5. Qarz yozuvi
       const debt = await tx.debt.create({
         data: {
           shopId,
+          clientReference: validated.data.idempotencyKey || null,
+          ...(validated.data.occurredAt
+            ? { createdAt: new Date(validated.data.occurredAt) }
+            : {}),
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phone: phone?.trim() || null,
@@ -172,6 +229,10 @@ export async function POST(req: NextRequest) {
         data: {
           shopId,
           receiptNumber,
+          idempotencyKey: validated.data.idempotencyKey || null,
+          ...(validated.data.occurredAt
+            ? { createdAt: new Date(validated.data.occurredAt) }
+            : {}),
           cashierId: user.id,
           customerId: validated.data.customerId || null,
           totalAmount,
@@ -217,7 +278,7 @@ export async function POST(req: NextRequest) {
 
         if (updateResult.count === 0) {
           throw new Error(
-            `"${item.productName}" (Partiya #${item.batchNumber}) omborda yetarli emas!`
+            `"${item.productName}" (Partiya #${item.batchNumber}) omborda yetarli emas!`,
           );
         }
 
@@ -238,15 +299,24 @@ export async function POST(req: NextRequest) {
         const allBatches = await tx.productBatch.findMany({
           where: { productId: item.productId, shopId },
         });
-        const currentTotalStock = allBatches.reduce((acc, b) => acc + b.currentQuantity, 0);
+        const currentTotalStock = allBatches.reduce(
+          (acc, b) => acc + b.currentQuantity,
+          0,
+        );
 
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
 
         if (product && currentTotalStock <= product.minStock) {
           const refKey = `LOW_STOCK_${item.productId}`;
           await tx.notification.upsert({
             where: {
-              shopId_type_referenceKey: { shopId, type: "LOW_STOCK", referenceKey: refKey },
+              shopId_type_referenceKey: {
+                shopId,
+                type: "LOW_STOCK",
+                referenceKey: refKey,
+              },
             },
             update: {
               message: `Diqqat: "${product.name}" mahsulotining umumiy qoldig'i ${currentTotalStock} ${product.unit} qoldi (minimal chegara: ${product.minStock}).`,
@@ -270,7 +340,15 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return { debt, sale, items: validatedItems, totalAmount, payableAmount, taxAmount, receiptNumber };
+      return {
+        debt,
+        sale,
+        items: validatedItems,
+        totalAmount,
+        payableAmount,
+        taxAmount,
+        receiptNumber,
+      };
     });
 
     await logAudit({
@@ -290,8 +368,12 @@ export async function POST(req: NextRequest) {
         id: result.debt.id,
         saleId: result.sale.id,
         receipt: {
-          ...result.sale, shopName: shop.name, shopPhone: shop.phone,
-          shopAddress: shop.address, cashierName: user.fullName, items: result.items,
+          ...result.sale,
+          shopName: shop.name,
+          shopPhone: shop.phone,
+          shopAddress: shop.address,
+          cashierName: user.fullName,
+          items: result.items,
         },
         receiptNumber: result.receiptNumber,
         firstName: result.debt.firstName,
@@ -304,10 +386,38 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
+    if (replay && error?.code === "P2002") {
+      const existing = await saleReplay(replay.shopId, replay.key);
+      const debt = await prisma.debt.findFirst({
+        where: { shopId: replay.shopId, clientReference: replay.key },
+      });
+      if (existing && debt) {
+        try {
+          assertReplay(existing, replay.input);
+          return NextResponse.json({
+            success: true,
+            data: {
+              ...debt,
+              saleId: existing.id,
+              receiptNumber: existing.receiptNumber,
+              receipt: existing,
+            },
+          });
+        } catch (conflict) {
+          return NextResponse.json(
+            { success: false, error: (conflict as Error).message },
+            { status: 409 },
+          );
+        }
+      }
+    }
     logger.error("Debt sale POST error", { error: error });
     return NextResponse.json(
-      { success: false, error: error.message || "Qarzga sotishda xatolik yuz berdi" },
-      { status: 400 }
+      {
+        success: false,
+        error: error.message || "Qarzga sotishda xatolik yuz berdi",
+      },
+      { status: 400 },
     );
   }
 }

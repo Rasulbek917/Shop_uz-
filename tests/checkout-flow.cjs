@@ -172,7 +172,7 @@ test('unpaid account can authenticate but product and sale APIs return 403', asy
     const route = load(file, {
       '@/lib/tenant': tenant,
       '@/lib/prisma': { prisma: new Proxy({}, { get() { assert.fail('Unpaid shop must not perform business queries'); } }) },
-      '@/lib/validations': {}, '@/lib/audit': {}, '@/lib/logger': { logger: { error() {} } }, '@/lib/receipt': {},
+      '@/lib/sale-replay': {}, '@/lib/validations': {}, '@/lib/audit': {}, '@/lib/logger': { logger: { error() {} } }, '@/lib/receipt': {},
     });
     const response = await route.POST(request);
     assert.equal(response.status, 403);
@@ -564,4 +564,25 @@ test('image download saves genuine PNG and refuses error pages or invalid images
   await download();
   assert.equal(downloads, 1);
   assert.equal(filename, 'chek-001.png');
+});
+
+test('offline sale schema keeps timestamps and quoted totals while older callers still work', () => {
+  const { saleSchema, debtSaleSchema } = load('src/lib/validations.ts');
+  const input = { paymentMethod: 'CASH', paidAmount: 1000, items: [{ productId: 'p', batchId: 'b', quantity: 1, unitPrice: 1000 }] };
+  assert.equal(saleSchema.parse(input).occurredAt, undefined);
+  const occurredAt = new Date(Date.now() - 3600000).toISOString();
+  assert.equal(saleSchema.parse({ ...input, occurredAt, expectedTotal: 1000 }).occurredAt, occurredAt);
+  assert.equal(saleSchema.safeParse({ ...input, occurredAt: new Date(Date.now() + 3600000).toISOString() }).success, false);
+  assert.equal(debtSaleSchema.parse({ ...input, firstName: 'Test', lastName: 'User', occurredAt, expectedTotal: 1000 }).expectedTotal, 1000);
+});
+
+test('offline retries reject reuse with different cart, customer or payment', () => {
+  const { assertReplay } = load('src/lib/sale-replay.ts', { './prisma': { prisma: {} }, './onboarding': { BusinessError } });
+  const items = [{ productId: 'p', batchId: 'b', quantity: 2, unitPrice: 1000, discount: 0 }];
+  const sale = { paymentMethod: 'CASH', discountAmount: 0, paidAmount: 2000, payableAmount: 2000, customerId: null, items };
+  const input = { paymentMethod: 'CASH', discountAmount: 0, paidAmount: 2000, expectedTotal: 2000, items };
+  assert.doesNotThrow(() => assertReplay(sale, input));
+  for (const patch of [{ paymentMethod: 'CARD' }, { customerId: 'other' }, { paidAmount: 3000 }, { expectedTotal: 3000 }, { items: [{ ...items[0], quantity: 3 }] }]) {
+    assert.throws(() => assertReplay(sale, { ...input, ...patch }), /identifikatori/);
+  }
 });

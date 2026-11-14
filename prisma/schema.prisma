@@ -241,6 +241,7 @@ model Customer {
 }
 
 model Debt {
+  clientReference String? @unique
   id          String   @id @default(uuid())
   shopId      String
   firstName   String

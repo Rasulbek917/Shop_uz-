@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -34,5 +35,5 @@ export async function generateReceiptNumber(
     if (!isNaN(lastSeq)) seq = lastSeq + 1;
   }
 
-  return `${prefix}${String(seq).padStart(4, "0")}`;
+  return `${prefix}${String(seq).padStart(4, "0")}-${randomBytes(4).toString("hex").toUpperCase()}`;
 }

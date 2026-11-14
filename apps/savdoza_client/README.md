@@ -1,28 +1,24 @@
-# Savdoza Android va Windows
+# Savdoza native Android
 
-Flutter bilan yozilgan alohida native ilova. Backend — mavjud Savdoza Next.js loyihasi. Serverga HTTPS orqali ulanadi. Sessiya operativ xotirada saqlanadi, ilova yopilganda qayta login talab qilinadi.
+Flutter ekranlari mavjud HTTPS backend API bilan ishlaydi. Dashboard, POS, mahsulotlar, kategoriyalar, ombor, kirim, mijozlar, nasiya, qaytarishlar, cheklar, hisobotlar, Pro/Max, xodimlar, yetkazib beruvchilar, amallar jurnali, sozlamalar va superadmin ekranlari bor.
 
-Ekranlar: login, dashboard, mahsulotlar, shtrix-kod orqali qidiruv (klaviatura/USB skaner), POS savati, naqd/karta to‘lovi, chek ko‘rish, tarif holati va to‘lov so‘rovi. Kamera skaneri, printer, offline savdo va superadminning arizalarni tasdiqlash ekranlari hali qo‘shilmagan. Backend obuna va rolni har so‘rovda tekshiradi.
+## Offline va sinxronlash
 
-## Android
+Birinchi login va katalog yuklash online bajariladi. Android sessiya, katalog va savdo navbatini Android Keystore AES-GCM orqali shifrlab, AtomicFile bilan saqlaydi. Offline savdoda mahalliy qoldiq rezerv qilinadi. Har savdoning o‘zgarmaydigan `MOB-…` identifikatori bor. Server takroriy yuborishda bitta savdoni qaytaradi.
 
-Flutter SDK va Android SDK kerak.
+Android WorkManager tarmoq qaytganda va davriy tekshiruvlarda yuboradi. Android energiya va fon cheklovlari sabab vaqtni OS belgilaydi. Ilova ochilganda ham sinxronlash so‘raladi. API sessiya, obuna, qoldiq va summani tekshiradi. Konfliktli savdo telefonda saqlanadi va Sinxronlash ekranida ko‘rinadi. Ro‘yxatdan o‘tish, bank to‘lovi va boshqaruvdagi tahrirlar online ishlaydi.
+
+Chek Flutter’da chiziladi. PNG saqlash Android fayl oynasi orqali, chop etish Android PrintManager orqali amalga oshiriladi. Offline QR bir xil havolani saqlaydi. Serverga yuborilgach shu havola yakuniy chekni ochadi.
+
+## Yig‘ish va tekshirish
 
 ```sh
 flutter pub get
-flutter build apk --debug
+flutter analyze --no-fatal-infos
+flutter test
+flutter build apk --release --dart-define=API_URL=https://shop.aminboyevrasulbek.uz
 ```
 
-Sinov APK fayli `build/app/outputs/flutter-apk/app-debug.apk`. Saytda e’lon qilish uchun uni loyihaning `public/releases/savdoza-android.apk` manziliga nusxalang. Production tarqatish uchun o‘zingizning signing keystore kalitingizni sozlab release build yarating. Generatsiya qilingan release sozlamasidagi debug imzosini production uchun ishlatmang.
+GitHub Actions backend va Flutter testlarini bajarib, optimallashtirilgan preview APK’ni `android-latest` release’ga chiqaradi. Preview signing key CI cache’da keyingi buildlar uchun saqlanadi. Production tarqatish uchun alohida release keystore kerak.
 
-## Windows
-
-Windows kompyuterda Flutter va Visual Studio C++ Desktop workload kerak. PowerShell’da:
-
-```powershell
-.\build-windows.ps1
-```
-
-Natija `public/releases/savdoza-windows.zip`. Uning ichida `Savdoza.exe`, kerakli DLL fayllari va `data` papkasi bo‘ladi. Saytning `/download` sahifasi mavjud fayllarni avtomatik ko‘rsatadi.
-
-Ilovadagi Server manziliga o‘zingizning HTTPS domeningizni kiriting. Telefonning localhost manzili telefonning o‘ziga tegishli. Hisoblar, savdo va tariflar barcha qurilmalarda bitta backend orqali yuritiladi.
+Android uchun doimiy shifrlangan saqlash, fon sinxronlash, kamera, fayl saqlash va printer integratsiyalari yozilgan. Boshqa platformalarda platformaga bog‘liq funksiyalar alohida integratsiya talab qiladi.

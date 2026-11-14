@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'apps/savdoza_client/**'
+      - '.github/workflows/android-apk.yml'
 permissions:
   contents: write
 concurrency:
@@ -12,53 +13,83 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify backend sync contracts
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: |
+          npm ci --ignore-scripts
+          npx prisma generate
+          npx tsc --noEmit
+          node tests/checkout-flow.cjs
+          node tests/tezcheck-security.cjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: savdoza-android-preview-signing-v1
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: savdoza-flutter-3.50-${{ hashFiles('apps/savdoza_client/pubspec.yaml') }}
+          restore-keys: savdoza-flutter-3.50-
       - name: Install Flutter SDK
         run: |
           git clone --depth 1 --branch 3.50.0 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
           echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
-      - name: Resolve and analyze
+      - name: Resolve, analyze and test native app
         working-directory: apps/savdoza_client
         run: |
           flutter config --no-analytics
           flutter pub get
           flutter analyze --no-pub --no-fatal-infos
-      - name: Build installation APK
+          flutter test --no-pub
+      - name: Build optimized installation APK
         working-directory: apps/savdoza_client
-        run: flutter build apk --debug --no-pub --dart-define=API_URL=https://shop.aminboyevrasulbek.uz --build-number=${{ github.run_number }}
+        run: flutter build apk --release --no-pub --dart-define=API_URL=https://shop.aminboyevrasulbek.uz --build-name=2.0.0 --build-number=${{ github.run_number }}
       - uses: actions/upload-artifact@v4
         with:
           name: savdoza-android-apk
-          path: apps/savdoza_client/build/app/outputs/flutter-apk/app-debug.apk
+          path: |
+            apps/savdoza_client/build/app/outputs/flutter-apk/app-release.apk
+            apps/savdoza_client/pubspec.lock
           retention-days: 30
       - name: Publish APK and website download details
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp apps/savdoza_client/build/app/outputs/flutter-apk/app-debug.apk "$RUNNER_TEMP/savdoza-android.apk"
-          gh release view android-latest >/dev/null 2>&1 || gh release create android-latest --target "$GITHUB_SHA" --title "Savdoza Android sinov versiyasi" --notes "Android uchun sinov APK. Backend orqali login va POS."
+          cp apps/savdoza_client/build/app/outputs/flutter-apk/app-release.apk "$RUNNER_TEMP/savdoza-android.apk"
+          gh release view android-latest >/dev/null 2>&1 || gh release create android-latest --target "$GITHUB_SHA" --title "Savdoza Android" --notes "Android uchun Savdoza."
           gh release upload android-latest "$RUNNER_TEMP/savdoza-android.apk" --clobber
+          gh release edit android-latest --title "Savdoza Android 2.0 — native va offline POS" --notes "Alohida Flutter Android ilova. Dashboard, POS, kategoriyalar, mahsulotlar, ombor, mijozlar, nasiya, cheklar, sozlamalar, Pro/Max va superadmin bo‘limlari. Offline katalog va savdolar shifrlangan telefonda saqlanadi, internet qaytganda Android WorkManager avtomatik yuboradi. Optimallashtirilgan sinov build, preview signing. Birinchi offline ishlatishdan oldin online login va katalogni yuklash kerak."
           APK_PATH="$RUNNER_TEMP/savdoza-android.apk" python3 - <<'PY'
           import os, json, hashlib
           from pathlib import Path
           data = Path(os.environ['APK_PATH']).read_bytes()
           target = Path('public/releases/manifest.json')
           manifest = json.loads(target.read_text())
-          manifest['android'] = {'url': 'https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/releases/download/android-latest/savdoza-android.apk', 'version': '1.0.0+' + os.environ['GITHUB_RUN_NUMBER'], 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'channel': 'debug'}
+          manifest['android'] = {'url': 'https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/releases/download/android-latest/savdoza-android.apk', 'version': '2.0.0+' + os.environ['GITHUB_RUN_NUMBER'], 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'channel': 'preview'}
           target.write_text(json.dumps(manifest, indent=2) + '\n')
           PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/releases/manifest.json
+          git add public/releases/manifest.json apps/savdoza_client/pubspec.lock
           git diff --cached --quiet && exit 0
-          git commit -m "chore: publish Android APK download metadata"
+          git commit -m "chore: publish native offline Android APK and dependency lock"
           git restore --worktree apps/savdoza_client
           git pull --rebase origin main
           git push origin HEAD:main

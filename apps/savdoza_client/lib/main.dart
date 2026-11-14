@@ -1,75 +1,53 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-void main() => runApp(
-  MaterialApp(
-    title: 'Savdoza',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      colorSchemeSeed: const Color(0xff24634f),
-      scaffoldBackgroundColor: const Color(0xfff5f8f2),
+import 'data.dart';
+import 'widgets.dart';
+import 'management.dart';
+import 'pos.dart';
+import 'screens.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    MaterialApp(
+      title: 'Savdoza',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: const Color(0xff24634f),
+        scaffoldBackgroundColor: const Color(0xfff5f8f2),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xffdce6dd)),
+          ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xfff5f8f2),
+          foregroundColor: Color(0xff142d25),
+        ),
+      ),
+      home: const Savdoza(),
     ),
-    home: const Savdoza(),
-  ),
-);
-
-String money(num value) =>
-    '${value.round().toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ')} so‘m';
-
-class Api {
-  final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
-  String server = '';
-  String? cookie;
-  Future<Map<String, dynamic>> call(
-    String path, [
-    Map<String, dynamic>? body,
-  ]) async {
-    final request = await client.openUrl(
-      body == null ? 'GET' : 'POST',
-      Uri.parse('$server$path'),
-    );
-    if (cookie != null) request.headers.set('Cookie', cookie!);
-    if (body != null) {
-      request.headers.contentType = ContentType.json;
-      request.write(jsonEncode(body));
-    }
-    final response = await request.close().timeout(const Duration(seconds: 25));
-    final text = await response.transform(utf8.decoder).join();
-    Map<String, dynamic> data;
-    try {
-      data = jsonDecode(text) as Map<String, dynamic>;
-    } catch (_) {
-      throw Exception('Server javobi noto‘g‘ri. Domenni tekshiring.');
-    }
-    if (response.statusCode >= 400 || data['success'] == false) {
-      final error = data['error'];
-      throw Exception(
-        error is Map ? error['message'] : error ?? 'So‘rov bajarilmadi',
-      );
-    }
-    for (final c in response.cookies) {
-      if (c.name == 'savdoza_auth_token') cookie = '${c.name}=${c.value}';
-    }
-    return data;
-  }
+  );
 }
 
-class Line {
-  Line(this.product, this.batch);
-  final Map<String, dynamic> product, batch;
-  int quantity = 1;
-  num get price => product['salePrice'] as num;
-  Map<String, dynamic> json() => {
-    'productId': product['id'],
-    'batchId': batch['id'],
-    'quantity': quantity,
-    'unitPrice': price,
-    'discount': 0,
-  };
+class Destination {
+  const Destination(this.key, this.title, this.icon, {this.max = false});
+  final String key, title;
+  final IconData icon;
+  final bool max;
 }
 
 class Savdoza extends StatefulWidget {
@@ -78,315 +56,257 @@ class Savdoza extends StatefulWidget {
   State<Savdoza> createState() => _SavdozaState();
 }
 
-class _SavdozaState extends State<Savdoza> {
-  final api = Api();
-  Timer? accountTimer;
-
+class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
+  final data = AppData();
+  Timer? timer, localTimer;
+  bool loading = true;
+  String section = 'dashboard', error = '';
   @override
   void initState() {
     super.initState();
-    accountTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (account != null && !busy) {
-        operation(refresh);
-      }
+    WidgetsBinding.instance.addObserver(this);
+    data.addListener(changed);
+    restore();
+    timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (data.session != null) data.refresh();
+    });
+    localTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (data.session != null) data.reload();
     });
   }
 
-  final server = TextEditingController(
-    text: const String.fromEnvironment('API_URL', defaultValue: 'https://'),
-  );
-  final login = TextEditingController(),
-      password = TextEditingController(),
-      search = TextEditingController();
-  Map<String, dynamic>? account;
-  List<dynamic> products = [], sales = [];
-  final List<Line> cart = [];
-  bool busy = false;
-  int page = 0;
-  String? error, saleKey;
-  String payment = 'CASH';
-  num taxRate = 0;
-  bool taxIncluded = false;
-  Map<String, dynamic> get user =>
-      Map<String, dynamic>.from(account?['user'] ?? {});
-  bool get access => user['hasAccess'] == true;
-  bool get canSell => ['SHOP_ADMIN', 'CASHIER'].contains(user['role']);
-  num get subtotal =>
-      cart.fold<num>(0, (sum, line) => sum + line.quantity * line.price);
-  num get total =>
-      taxIncluded ? subtotal : subtotal + (subtotal * taxRate / 100).round();
+  void changed() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> restore() async {
+    try {
+      await data.restore();
+    } catch (e) {
+      error = '$e';
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && data.session != null) {
+      data.reload().then((_) => data.refresh());
+    }
+  }
+
   @override
   void dispose() {
-    accountTimer?.cancel();
-    for (final c in [server, login, password, search]) {
-      c.dispose();
-    }
-    api.client.close();
+    timer?.cancel();
+    localTimer?.cancel();
+    data.removeListener(changed);
+    data.api.client.close();
+    data.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  Future<void> operation(Future<void> Function() action) async {
-    if (busy) return;
-    setState(() {
-      busy = true;
-      error = null;
-    });
-    try {
-      await action();
-    } catch (e) {
-      if (mounted) {
-        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => busy = false);
-    }
-  }
-
-  Future<void> refresh() async {
-    final result = await api.call('/api/account');
-    if (!mounted) return;
-    setState(() => account = Map<String, dynamic>.from(result['data']));
-    if (access && user['role'] != 'SUPER_ADMIN') {
-      final catalog = await api.call('/api/products');
-      final history = await api.call('/api/sales');
-      final settings = await api.call('/api/shop/settings');
-      if (mounted) {
-        setState(() {
-          products = catalog['data'];
-          sales = history['data'];
-          taxRate = settings['data']['taxRate'] ?? 0;
-          taxIncluded = settings['data']['taxIncluded'] == true;
-        });
-      }
-    }
-  }
-
-  Future<void> signIn() => operation(() async {
-    final uri = Uri.tryParse(server.text.trim());
-    if (uri == null ||
-        uri.scheme != 'https' ||
-        uri.host.isEmpty ||
-        uri.userInfo.isNotEmpty ||
-        uri.hasQuery ||
-        uri.hasFragment ||
-        (uri.path.isNotEmpty && uri.path != '/')) {
-      throw Exception('HTTPS server domenini kiriting');
-    }
-    api.server = server.text.trim().replaceAll(RegExp(r'/+$'), '');
-    await api.call('/api/auth/login', {
-      'username': login.text.trim(),
-      'password': password.text,
-    });
-    await refresh();
-    password.clear();
-  });
-  void add(Map<String, dynamic> p) {
-    if (busy) return;
-    final batches = (p['batches'] as List)
-        .where(
-          (b) =>
-              b['currentQuantity'] > 0 &&
-              DateTime.parse(b['expiryDate']).isAfter(DateTime.now()),
-        )
-        .toList();
-    batches.sort(
-      (a, b) =>
-          a['expiryDate'].toString().compareTo(b['expiryDate'].toString()),
-    );
-    for (final batch in batches) {
-      final line = cart.where((l) => l.batch['id'] == batch['id']).firstOrNull;
-      if (line == null) {
-        setState(() => cart.add(Line(p, Map<String, dynamic>.from(batch))));
-        saleKey = null;
-        return;
-      }
-      if (line.quantity < batch['currentQuantity']) {
-        setState(() => line.quantity++);
-        saleKey = null;
-        return;
-      }
-    }
-    setState(() => error = 'Yaroqli qoldiq yetarli emas');
-  }
-
-  Future<String?> ask(String title, String label, {String initial = ''}) async {
-    final controller = TextEditingController(text: initial);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(labelText: label),
-          maxLength: 500,
+  List<Destination> get destinations {
+    if (data.user['role'] == 'SUPER_ADMIN') {
+      return const [
+        Destination('shops', 'Do‘konlar', Icons.storefront),
+        Destination('requests', 'Xabarlar va arizalar', Icons.inbox_outlined),
+        Destination(
+          'pricing',
+          'Tarif narxlari',
+          Icons.workspace_premium_outlined,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Bekor qilish'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Tasdiqlash'),
-          ),
-        ],
+        Destination('audit', 'Tizim jurnali', Icons.history),
+        Destination('settings', 'Sozlamalar', Icons.settings_outlined),
+      ];
+    }
+    if (data.user['role'] == 'WAREHOUSEMAN') {
+      return const [
+        Destination('dashboard', 'Dashboard', Icons.dashboard_outlined),
+        Destination('products', 'Mahsulotlar', Icons.inventory_2_outlined),
+        Destination('categories', 'Kategoriyalar', Icons.category_outlined),
+        Destination('batches', 'Ombor va partiyalar', Icons.warehouse_outlined),
+        Destination('inflow', 'Kirim', Icons.add_box_outlined),
+        Destination('settings', 'Sozlamalar', Icons.settings_outlined),
+      ];
+    }
+    if (data.user['role'] == 'CASHIER') {
+      return const [
+        Destination('dashboard', 'Dashboard', Icons.dashboard_outlined),
+        Destination('pos', 'POS terminal', Icons.point_of_sale),
+        Destination('receipts', 'Cheklar', Icons.receipt_long),
+        Destination('returns', 'Qaytarishlar', Icons.keyboard_return),
+        Destination('customers', 'Mijozlar', Icons.people_outline),
+        Destination('queue', 'Sinxronlash', Icons.sync),
+        Destination('settings', 'Sozlamalar', Icons.settings_outlined),
+      ];
+    }
+    return const [
+      Destination('dashboard', 'Dashboard', Icons.dashboard_outlined),
+      Destination('pos', 'POS terminal', Icons.point_of_sale),
+      Destination('products', 'Mahsulotlar', Icons.inventory_2_outlined),
+      Destination('categories', 'Kategoriyalar', Icons.category_outlined),
+      Destination('batches', 'Ombor va partiyalar', Icons.warehouse_outlined),
+      Destination('inflow', 'Tezkor kirim', Icons.add_box_outlined),
+      Destination(
+        'manufacturers',
+        'Ishlab chiqaruvchilar',
+        Icons.factory_outlined,
       ),
-    );
-    // Dialog animations finish after its route returns.
-    Future.delayed(const Duration(seconds: 1), controller.dispose);
-    return result;
+      Destination('receipts', 'Cheklar va sotuvlar', Icons.receipt_long),
+      Destination('returns', 'Qaytarishlar', Icons.keyboard_return),
+      Destination('customers', 'Mijozlar', Icons.people_outline),
+      Destination('debts', 'Qarzlar', Icons.credit_card),
+      Destination(
+        'suppliers',
+        'Yetkazib beruvchilar',
+        Icons.local_shipping_outlined,
+        max: true,
+      ),
+      Destination('staff', 'Xodimlar', Icons.badge_outlined, max: true),
+      Destination('reports', 'Hisobotlar', Icons.bar_chart),
+      Destination('audit', 'Amallar jurnali', Icons.history, max: true),
+      Destination(
+        'notifications',
+        'Bildirishnomalar',
+        Icons.notifications_outlined,
+      ),
+      Destination('queue', 'Sinxronlash', Icons.sync),
+      Destination('settings', 'Sozlamalar', Icons.settings_outlined),
+    ];
   }
 
-  Future<void> checkout() async {
-    if (busy || cart.isEmpty) return;
-    final text = await ask(
-      'Jami ${money(total)}',
-      'Qabul qilingan summa',
-      initial: total.round().toString(),
-    );
-    if (text == null || !mounted) return;
-    await operation(() async {
-      final paid = num.tryParse(text);
-      if (paid == null || !paid.isFinite || paid < total) {
-        throw Exception('To‘lov summasi yetarli emas');
-      }
-      saleKey ??= 'APP_${DateTime.now().microsecondsSinceEpoch}_${user['id']}';
-      final result = await api.call('/api/sales', {
-        'paymentMethod': payment,
-        'paidAmount': paid,
-        'discountAmount': 0,
-        'idempotencyKey': saleKey,
-        'items': cart.map((l) => l.json()).toList(),
-      });
-      if (!mounted) return;
-      setState(() {
-        cart.clear();
-        saleKey = null;
-      });
-      final receipt = result['data'];
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text('Chek ${receipt['receiptNumber']}'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final item in receipt['items'])
-                  Text(
-                    '${item['productName']} × ${item['quantity']} — ${money(item['totalPrice'])}',
-                  ),
-                const Divider(),
-                Text('Jami ${money(receipt['payableAmount'])}'),
-                Text('Qaytim ${money(receipt['changeAmount'])}'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Yopish'),
-            ),
-          ],
-        ),
-      );
-      await refresh();
-    });
+  Widget body() {
+    if (!data.access && section != 'queue') return PlansPage(data: data);
+    switch (section) {
+      case 'dashboard':
+        return dashboard();
+      case 'pos':
+        return PosPage(data: data);
+      case 'settings':
+        return SettingsPage(data: data);
+      case 'queue':
+        return OutboxPage(data: data);
+      case 'reports':
+        return ReportsPage(data: data);
+      case 'receipts':
+        return ReceiptHistory(data: data);
+      case 'inflow':
+        return InflowPage(data: data);
+      case 'returns':
+        return ReturnsPage(data: data);
+      case 'requests':
+        return AdminRequests(data: data);
+      case 'pricing':
+        return AdminPricing(data: data);
+      default:
+        return ManagementPage(
+          data: data,
+          section: section,
+          key: ValueKey(section),
+        );
+    }
   }
 
-  Widget loginView() => Center(
-    child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: 420,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(Icons.storefront, size: 64, color: Color(0xff24634f)),
-            const Text(
-              'Savdoza',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 38, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 28),
-            field(server, 'Server manzili — https://domen.uz'),
-            field(login, 'Login'),
-            field(password, 'Parol', secret: true),
-            FilledButton(
-              onPressed: busy ? null : signIn,
-              child: const Text('Kirish'),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Android va Windows uchun do‘kon boshqaruvi. Mavjud hisobingiz va HTTPS server manzilidan foydalaning.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-  Widget field(
-    TextEditingController controller,
-    String label, {
-    bool secret = false,
-  }) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: TextField(
-      controller: controller,
-      obscureText: secret,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-      ),
-    ),
-  );
-  Widget dashboard() => ListView(
-    padding: const EdgeInsets.all(24),
-    children: [
-      Text(
-        'Salom, ${user['fullName']}',
-        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 20),
-      Wrap(
-        spacing: 16,
-        runSpacing: 16,
+  Widget dashboard() {
+    final report = object(data.cache['reports']);
+    final today = object(report['today']);
+    return RefreshIndicator(
+      onRefresh: data.refresh,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
         children: [
-          stat('Mahsulotlar', '${products.length}', Icons.inventory_2_outlined),
-          stat('Yuklangan savdolar', '${sales.length}', Icons.receipt_long),
+          Text(
+            'Salom, ${data.user['fullName']}',
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${data.user['shopName'] ?? ''} · ${data.online ? 'Online' : 'Offline'}',
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              stat(
+                'Bugungi savdo',
+                money((today['revenue'] as num?) ?? 0),
+                Icons.trending_up,
+              ),
+              stat(
+                'Savdolar',
+                '${today['salesCount'] ?? 0} ta',
+                Icons.receipt_long,
+              ),
+              stat(
+                'Mahsulotlar',
+                '${data.products.length} ta',
+                Icons.inventory_2_outlined,
+              ),
+              stat('Sinxronlash', '${data.pending.length} ta', Icons.sync),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (data.sell)
+            FilledButton.icon(
+              onPressed: () => setState(() => section = 'pos'),
+              icon: const Icon(Icons.point_of_sale),
+              label: const Text('POS terminalni ochish'),
+            ),
+          if (data.pending.isNotEmpty)
+            Card(
+              color: const Color(0xfffff3dc),
+              child: ListTile(
+                title: Text(
+                  '${data.pending.length} ta savdo telefonda saqlangan',
+                ),
+                subtitle: const Text('Internet qaytganda avtomatik yuboriladi'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => setState(() => section = 'queue'),
+              ),
+            ),
+          const SizedBox(height: 20),
+          const Text(
+            'Tezkor bo‘limlar',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          for (final destination in destinations.where(
+            (item) => [
+              'products',
+              'categories',
+              'receipts',
+              'inflow',
+              'reports',
+            ].contains(item.key),
+          ))
+            Card(
+              child: ListTile(
+                leading: Icon(destination.icon),
+                title: Text(destination.title),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => setState(() => section = destination.key),
+              ),
+            ),
         ],
       ),
-      const SizedBox(height: 20),
-      if (canSell)
-        FilledButton.icon(
-          onPressed: () => setState(() => page = 1),
-          icon: const Icon(Icons.point_of_sale),
-          label: const Text('POS terminal'),
-        ),
-      const SizedBox(height: 24),
-      const Text('So‘nggi savdolar', style: TextStyle(fontSize: 22)),
-      for (final s in sales.take(15))
-        ListTile(
-          title: Text(s['receiptNumber']),
-          subtitle: Text(s['paymentMethod']),
-          trailing: Text(money(s['payableAmount'])),
-        ),
-    ],
-  );
+    );
+  }
+
   Widget stat(String title, String value, IconData icon) => SizedBox(
-    width: 240,
+    width: 230,
     child: Card(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon),
+            Icon(icon, color: const Color(0xff24634f)),
+            const SizedBox(height: 10),
             Text(
               value,
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
             ),
             Text(title),
           ],
@@ -394,325 +314,421 @@ class _SavdozaState extends State<Savdoza> {
       ),
     ),
   );
-  Widget pos() {
-    final term = search.text.toLowerCase();
-    final shown = products
-        .where(
-          (p) =>
-              p['name'].toString().toLowerCase().contains(term) ||
-              (p['barcode'] ?? '').toString().contains(term),
-        )
-        .toList();
-    final catalog = Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            controller: search,
-            onChanged: (_) => setState(() {}),
-            onSubmitted: (code) {
-              final match = products.where((p) => p['barcode'] == code.trim());
-              if (match.isNotEmpty) {
-                add(Map<String, dynamic>.from(match.first));
-                search.clear();
-                setState(() {});
-              }
-            },
-            decoration: const InputDecoration(
-              labelText: 'Mahsulot yoki shtrix-kod',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
+  Future<void> logout() async {
+    if (data.pending.isNotEmpty) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Sinxronlanmagan savdolar bor'),
+          content: const Text(
+            'Savdolar telefonda qoladi. Ushbu hisobga qayta kirgach yuborish davom etadi. Hisobdan chiqasizmi?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Qolish'),
             ),
-          ),
-        ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 230,
-              mainAxisExtent: 130,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Chiqish'),
             ),
-            itemCount: shown.length,
-            itemBuilder: (_, i) {
-              final p = shown[i];
-              return Card(
-                child: InkWell(
-                  onTap: busy ? null : () => add(Map<String, dynamic>.from(p)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          p['name'],
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const Spacer(),
-                        Text(money(p['salePrice'])),
-                        Text('Qoldiq ${p['totalStock']}'),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
+          ],
         ),
-      ],
-    );
-    final basket = Column(
-      children: [
-        const ListTile(
-          title: Text(
-            'Savat',
-            style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
-          ),
-        ),
-        Expanded(
-          child: ListView(
-            children: [
-              for (final l in cart)
-                ListTile(
-                  title: Text(l.product['name']),
-                  subtitle: Text(money(l.price * l.quantity)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: busy
-                            ? null
-                            : () => setState(() {
-                                l.quantity--;
-                                if (l.quantity == 0) cart.remove(l);
-                                saleKey = null;
-                              }),
-                        icon: const Icon(Icons.remove_circle_outline),
-                      ),
-                      Text('${l.quantity}'),
-                      IconButton(
-                        onPressed: busy ? null : () => add(l.product),
-                        icon: const Icon(Icons.add_circle_outline),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Jami ${money(total)}',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'CASH', label: Text('Naqd')),
-                  ButtonSegment(value: 'CARD', label: Text('Karta')),
-                ],
-                selected: {payment},
-                onSelectionChanged: busy
-                    ? null
-                    : (v) => setState(() => payment = v.first),
-              ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: busy || cart.isEmpty ? null : checkout,
-                child: const Text('To‘lovni qabul qilish'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-    return LayoutBuilder(
-      builder: (_, size) => size.maxWidth > 850
-          ? Row(
-              children: [
-                Expanded(child: catalog),
-                SizedBox(width: 365, child: basket),
-              ],
-            )
-          : Column(
-              children: [
-                Expanded(child: catalog),
-                SizedBox(height: 300, child: basket),
-              ],
-            ),
-    );
-  }
-
-  Widget accountView() {
-    final shop = account?['shop'];
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        const Text(
-          'Hisob va tarif',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          access
-              ? 'Hisob faol'
-              : 'Tarifni yangilang yoki superadmin tasdig‘ini kuting.',
-        ),
-        if (shop != null) ...[
-          Text('Do‘kon ${shop['name']}'),
-          Text('Tarif ${shop['planCode']}'),
-          Text('Tugash sanasi ${shop['subscriptionEndDate'] ?? '—'}'),
-        ],
-        for (final p in account?['plans'] ?? [])
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    p['name'],
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text('${money(p['price'])} / 30 kun'),
-                  Text(p['paymentInstructions'].toString()),
-                  FilledButton(
-                    onPressed:
-                        !busy &&
-                            p['enabled'] == true &&
-                            user['role'] == 'SHOP_ADMIN'
-                        ? () async {
-                            final ref = await ask(
-                              'To‘lov so‘rovi',
-                              'Tranzaksiya raqami va to‘lov izohi',
-                            );
-                            if (ref == null || !mounted) return;
-                            await operation(() async {
-                              if (ref.trim().length < 5) {
-                                throw Exception(
-                                  'To‘lov izohini to‘liq kiriting',
-                                );
-                              }
-                              await api.call('/api/purchases', {
-                                'planCode': p['code'],
-                                'reference': ref.trim(),
-                              });
-                              await refresh();
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'So‘rov yuborildi. Tasdiqni kuting.',
-                                    ),
-                                  ),
-                                );
-                              }
-                            });
-                          }
-                        : null,
-                    child: const Text('To‘lovni tekshirishga yuborish'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
+      );
+      if (confirmed != true) return;
+    }
+    await data.logout();
+    if (mounted) setState(() => section = 'dashboard');
   }
 
   @override
   Widget build(BuildContext context) {
-    final authenticated = account != null;
-    final selected = access && user['role'] != 'SUPER_ADMIN' ? page : 2;
+    if (loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (error.isNotEmpty && data.session == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(error),
+              FilledButton(
+                onPressed: restore,
+                child: const Text('Qayta urinish'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (data.session == null || !data.cookieValid) {
+      return AuthPage(
+        data: data,
+        onSignedIn: () {
+          setState(
+            () => section = data.user['role'] == 'SUPER_ADMIN'
+                ? 'shops'
+                : 'dashboard',
+          );
+        },
+      );
+    }
+    if (!destinations.any((destination) => destination.key == section)) {
+      section = destinations.first.key;
+    }
+    final selected = destinations.firstWhere((item) => item.key == section);
     return Scaffold(
-      appBar: authenticated
-          ? AppBar(
-              title: Text(user['shopName'] ?? 'Savdoza'),
-              actions: [
-                Center(child: Text(user['planCode'] ?? '')),
-                IconButton(
-                  onPressed: busy ? null : () => operation(refresh),
-                  icon: const Icon(Icons.refresh),
+      appBar: AppBar(
+        title: Text(data.access ? selected.title : 'Tarifni yangilang'),
+        actions: [
+          IconButton(
+            onPressed: data.refreshing ? null : data.refresh,
+            icon: const Icon(Icons.refresh),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (action) {
+              if (action == 'logout') {
+                logout();
+              } else {
+                setState(() => section = 'settings');
+              }
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'profile',
+                child: Text(
+                  '${data.user['username']} · ${data.user['planCode']}',
                 ),
-                IconButton(
-                  onPressed: busy
-                      ? null
-                      : () => operation(() async {
-                          try {
-                            await api.call('/api/auth/logout', {});
-                          } finally {
-                            api.cookie = null;
-                            if (mounted) {
-                              setState(() {
-                                account = null;
-                                cart.clear();
-                                products = [];
-                                sales = [];
-                                page = 0;
-                              });
-                            }
-                          }
-                        }),
-                  icon: const Icon(Icons.logout),
-                ),
-              ],
-            )
-          : null,
-      body: Column(
-        children: [
-          if (busy) const LinearProgressIndicator(),
-          if (error != null)
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(error!, style: const TextStyle(color: Colors.red)),
-            ),
-          Expanded(
-            child: !authenticated
-                ? loginView()
-                : selected == 2
-                ? accountView()
-                : selected == 1 && canSell
-                ? pos()
-                : dashboard(),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Text('Hisobdan chiqish'),
+              ),
+            ],
           ),
         ],
       ),
-      bottomNavigationBar: authenticated
+      drawer: Drawer(
+        child: SafeArea(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.storefront, size: 38),
+                title: const Text(
+                  'SAVDOZA',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                ),
+                subtitle: Text(
+                  '${data.user['shopName'] ?? data.user['fullName']}',
+                ),
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView(
+                  children: [
+                    for (final destination in destinations)
+                      ListTile(
+                        selected: section == destination.key,
+                        enabled:
+                            (!destination.max || data.max) &&
+                            (data.access ||
+                                [
+                                  'settings',
+                                  'queue',
+                                ].contains(destination.key)),
+                        leading: Icon(destination.icon),
+                        title: Text(destination.title),
+                        subtitle: destination.max && !data.max
+                            ? const Text('Max tarifiga o‘ting')
+                            : null,
+                        trailing: destination.max && !data.max
+                            ? const Icon(Icons.lock_outline, size: 18)
+                            : null,
+                        onTap: () {
+                          Navigator.pop(context);
+                          setState(() => section = destination.key);
+                        },
+                      ),
+                  ],
+                ),
+              ),
+              ListTile(
+                leading: Icon(
+                  data.online ? Icons.cloud_done_outlined : Icons.cloud_off,
+                ),
+                title: Text(
+                  data.online ? 'Online' : 'Offline · Telefonda saqlanadi',
+                ),
+                subtitle: Text(
+                  '${data.pending.length} ta savdo yuborish kutilmoqda',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          if (data.refreshing) const LinearProgressIndicator(),
+          if (!data.online || data.pending.isNotEmpty)
+            Material(
+              color: data.online
+                  ? const Color(0xffe7f3e8)
+                  : const Color(0xfffff3dc),
+              child: ListTile(
+                dense: true,
+                leading: Icon(data.online ? Icons.sync : Icons.wifi_off),
+                title: Text(
+                  data.online
+                      ? '${data.pending.length} ta savdo sinxronlanmoqda'
+                      : 'Offline · Ma’lumotlar telefonda',
+                ),
+                subtitle: data.connectionError == null
+                    ? null
+                    : Text(data.connectionError!),
+                onTap: () => setState(() => section = 'queue'),
+              ),
+            ),
+          Expanded(
+            child: KeyedSubtree(key: ValueKey(section), child: body()),
+          ),
+        ],
+      ),
+      bottomNavigationBar: data.access && data.user['role'] != 'SUPER_ADMIN'
           ? NavigationBar(
-              selectedIndex: selected,
-              onDestinationSelected: busy
-                  ? null
-                  : (i) => setState(() => page = i),
+              selectedIndex: section == 'pos'
+                  ? 1
+                  : section == 'settings'
+                  ? 2
+                  : 0,
+              onDestinationSelected: (index) => setState(
+                () => section = index == 1
+                    ? 'pos'
+                    : index == 2
+                    ? 'settings'
+                    : 'dashboard',
+              ),
               destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.dashboard_outlined),
+                const NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
                   label: 'Dashboard',
-                  enabled: access && user['role'] != 'SUPER_ADMIN',
                 ),
                 NavigationDestination(
                   icon: const Icon(Icons.point_of_sale),
                   label: 'POS',
-                  enabled: access && canSell,
+                  enabled: data.sell,
                 ),
                 const NavigationDestination(
-                  icon: Icon(Icons.workspace_premium_outlined),
-                  label: 'Tarif',
+                  icon: Icon(Icons.settings_outlined),
+                  label: 'Sozlamalar',
                 ),
               ],
             )
           : null,
     );
   }
+}
+
+class AuthPage extends StatefulWidget {
+  const AuthPage({super.key, required this.data, required this.onSignedIn});
+  final AppData data;
+  final VoidCallback onSignedIn;
+  @override
+  State<AuthPage> createState() => _AuthPageState();
+}
+
+class _AuthPageState extends State<AuthPage> {
+  final form = GlobalKey<FormState>();
+  final fields = {
+    for (final key in [
+      'username',
+      'password',
+      'fullName',
+      'shopName',
+      'phone',
+      'email',
+    ])
+      key: TextEditingController(),
+  };
+  bool register = false, consent = false, busy = false;
+  String plan = 'PRO', error = '';
+  @override
+  void dispose() {
+    for (final controller in fields.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> submit() async {
+    if (busy || !form.currentState!.validate()) return;
+    if (register && !consent) {
+      setState(() => error = 'Foydalanish shartlarini qabul qiling');
+      return;
+    }
+    setState(() {
+      busy = true;
+      error = '';
+    });
+    try {
+      if (register) {
+        await widget.data.registered({
+          for (final entry in fields.entries)
+            entry.key: entry.key == 'password'
+                ? entry.value.text
+                : entry.value.text.trim(),
+          'planCode': plan,
+          'consent': true,
+        });
+      } else {
+        await widget.data.login(
+          fields['username']!.text,
+          fields['password']!.text,
+        );
+      }
+      widget.onSignedIn();
+    } catch (e) {
+      if (mounted) setState(() => error = '$e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Widget input(String key, String label, {bool secret = false}) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: TextFormField(
+      controller: fields[key],
+      obscureText: secret,
+      keyboardType: key == 'email'
+          ? TextInputType.emailAddress
+          : key == 'phone'
+          ? TextInputType.phone
+          : TextInputType.text,
+      autofillHints: key == 'username'
+          ? const [AutofillHints.username]
+          : key == 'password'
+          ? const [AutofillHints.password]
+          : null,
+      decoration: InputDecoration(labelText: label),
+      validator: (value) => (value ?? '').trim().isEmpty ? 'To‘ldiring' : null,
+    ),
+  );
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: SizedBox(
+            width: 460,
+            child: AutofillGroup(
+              child: Form(
+                key: form,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(
+                      Icons.storefront,
+                      size: 64,
+                      color: Color(0xff24634f),
+                    ),
+                    const Text(
+                      'Savdoza',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      register
+                          ? 'Do‘kon hisobini yarating'
+                          : 'Hisobingizga kiring',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(height: 28),
+                    if (register) ...[
+                      input('fullName', 'Ism va familiya'),
+                      input('shopName', 'Do‘kon nomi'),
+                      input('phone', 'Telefon +998…'),
+                      input('email', 'Email'),
+                    ],
+                    input('username', 'Login (lotin harflari)'),
+                    input(
+                      'password',
+                      register ? 'Parol (kamida 10 belgi)' : 'Parol',
+                      secret: true,
+                    ),
+                    if (register) ...[
+                      DropdownButtonFormField<String>(
+                        initialValue: plan,
+                        decoration: const InputDecoration(labelText: 'Tarif'),
+                        items: const [
+                          DropdownMenuItem(value: 'PRO', child: Text('Pro')),
+                          DropdownMenuItem(value: 'MAX', child: Text('Max')),
+                        ],
+                        onChanged: (value) => setState(() => plan = value!),
+                      ),
+                      CheckboxListTile(
+                        value: consent,
+                        onChanged: (value) =>
+                            setState(() => consent = value ?? false),
+                        title: const Text(
+                          'Foydalanish shartlarini qabul qilaman',
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => launchUrl(
+                          Uri.parse('$serverUrl/terms'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        child: const Text('Shartlarni o‘qish'),
+                      ),
+                    ],
+                    if (error.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          error,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    FilledButton(
+                      onPressed: busy ? null : submit,
+                      child: Text(
+                        busy
+                            ? 'Kutilmoqda…'
+                            : register
+                            ? 'Hisob yaratish'
+                            : 'Kirish',
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: busy
+                          ? null
+                          : () => setState(() {
+                              register = !register;
+                              error = '';
+                            }),
+                      child: Text(
+                        register ? 'Hisobim bor · Kirish' : 'Ro‘yxatdan o‘tish',
+                      ),
+                    ),
+                    const Text(
+                      'Birinchi kirish uchun internet kerak. Kirgandan keyin katalog va POS offline ishlaydi.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }
