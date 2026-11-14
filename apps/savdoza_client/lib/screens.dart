@@ -253,89 +253,99 @@ class SettingsPage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(20),
-    children: [
-      Text(
-        '${data.user['fullName']}',
-        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-      ),
-      Text('${data.user['username']} · ${data.user['role']}'),
-      if (Platform.isAndroid || Platform.isWindows)
-        ListenableBuilder(
-          listenable: appUpdates,
-          builder: (context, _) => ListTile(
-            leading: const Icon(Icons.system_update),
-            title: const Text('Ilovani yangilash'),
-            subtitle: Text(
-              appUpdates.available
-                  ? 'Yangi versiya ${appUpdates.release!.version}'
-                  : 'Versiyani tekshirish',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => openUpdates(context),
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topLeft,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 960),
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text(
+            '${data.user['fullName']}',
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
-        ),
-      Card(
-        child: Column(
-          children: [
+          Text(
+            '${data.user['username']} · ${{'SHOP_ADMIN': 'Do‘kon administratori', 'CASHIER': 'Kassir', 'WAREHOUSEMAN': 'Omborchi', 'SUPER_ADMIN': 'Superadmin'}[data.user['role']] ?? ''}',
+          ),
+          if (Platform.isAndroid || Platform.isWindows)
+            ListenableBuilder(
+              listenable: appUpdates,
+              builder: (context, _) => ListTile(
+                leading: const Icon(Icons.system_update),
+                title: const Text('Ilovani yangilash'),
+                subtitle: Text(
+                  appUpdates.available
+                      ? 'Yangi versiya ${appUpdates.release!.version}'
+                      : 'Versiyani tekshirish',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => openUpdates(context),
+              ),
+            ),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: const Text('Profilni tahrirlash'),
+                  enabled: data.online,
+                  onTap: () => update(context, false),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.lock_outline),
+                  title: const Text('Parolni almashtirish'),
+                  enabled: data.online,
+                  onTap: () => update(context, true),
+                ),
+              ],
+            ),
+          ),
+          if (data.owner) ...[
             ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('Profilni tahrirlash'),
+              leading: const Icon(Icons.storefront),
+              title: const Text('Do‘kon sozlamalari'),
               enabled: data.online,
-              onTap: () => update(context, false),
+              onTap: () => shop(context),
             ),
             ListTile(
-              leading: const Icon(Icons.lock_outline),
-              title: const Text('Parolni almashtirish'),
-              enabled: data.online,
-              onTap: () => update(context, true),
+              leading: const Icon(Icons.workspace_premium),
+              title: const Text('Tarif va obuna'),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(
+                    appBar: AppBar(title: const Text('Tarif va obuna')),
+                    body: PlansPage(data: data),
+                  ),
+                ),
+              ),
             ),
           ],
-        ),
-      ),
-      if (data.owner) ...[
-        ListTile(
-          leading: const Icon(Icons.storefront),
-          title: const Text('Do‘kon sozlamalari'),
-          enabled: data.online,
-          onTap: () => shop(context),
-        ),
-        ListTile(
-          leading: const Icon(Icons.workspace_premium),
-          title: const Text('Tarif va obuna'),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => Scaffold(
-                appBar: AppBar(title: const Text('Tarif va obuna')),
-                body: PlansPage(data: data),
+          ListTile(
+            leading: const Icon(Icons.sync),
+            title: Text('Sinxronlash · ${data.pending.length} ta kutilmoqda'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => Scaffold(
+                  appBar: AppBar(title: const Text('Sinxronlash')),
+                  body: OutboxPage(data: data),
+                ),
               ),
             ),
           ),
-        ),
-      ],
-      ListTile(
-        leading: const Icon(Icons.sync),
-        title: Text('Sinxronlash · ${data.pending.length} ta kutilmoqda'),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-            builder: (_) => Scaffold(
-              appBar: AppBar(title: const Text('Sinxronlash')),
-              body: OutboxPage(data: data),
+          Text(
+            'Katalog yangilangan ${dateText(data.cache['productsFetchedAt'])}',
+          ),
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Offline katalog va savdolar qurilmada shifrlangan holda saqlanadi. Ro‘yxatdan o‘tish, tarif, sozlamalar va boshqaruvdagi o‘zgarishlar uchun internet kerak.',
             ),
           ),
-        ),
+        ],
       ),
-      Text('Katalog yangilangan ${dateText(data.cache['productsFetchedAt'])}'),
-      const Padding(
-        padding: EdgeInsets.all(16),
-        child: Text(
-          'Offline katalog va savdolar qurilmada shifrlangan holda saqlanadi. Ro‘yxatdan o‘tish, tarif, sozlamalar va boshqaruvdagi o‘zgarishlar uchun internet kerak.',
-        ),
-      ),
-    ],
+    ),
   );
 }
 
@@ -359,7 +369,7 @@ class OutboxPage extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 12),
           child: Text(
-            'Internet qaytganda Android savdolarni avtomatik yuboradi. Xato chiqqan savdo telefonda saqlanib qoladi.',
+            'Sinxronlanmagan savdolar qurilmada saqlanadi. Internetga ulangach, yuborish qayta uriniladi.',
           ),
         ),
         for (final order in data.orders.reversed)
@@ -625,10 +635,20 @@ class InflowPage extends StatelessWidget {
     children: [
       Padding(
         padding: const EdgeInsets.all(20),
-        child: FilledButton.icon(
-          onPressed: data.online ? () => create(context) : null,
-          icon: const Icon(Icons.add),
-          label: const Text('Yangi kirim'),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Partiyalar',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+            ),
+            FilledButton.icon(
+              onPressed: data.online ? () => create(context) : null,
+              icon: const Icon(Icons.add),
+              label: const Text('Yangi kirim'),
+            ),
+          ],
         ),
       ),
       Expanded(
@@ -737,10 +757,20 @@ class _ReturnsPageState extends State<ReturnsPage> {
     children: [
       Padding(
         padding: const EdgeInsets.all(16),
-        child: FilledButton.icon(
-          onPressed: widget.data.online ? create : null,
-          icon: const Icon(Icons.keyboard_return),
-          label: const Text('Tovar qaytarish'),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Qaytarishlar tarixi',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+            ),
+            FilledButton.icon(
+              onPressed: widget.data.online ? create : null,
+              icon: const Icon(Icons.keyboard_return),
+              label: const Text('Tovar qaytarish'),
+            ),
+          ],
         ),
       ),
       if (error != null) Text(error!),

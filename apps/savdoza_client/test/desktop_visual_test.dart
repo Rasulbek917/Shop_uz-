@@ -11,12 +11,20 @@ import 'package:savdoza_client/desktop_shell.dart';
 import 'package:savdoza_client/desktop_table.dart';
 import 'package:savdoza_client/navigation.dart';
 import 'package:savdoza_client/pos.dart';
+import 'package:savdoza_client/screens.dart';
 
 import 'app_test.dart' show sample;
 import 'dashboard_test.dart' show dashboardData;
 
 void main() {
-  for (final section in ['dashboard', 'pos', 'products']) {
+  for (final section in [
+    'dashboard',
+    'pos',
+    'products',
+    'batches',
+    'returns',
+    'settings',
+  ]) {
     testWidgets('desktop $section layout uses the available workspace', (
       tester,
     ) async {
@@ -63,6 +71,9 @@ void main() {
       final content = switch (section) {
         'dashboard' => DesktopDashboard(data: data, onNavigate: (_) {}),
         'pos' => PosPage(data: data),
+        'batches' => InflowPage(data: data),
+        'returns' => ReturnsPage(data: data),
+        'settings' => SettingsPage(data: data),
         _ => DesktopRecordsTable(
           rows: data.products,
           title: 'Mahsulotlar',
@@ -93,6 +104,12 @@ void main() {
                   'Mahsulotlar',
                   Icons.inventory_2_outlined,
                 ),
+                Destination(
+                  'batches',
+                  'Ombor va partiyalar',
+                  Icons.warehouse_outlined,
+                ),
+                Destination('returns', 'Qaytarishlar', Icons.keyboard_return),
                 Destination('settings', 'Sozlamalar', Icons.settings_outlined),
               ],
               section: section,
