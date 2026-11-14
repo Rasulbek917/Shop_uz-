@@ -67,6 +67,7 @@ jobs:
           echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
       - name: Resolve, analyze and test native app
         env:
+          SAVDOZA_DESKTOP_PREVIEW: "1"
           SAVDOZA_DASHBOARD_PREVIEW: ${{ runner.temp }}/savdoza-dashboard.png
         working-directory: apps/savdoza_client
         run: |

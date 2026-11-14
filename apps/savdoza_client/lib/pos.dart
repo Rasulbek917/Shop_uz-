@@ -381,152 +381,187 @@ class _PosPageState extends State<PosPage> {
         ),
       ],
     );
-    final basket = SingleChildScrollView(
-      child: Column(
-        children: [
-          const ListTile(
-            leading: Icon(Icons.shopping_basket_outlined),
-            title: Text(
-              'Savat',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ListView(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              for (final line in cart)
-                ListTile(
-                  title: Text('${line.product['name']}'),
-                  subtitle: Text(money(line.price * line.quantity)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: saving
-                            ? null
-                            : () => setState(() {
-                                line.quantity--;
-                                if (line.quantity <= 0) cart.remove(line);
-                              }),
-                        icon: const Icon(Icons.remove_circle_outline),
-                      ),
-                      Text('${line.quantity}'),
-                      IconButton(
-                        onPressed: saving
-                            ? null
-                            : () {
-                                final current = widget.data.products
-                                    .where((p) => p['id'] == line.product['id'])
-                                    .firstOrNull;
-                                if (current != null) add(current);
-                              },
-                        icon: const Icon(Icons.add_circle_outline),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+    final basketHeader = const ListTile(
+      leading: Icon(Icons.shopping_basket_outlined),
+      title: Text(
+        'Savat',
+        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+      ),
+    );
+    Widget basketLines(bool scroll) => ListView(
+      shrinkWrap: !scroll,
+      physics: scroll
+          ? const AlwaysScrollableScrollPhysics()
+          : const NeverScrollableScrollPhysics(),
+      children: [
+        for (final line in cart)
+          ListTile(
+            title: Text('${line.product['name']}'),
+            subtitle: Text(money(line.price * line.quantity)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                DropdownButtonFormField<String>(
-                  key: ValueKey('customer-$customer'),
-                  initialValue: customer,
-                  isExpanded: true,
-                  decoration: const InputDecoration(labelText: 'Mijoz'),
-                  items: [
-                    const DropdownMenuItem(
-                      value: '',
-                      child: Text('Oddiy xaridor'),
-                    ),
-                    ...records(widget.data.cache['customers']).map(
-                      (row) => DropdownMenuItem(
-                        value: '${row['id']}',
-                        child: Text('${row['name']}'),
-                      ),
-                    ),
-                  ],
-                  onChanged: saving
+                IconButton(
+                  onPressed: saving
                       ? null
-                      : (value) => setState(() => customer = value ?? ''),
+                      : () => setState(() {
+                          line.quantity--;
+                          if (line.quantity <= 0) cart.remove(line);
+                        }),
+                  icon: const Icon(Icons.remove_circle_outline),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: discount,
-                        keyboardType: TextInputType.number,
-                        onChanged: (_) => setState(() {}),
-                        decoration: const InputDecoration(
-                          labelText: 'Chegirma (so‘m)',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Jami ${money(total)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: payment,
-                  decoration: const InputDecoration(labelText: 'To‘lov turi'),
-                  items: const [
-                    DropdownMenuItem(value: 'CASH', child: Text('Naqd')),
-                    DropdownMenuItem(value: 'CARD', child: Text('Karta')),
-                    DropdownMenuItem(
-                      value: 'ELECTRONIC',
-                      child: Text('Elektron to‘lov'),
-                    ),
-                  ],
-                  onChanged: saving
+                Text('${line.quantity}'),
+                IconButton(
+                  onPressed: saving
                       ? null
-                      : (value) => setState(() => payment = value!),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: saving || cart.isEmpty
-                            ? null
-                            : () => checkout(false),
-                        child: Text(
-                          saving ? 'Saqlanmoqda…' : 'Savdoni yakunlash',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: saving || cart.isEmpty
-                          ? null
-                          : () => checkout(true),
-                      child: const Text('Nasiya'),
-                    ),
-                  ],
+                      : () {
+                          final current = widget.data.products
+                              .where((p) => p['id'] == line.product['id'])
+                              .firstOrNull;
+                          if (current != null) add(current);
+                        },
+                  icon: const Icon(Icons.add_circle_outline),
                 ),
               ],
             ),
           ),
+      ],
+    );
+    final basketFooter = Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          DropdownButtonFormField<String>(
+            key: ValueKey('customer-$customer'),
+            initialValue: customer,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Mijoz'),
+            items: [
+              const DropdownMenuItem(value: '', child: Text('Oddiy xaridor')),
+              ...records(widget.data.cache['customers']).map(
+                (row) => DropdownMenuItem(
+                  value: '${row['id']}',
+                  child: Text('${row['name']}'),
+                ),
+              ),
+            ],
+            onChanged: saving
+                ? null
+                : (value) => setState(() => customer = value ?? ''),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: discount,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'Chegirma (so‘m)',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  'Jami ${money(total)}',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: payment,
+            decoration: const InputDecoration(labelText: 'To‘lov turi'),
+            items: const [
+              DropdownMenuItem(value: 'CASH', child: Text('Naqd')),
+              DropdownMenuItem(value: 'CARD', child: Text('Karta')),
+              DropdownMenuItem(
+                value: 'ELECTRONIC',
+                child: Text('Elektron to‘lov'),
+              ),
+            ],
+            onChanged: saving
+                ? null
+                : (value) => setState(() => payment = value!),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton(
+                  onPressed: saving || cart.isEmpty
+                      ? null
+                      : () => checkout(false),
+                  child: Text(saving ? 'Saqlanmoqda…' : 'Savdoni yakunlash'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: saving || cart.isEmpty ? null : () => checkout(true),
+                child: const Text('Nasiya'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    final basket = SingleChildScrollView(
+      child: Column(children: [basketHeader, basketLines(false), basketFooter]),
+    );
+    final desktopBasket = Material(
+      color: Colors.white,
+      shape: const Border(left: BorderSide(color: Color(0xffdbe3e7))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          basketHeader,
+          const Divider(height: 1),
+          Expanded(
+            child: cart.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.shopping_basket_outlined,
+                          size: 44,
+                          color: Colors.blueGrey,
+                        ),
+                        SizedBox(height: 12),
+                        Text('Savat bo‘sh'),
+                        SizedBox(height: 6),
+                        Text(
+                          'Mahsulotni bosib savatga qo‘shing',
+                          style: TextStyle(
+                            color: Colors.blueGrey,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : basketLines(true),
+          ),
+          const Divider(height: 1),
+          basketFooter,
         ],
       ),
     );
     return LayoutBuilder(
       builder: (context, size) => Platform.isWindows || size.maxWidth >= 820
           ? Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: catalog),
-                SizedBox(width: 370, child: basket),
+                SizedBox(width: 400, child: desktopBasket),
               ],
             )
           : Column(

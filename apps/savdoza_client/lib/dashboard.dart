@@ -218,7 +218,7 @@ class DashboardPage extends StatelessWidget {
                   else ...[
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final chart = _RevenueChart(
+                        final chart = RevenueChart(
                           rows: records(report['last7DaysTrend']),
                         );
                         final products = _TopProducts(
@@ -449,8 +449,8 @@ class _Panel extends StatelessWidget {
   );
 }
 
-class _RevenueChart extends StatelessWidget {
-  const _RevenueChart({required this.rows});
+class RevenueChart extends StatelessWidget {
+  const RevenueChart({super.key, required this.rows});
   final List<Json> rows;
 
   @override

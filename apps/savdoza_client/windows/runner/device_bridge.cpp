@@ -11,10 +11,17 @@
 #include <stdexcept>
 #include <vector>
 #include <algorithm>
+#include <array>
+#include <cctype>
 
 namespace {
 using flutter::EncodableValue;
 using flutter::EncodableMap;
+
+int64_t Integer(const EncodableValue& value) {
+  if (const auto* number = std::get_if<int64_t>(&value)) return *number;
+  return std::get<int32_t>(value);
+}
 
 std::filesystem::path StorePath() {
   PWSTR folder = nullptr;
@@ -24,6 +31,43 @@ std::filesystem::path StorePath() {
   directory /= L"Savdoza";
   std::filesystem::create_directories(directory);
   return directory / L"offline.sec";
+}
+
+std::filesystem::path UpdatePath() {
+  return StorePath().parent_path() / L"updates" / L"savdoza-windows-setup.exe";
+}
+
+void VerifyUpdate(const EncodableMap& arguments) {
+  const auto path = UpdatePath();
+  const auto expected_size = Integer(arguments.at(EncodableValue("bytes")));
+  if (expected_size < 1 || expected_size > 209715200 || std::filesystem::file_size(path) != static_cast<uintmax_t>(expected_size)) throw std::runtime_error("Yangilanish hajmi mos kelmadi");
+  std::ifstream file(path, std::ios::binary);
+  if (!file) throw std::runtime_error("Yangilanish fayli ochilmadi");
+  HCRYPTPROV provider = 0;
+  HCRYPTHASH hash = 0;
+  if (!CryptAcquireContextW(&provider, nullptr, nullptr, PROV_RSA_AES, CRYPT_VERIFYCONTEXT)) throw std::runtime_error("Faylni tekshirib bo‘lmadi");
+  if (!CryptCreateHash(provider, CALG_SHA_256, 0, 0, &hash)) {
+    CryptReleaseContext(provider, 0);
+    throw std::runtime_error("Faylni tekshirib bo‘lmadi");
+  }
+  std::array<char, 65536> buffer{};
+  bool valid = true;
+  while (file) {
+    file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+    const auto count = file.gcount();
+    if (count > 0 && !CryptHashData(hash, reinterpret_cast<const BYTE*>(buffer.data()), static_cast<DWORD>(count), 0)) { valid = false; break; }
+  }
+  std::array<BYTE, 32> digest{};
+  DWORD length = static_cast<DWORD>(digest.size());
+  valid = valid && file.eof() && CryptGetHashParam(hash, HP_HASHVAL, digest.data(), &length, 0);
+  CryptDestroyHash(hash);
+  CryptReleaseContext(provider, 0);
+  std::string actual;
+  constexpr char hex[] = "0123456789abcdef";
+  for (const auto byte : digest) { actual.push_back(hex[byte >> 4]); actual.push_back(hex[byte & 15]); }
+  auto expected = std::get<std::string>(arguments.at(EncodableValue("sha256")));
+  std::transform(expected.begin(), expected.end(), expected.begin(), [](unsigned char value) { return static_cast<char>(std::tolower(value)); });
+  if (!valid || actual != expected) throw std::runtime_error("Yangilanish fayli tekshiruvdan o‘tmadi. Qayta yuklang");
 }
 
 void WriteFileBytes(const std::filesystem::path& path, const std::vector<uint8_t>& bytes) {
@@ -127,7 +171,21 @@ std::unique_ptr<flutter::MethodChannel<EncodableValue>> RegisterDeviceBridge(flu
   auto channel = std::make_unique<flutter::MethodChannel<EncodableValue>>(messenger, "savdoza/device", &flutter::StandardMethodCodec::GetInstance());
   channel->SetMethodCallHandler([window](const flutter::MethodCall<EncodableValue>& call, std::unique_ptr<flutter::MethodResult<EncodableValue>> result) {
     try {
-      if (call.method_name() == "readStore") result->Success(EncodableValue(ReadStore()));
+      if (call.method_name() == "appVersion") {
+        result->Success(EncodableValue(EncodableMap{
+          {EncodableValue("version"), EncodableValue(std::to_string(FLUTTER_VERSION_MAJOR) + "." + std::to_string(FLUTTER_VERSION_MINOR) + "." + std::to_string(FLUTTER_VERSION_PATCH))},
+          {EncodableValue("build"), EncodableValue(static_cast<int64_t>(FLUTTER_VERSION_BUILD))},
+        }));
+      } else if (call.method_name() == "verifyUpdate") {
+        VerifyUpdate(std::get<EncodableMap>(*call.arguments()));
+        result->Success();
+      } else if (call.method_name() == "installUpdate") {
+        const auto& arguments = std::get<EncodableMap>(*call.arguments());
+        if (Integer(arguments.at(EncodableValue("build"))) <= FLUTTER_VERSION_BUILD) throw std::runtime_error("Yangi versiya topilmadi");
+        VerifyUpdate(arguments);
+        if (reinterpret_cast<INT_PTR>(ShellExecuteW(window, L"open", UpdatePath().c_str(), nullptr, nullptr, SW_SHOWNORMAL)) <= 32) throw std::runtime_error("O‘rnatish oynasi ochilmadi");
+        result->Success(EncodableValue("installer"));
+      } else if (call.method_name() == "readStore") result->Success(EncodableValue(ReadStore()));
       else if (call.method_name() == "writeStore") {
         WriteStore(std::get<std::string>(*call.arguments()));
         result->Success();

@@ -12,6 +12,16 @@ void main() {
   };
   test('updates require the official APK, checksum and bounded size', () {
     expect(AppRelease.fromJson(manifest).build, 15);
+    final windows = {
+      ...manifest,
+      'url': 'https://github.com/Rasulbek917/Shop_uz-/releases/download/windows-latest/savdoza-windows-setup.exe',
+    };
+    expect(AppRelease.fromJson(windows, platform: 'windows').build, 15);
+    expect(
+      () => AppRelease.fromJson(manifest, platform: 'windows'),
+      throwsA(isA<FormatException>()),
+    );
+    expect(() => AppRelease.fromJson(windows), throwsA(isA<FormatException>()));
     for (final invalid in [
       {
         'url': 'http://github.com/Rasulbek917/Shop_uz-/releases/download/android-latest/savdoza-android.apk',

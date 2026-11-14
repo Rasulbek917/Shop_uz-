@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
 import 'updates.dart';
+import 'dashboard.dart';
 import 'widgets.dart';
 import 'management.dart';
 
@@ -260,7 +261,7 @@ class SettingsPage extends StatelessWidget {
         style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
       ),
       Text('${data.user['username']} · ${data.user['role']}'),
-      if (Platform.isAndroid)
+      if (Platform.isAndroid || Platform.isWindows)
         ListenableBuilder(
           listenable: appUpdates,
           builder: (context, _) => ListTile(
@@ -331,7 +332,7 @@ class SettingsPage extends StatelessWidget {
       const Padding(
         padding: EdgeInsets.all(16),
         child: Text(
-          'Offline katalog va savdolar telefonda shifrlangan holda saqlanadi. Ro‘yxatdan o‘tish, tarif, sozlamalar va boshqaruvdagi o‘zgarishlar uchun internet kerak.',
+          'Offline katalog va savdolar qurilmada shifrlangan holda saqlanadi. Ro‘yxatdan o‘tish, tarif, sozlamalar va boshqaruvdagi o‘zgarishlar uchun internet kerak.',
         ),
       ),
     ],
@@ -415,33 +416,92 @@ class ReportsPage extends StatelessWidget {
           'Savdo hisoboti',
           style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
         ),
-        for (final period in ['today', 'month'])
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    period == 'today' ? 'Bugun' : 'Shu oy',
-                    style: const TextStyle(fontSize: 22),
+        LayoutBuilder(
+          builder: (context, constraints) => Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              for (final period in ['today', 'month'])
+                SizedBox(
+                  width: constraints.maxWidth < 650
+                      ? constraints.maxWidth
+                      : (constraints.maxWidth - 16) / 2,
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            period == 'today' ? 'Bugun' : 'Shu oy',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          for (final item in [
+                            (
+                              'Tushum',
+                              money(
+                                (object(reports[period])['revenue'] as num?) ??
+                                    0,
+                              ),
+                            ),
+                            (
+                              'Savdolar',
+                              '${object(reports[period])['salesCount'] ?? 0} ta',
+                            ),
+                            (
+                              'Sof foyda',
+                              money(
+                                (object(reports[period])['profit'] as num?) ??
+                                    0,
+                              ),
+                            ),
+                            (
+                              'Qaytarish',
+                              money(
+                                (object(reports[period])['refundTotal']
+                                        as num?) ??
+                                    0,
+                              ),
+                            ),
+                          ])
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.$1,
+                                      style: const TextStyle(
+                                        color: Colors.blueGrey,
+                                      ),
+                                    ),
+                                  ),
+                                  Flexible(
+                                    child: Text(
+                                      item.$2,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                  Text(
-                    'Tushum ${money((object(reports[period])['revenue'] as num?) ?? 0)}',
-                  ),
-                  Text(
-                    'Savdolar ${object(reports[period])['salesCount'] ?? 0} ta',
-                  ),
-                  Text(
-                    'Foyda ${money((object(reports[period])['profit'] as num?) ?? 0)}',
-                  ),
-                  Text(
-                    'Qaytarish ${money((object(reports[period])['refundTotal'] as num?) ?? 0)}',
-                  ),
-                ],
-              ),
-            ),
+                ),
+            ],
           ),
+        ),
+        const SizedBox(height: 20),
+        RevenueChart(rows: records(reports['last7DaysTrend'])),
+        const SizedBox(height: 24),
         const Text('Ko‘p sotilgan mahsulotlar', style: TextStyle(fontSize: 20)),
         for (final product in records(reports['topProducts']))
           ListTile(
@@ -687,6 +747,32 @@ class _ReturnsPageState extends State<ReturnsPage> {
       Expanded(
         child: ListView(
           children: [
+            if (rows.isEmpty && error == null)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 64),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.assignment_return_outlined,
+                      size: 48,
+                      color: Colors.blueGrey,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Qaytarishlar hozircha yo‘q',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Qaytarilgan savdolar shu yerda ko‘rinadi.',
+                      style: TextStyle(color: Colors.blueGrey),
+                    ),
+                  ],
+                ),
+              ),
             for (final row in rows)
               Card(
                 child: ListTile(

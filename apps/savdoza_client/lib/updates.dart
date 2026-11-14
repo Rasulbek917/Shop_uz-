@@ -6,13 +6,16 @@ import 'package:flutter/material.dart';
 import 'data.dart';
 
 class AppRelease {
-  AppRelease.fromJson(Json data)
+  AppRelease.fromJson(Json data, {String platform = 'android'})
     : version = '${data['version']}',
       sha256 = '${data['sha256']}',
       url = '${data['url']}',
       bytes = (data['bytes'] as num).toInt(),
       build = int.parse('${data['version']}'.split('+').last) {
     final uri = Uri.parse(url);
+    final path = platform == 'android'
+        ? '/Rasulbek917/Shop_uz-/releases/download/android-latest/savdoza-android.apk'
+        : '/Rasulbek917/Shop_uz-/releases/download/windows-latest/savdoza-windows-setup.exe';
     if (build <= 0 ||
         bytes <= 0 ||
         bytes > 209715200 ||
@@ -20,8 +23,8 @@ class AppRelease {
         uri.scheme != 'https' ||
         uri.host != 'github.com' ||
         uri.userInfo.isNotEmpty ||
-        uri.path !=
-            '/Rasulbek917/Shop_uz-/releases/download/android-latest/savdoza-android.apk') {
+        !['android', 'windows'].contains(platform) ||
+        uri.path != path) {
       throw const FormatException('Yangilanish ma’lumotlari noto‘g‘ri');
     }
   }
@@ -43,7 +46,8 @@ class AppUpdates extends ChangeNotifier {
   bool get available => release != null && release!.build > build;
 
   Future<void> check({bool force = false}) async {
-    if (!Platform.isAndroid || checking || downloading) return;
+    if ((!Platform.isAndroid && !Platform.isWindows) || checking || downloading)
+      return;
     if (!force &&
         lastChecked != null &&
         DateTime.now().difference(lastChecked!) < const Duration(hours: 6)) {
@@ -75,7 +79,10 @@ class AppUpdates extends ChangeNotifier {
           .join()
           .timeout(const Duration(seconds: 20));
       final next = AppRelease.fromJson(
-        object(object(jsonDecode(text))['android']),
+        object(
+          object(jsonDecode(text))[Platform.isWindows ? 'windows' : 'android'],
+        ),
+        platform: Platform.isWindows ? 'windows' : 'android',
       );
       if (next.build != release?.build) {
         ready = false;
@@ -92,6 +99,79 @@ class AppUpdates extends ChangeNotifier {
     }
   }
 
+  Future<void> _downloadWindows(AppRelease target) async {
+    final base = Platform.environment['LOCALAPPDATA'];
+    if (base == null)
+      throw const FileSystemException('Yangilanish papkasi topilmadi');
+    final directory = Directory('$base/Savdoza/updates');
+    await directory.create(recursive: true);
+    final partial = File('${directory.path}/download.part');
+    final destination = File('${directory.path}/savdoza-windows-setup.exe');
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 15);
+    var uri = Uri.parse(
+      '${target.url}?v=${Uri.encodeComponent(target.version)}',
+    );
+    try {
+      for (var redirects = 0; redirects < 6; redirects++) {
+        if (uri.scheme != 'https' ||
+            uri.userInfo.isNotEmpty ||
+            ![
+              'github.com',
+              'release-assets.githubusercontent.com',
+              'objects.githubusercontent.com',
+            ].contains(uri.host))
+          throw const HttpException('Yuklab olish manzili tasdiqlanmadi');
+        final request = await client.getUrl(uri);
+        request.followRedirects = false;
+        final response = await request.close().timeout(
+          const Duration(seconds: 30),
+        );
+        if ([301, 302, 303, 307, 308].contains(response.statusCode)) {
+          final location = response.headers.value('location');
+          if (location == null)
+            throw const HttpException('Yangilanish havolasi olinmadi');
+          uri = uri.resolve(location);
+          await response.drain<void>().timeout(const Duration(seconds: 15));
+          continue;
+        }
+        if (response.statusCode != 200)
+          throw const HttpException('Yangilanish yuklanmadi');
+        final sink = partial.openWrite();
+        var count = 0;
+        final deadline = DateTime.now().add(const Duration(minutes: 15));
+        try {
+          await for (final chunk in response.timeout(
+            const Duration(seconds: 45),
+          )) {
+            count += chunk.length;
+            if (count > target.bytes || DateTime.now().isAfter(deadline))
+              throw const HttpException(
+                'Yuklab olish hajmi yoki vaqti noto‘g‘ri',
+              );
+            sink.add(chunk);
+          }
+          await sink.flush();
+        } finally {
+          await sink.close();
+        }
+        if (count != target.bytes)
+          throw const HttpException('Fayl to‘liq yuklanmadi');
+        if (await destination.exists()) await destination.delete();
+        await partial.rename(destination.path);
+        await device.invokeMethod('verifyUpdate', {
+          'sha256': target.sha256,
+          'bytes': target.bytes,
+        });
+        return;
+      }
+      throw const HttpException('Yuklab olish havolalari chegaradan oshdi');
+    } finally {
+      client.close(force: true);
+      if (await partial.exists()) await partial.delete();
+    }
+  }
+
   Future<void> update() async {
     if (!available || downloading) return;
     downloading = true;
@@ -100,16 +180,22 @@ class AppUpdates extends ChangeNotifier {
     final target = release!;
     try {
       if (!ready) {
-        await device.invokeMethod('downloadUpdate', {
-          'url': '${target.url}?v=${Uri.encodeComponent(target.version)}',
-          'sha256': target.sha256,
-          'bytes': target.bytes,
-          'build': target.build,
-        });
+        if (Platform.isWindows) {
+          await _downloadWindows(target);
+        } else {
+          await device.invokeMethod('downloadUpdate', {
+            'url': '${target.url}?v=${Uri.encodeComponent(target.version)}',
+            'sha256': target.sha256,
+            'bytes': target.bytes,
+            'build': target.build,
+          });
+        }
         ready = true;
       }
       final result = await device.invokeMethod<String>('installUpdate', {
         'build': target.build,
+        'sha256': target.sha256,
+        'bytes': target.bytes,
       });
       needsPermission = result == 'permission';
     } catch (e) {

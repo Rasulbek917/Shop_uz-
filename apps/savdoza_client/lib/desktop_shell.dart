@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'data.dart';
+import 'dashboard.dart';
+import 'updates.dart';
 import 'navigation.dart';
 
 class DesktopShell extends StatefulWidget {
@@ -103,7 +105,33 @@ class _DesktopShellState extends State<DesktopShell> {
         autofocus: true,
         child: Theme(
           data: Theme.of(context).copyWith(
-            visualDensity: VisualDensity.compact,
+            visualDensity: VisualDensity.standard,
+            cardTheme: CardThemeData(
+              color: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xffdbe3e7)),
+              ),
+            ),
+            filledButtonTheme: FilledButtonThemeData(
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(100, 44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            outlinedButtonTheme: OutlinedButtonThemeData(
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(100, 44),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
             scaffoldBackgroundColor: const Color(0xffedf1f4),
             inputDecorationTheme: Theme.of(context).inputDecorationTheme
                 .copyWith(isDense: true),
@@ -188,6 +216,18 @@ class _DesktopShellState extends State<DesktopShell> {
                                     ),
                                   ],
                                 ),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: appUpdates.available
+                                  ? 'Yangi versiya mavjud'
+                                  : 'Ilovani yangilash',
+                              onPressed: () => openUpdates(context),
+                              icon: Icon(
+                                Icons.system_update_alt,
+                                color: appUpdates.available
+                                    ? const Color(0xff24634f)
+                                    : null,
                               ),
                             ),
                             IconButton(
@@ -452,7 +492,10 @@ class _DesktopShellState extends State<DesktopShell> {
                                       ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: widget.child,
+                                    child: Material(
+                                      color: Colors.white,
+                                      child: widget.child,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -586,149 +629,7 @@ class DesktopDashboard extends StatelessWidget {
   });
   final AppData data;
   final ValueChanged<String> onNavigate;
-
   @override
-  Widget build(BuildContext context) {
-    final report = object(data.cache['reports']);
-    final today = object(report['today']);
-    final month = object(report['month']);
-    final inventory = object(report['inventory']);
-    final products = records(report['topProducts']);
-    final metrics = {
-      'Bugungi tushum': money((today['revenue'] as num?) ?? 0),
-      'Bugungi cheklar': '${today['salesCount'] ?? 0} ta',
-      'Oylik tushum': money((month['revenue'] as num?) ?? 0),
-      'Sof foyda': money((today['profit'] as num?) ?? 0),
-    };
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            if (data.sell)
-              FilledButton.icon(
-                onPressed: () => onNavigate('pos'),
-                icon: const Icon(Icons.point_of_sale, size: 18),
-                label: const Text('Savdoni boshlash · Ctrl+2'),
-              ),
-            if (data.owner || data.user['role'] == 'WAREHOUSEMAN')
-              OutlinedButton.icon(
-                onPressed: () => onNavigate('batches'),
-                icon: const Icon(Icons.warehouse_outlined, size: 18),
-                label: const Text('Omborni ochish'),
-              ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = constraints.maxWidth < 900 ? 2 : 4;
-            return Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                for (final metric in metrics.entries)
-                  SizedBox(
-                    width:
-                        (constraints.maxWidth - (columns - 1) * 16) / columns,
-                    child: Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xfff1f6f3),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xffdbe6df)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            metric.key,
-                            style: const TextStyle(
-                              color: Colors.blueGrey,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            metric.value,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xffdbe3e7)),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Wrap(
-            spacing: 28,
-            runSpacing: 12,
-            children: [
-              Text('Mahsulotlar ${inventory['totalProductsCount'] ?? 0} ta'),
-              Text(
-                'Kam qolgan ${inventory['lowStockCount'] ?? 0} ta',
-                style: const TextStyle(color: Color(0xffa16207)),
-              ),
-              Text(
-                'Muddati yaqin ${inventory['approachingExpiryCount'] ?? 0} ta',
-                style: const TextStyle(color: Color(0xffbe123c)),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Ko‘p sotilgan mahsulotlar',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
-        if (products.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Text('Ushbu oyda sotuvlar hali yo‘q.'),
-          )
-        else
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: DataTable(
-              columnSpacing: 52,
-              columns: const [
-                DataColumn(label: Text('Mahsulot')),
-                DataColumn(label: Text('Sotilgan miqdor'), numeric: true),
-                DataColumn(label: Text('Tushum'), numeric: true),
-              ],
-              rows: [
-                for (final product in products)
-                  DataRow(
-                    cells: [
-                      DataCell(Text('${product['name']}')),
-                      DataCell(
-                        Text(
-                          '${product['totalQuantity']} ${product['unit'] ?? ''}',
-                        ),
-                      ),
-                      DataCell(
-                        Text(money((product['totalRevenue'] as num?) ?? 0)),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) =>
+      DashboardPage(data: data, onNavigate: onNavigate);
 }

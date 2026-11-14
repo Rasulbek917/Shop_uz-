@@ -398,10 +398,19 @@ class _ManagementPageState extends State<ManagementPage> {
                 icon: const Icon(Icons.refresh),
               ),
               if (!config.readOnly)
-                IconButton(
-                  onPressed: busy ? null : edit,
-                  icon: const Icon(Icons.add_circle),
-                ),
+                Platform.isWindows
+                    ? Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: FilledButton.icon(
+                          onPressed: busy ? null : edit,
+                          icon: const Icon(Icons.add, size: 20),
+                          label: const Text('Qo‘shish'),
+                        ),
+                      )
+                    : IconButton(
+                        onPressed: busy ? null : edit,
+                        icon: const Icon(Icons.add_circle),
+                      ),
             ],
           ),
         ),
@@ -416,6 +425,7 @@ class _ManagementPageState extends State<ManagementPage> {
               ? DesktopRecordsTable(
                   key: ValueKey('${config.path}:$search'),
                   rows: visible,
+                  section: widget.section,
                   title: config.title,
                   actions: rowActions,
                 )
