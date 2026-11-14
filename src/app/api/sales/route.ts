@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { saleSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { withRefundInfo } from "@/lib/refunds";
 import { logger } from "@/lib/logger";
 import { saleReplay, assertReplay } from "@/lib/sale-replay";
 import { generateReceiptNumber } from "@/lib/receipt";
@@ -51,6 +52,7 @@ export async function GET(req: NextRequest) {
     const sales = await prisma.sale.findMany({
       where,
       include: {
+        returns: { include: { items: true } },
         cashier: {
           select: { id: true, fullName: true, username: true },
         },
@@ -68,7 +70,7 @@ export async function GET(req: NextRequest) {
       take: 100,
     });
 
-    return NextResponse.json({ success: true, data: sales });
+    return NextResponse.json({ success: true, data: sales.map(withRefundInfo) });
   } catch (error: any) {
     logger.error("Sales GET error", { error: error });
     return NextResponse.json(
@@ -151,6 +153,9 @@ export async function POST(req: NextRequest) {
 
     // Run atomic transaction
     const result = await prisma.$transaction(async (tx) => {
+      if (customerId && !await tx.customer.findFirst({ where: { id: customerId, shopId }, select: { id: true } })) {
+        throw new Error("Mijoz ushbu do‘konga tegishli emas");
+      }
       // 1. Validate batches, expiry, and calculate total gross
       let totalAmount = 0;
       const validatedItems: Array<{
@@ -176,7 +181,7 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        if (!batch) {
+        if (!batch || batch.productId !== item.productId || batch.product.status !== "ACTIVE") {
           throw new Error(
             `Partiya topilmadi yoki ushbu do‘konga tegishli emas`,
           );
@@ -211,7 +216,7 @@ export async function POST(req: NextRequest) {
           batchId: batch.id,
           batchNumber: batch.batchNumber,
           quantity: item.quantity,
-          unitPrice: Math.round(item.unitPrice),
+          unitPrice: item.unitPrice,
           discount: Math.round(item.discount),
           totalPrice: itemTotal,
           purchasePrice: batch.purchasePrice,

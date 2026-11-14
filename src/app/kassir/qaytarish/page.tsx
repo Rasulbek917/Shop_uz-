@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { RotateCcw, Search, CheckCircle, AlertCircle, ShoppingBag } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/formatters";
+import { refundForQuantity } from "@/lib/refunds";
 import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function ReturnsPage() {
@@ -12,6 +13,7 @@ export default function ReturnsPage() {
   const [returnReason, setReturnReason] = useState("Mijoz xohishi bilan qaytarildi");
   const [selectedItems, setSelectedItems] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingReturn, setPendingReturn] = useState<any>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -19,6 +21,7 @@ export default function ReturnsPage() {
     e.preventDefault();
     if (!receiptNumber.trim()) return;
 
+    if (pendingReturn) { setErrorMsg("Oldingi qaytarish natijasini avval tekshiring"); return; }
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -53,7 +56,7 @@ export default function ReturnsPage() {
   };
 
   const handleProcessReturn = async () => {
-    const itemsToReturn = Object.entries(selectedItems)
+    const itemsToReturn = pendingReturn?.items || Object.entries(selectedItems)
       .filter(([_, qty]) => qty > 0)
       .map(([saleItemId, qty]) => {
         const saleItem = sale.items.find((i: any) => i.id === saleItemId);
@@ -71,10 +74,12 @@ export default function ReturnsPage() {
       return;
     }
 
-    if (!confirm("Haqiqatan ham tanlangan tovarlarni omborga qaytarib, pulni xaridorga qaytarasizmi?")) {
+    if (!pendingReturn && !confirm("Haqiqatan ham tanlangan tovarlarni omborga qaytarib, pulni xaridorga qaytarasizmi?")) {
       return;
     }
 
+    const payload = pendingReturn || { saleId: sale.id, reason: returnReason, items: itemsToReturn, idempotencyKey: crypto.randomUUID() };
+    setPendingReturn(payload);
     setIsSubmitting(true);
     setErrorMsg(null);
 
@@ -82,26 +87,24 @@ export default function ReturnsPage() {
       const res = await fetch("/api/returns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          saleId: sale.id,
-          reason: returnReason,
-          items: itemsToReturn,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
+        setPendingReturn(null);
         setErrorMsg(getErrorMessage(data.error, "Qaytarishda xatolik yuz berdi"));
         setIsSubmitting(false);
         return;
       }
 
+      setPendingReturn(null);
       setSuccessMsg(data.message);
       setSale(null);
       setReceiptNumber("");
       setSelectedItems({});
     } catch (e) {
-      setErrorMsg("Server xatosi");
+      setErrorMsg("Natija olinmadi. Qayta tekshirish tugmasi shu so‘rovni takroriy qaytarishsiz tekshiradi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -140,6 +143,7 @@ export default function ReturnsPage() {
         </div>
       )}
 
+      {pendingReturn && <div className="rounded-xl border border-amber-300 bg-amber-50 p-4"><p>Qaytarish natijasini tekshirish kerak.</p><button className="btn-primary mt-3" disabled={isSubmitting} onClick={handleProcessReturn}>Natijani qayta tekshirish</button></div>}
       {/* Receipt Search Box */}
       <form onSubmit={handleSearchSale} className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="relative flex-1">
@@ -155,7 +159,7 @@ export default function ReturnsPage() {
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !!pendingReturn}
           className="rounded-xl bg-[#4F46E5] px-6 py-2.5 text-xs md:text-sm font-bold text-white shadow-md hover:bg-[#4338CA] disabled:opacity-50"
         >
           {isLoading ? "Qidirilmoqda..." : "Chekni Topish"}
@@ -214,10 +218,10 @@ export default function ReturnsPage() {
                         <input
                           type="number"
                           min="0"
-                          max={item.quantity}
+                          max={item.returnableQuantity ?? item.quantity}
                           value={currentQty}
                           onChange={(e) => {
-                            const val = Math.max(0, Math.min(item.quantity, Number(e.target.value) || 0));
+                            const val = Math.max(0, Math.min(item.returnableQuantity ?? item.quantity, Math.floor(Number(e.target.value) || 0)));
                             setSelectedItems((prev) => ({ ...prev, [item.id]: val }));
                           }}
                           className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
@@ -226,7 +230,7 @@ export default function ReturnsPage() {
                       </div>
 
                       <span className="font-extrabold text-slate-900 w-28 text-right">
-                        {formatCurrency(currentQty * item.unitPrice)}
+                        {formatCurrency(refundForQuantity(item, currentQty))}
                       </span>
                     </div>
                   </div>
@@ -251,7 +255,7 @@ export default function ReturnsPage() {
           <div className="flex justify-end pt-2">
             <button
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !!pendingReturn}
               onClick={handleProcessReturn}
               className="flex items-center gap-2 rounded-xl bg-red-600 px-6 py-2.5 text-xs md:text-sm font-bold text-white shadow-md hover:bg-red-700 disabled:opacity-50 transition-colors"
             >

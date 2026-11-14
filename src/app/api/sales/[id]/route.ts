@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
+import { withRefundInfo } from "@/lib/refunds";
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,7 @@ export async function GET(
           },
         },
         payments: true,
+        returns: { include: { items: true } },
       },
     });
 
@@ -40,7 +42,7 @@ export async function GET(
       return NextResponse.json({ success: false, error: "Chek / Sotuv topilmadi" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data: sale });
+    return NextResponse.json({ success: true, data: withRefundInfo(sale) });
   } catch (error) {
     logger.error("GET /api\sales\:id\route.ts xatolik", { error: error, route: "/api\sales\:id\route.ts" });
     return NextResponse.json({ success: false, error: "Xatolik yuz berdi" }, { status: 500 });

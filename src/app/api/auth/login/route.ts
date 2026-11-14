@@ -4,7 +4,7 @@ import { comparePassword, signJwtToken, getAuthCookieName, resolveUser } from "@
 import { loginSchema } from "@/lib/validations";
 import { getDaysRemaining } from "@/lib/formatters";
 import { logAudit } from "@/lib/audit";
-import { checkLoginRateLimit, recordFailedLoginAttempt, resetLoginRateLimit } from "@/lib/rateLimit";
+import { takeAuthAttempt, resetAuthAttempts } from "@/lib/rateLimit";
 import { AuthUser, ShopStatus } from "@/types";
 import { logger } from "@/lib/logger";
 
@@ -33,17 +33,19 @@ export async function POST(req: NextRequest) {
     const rateLimitKey = `login:${username.toLowerCase()}`;
 
     // 1. Check rate limit
-    const rateCheck = checkLoginRateLimit(rateLimitKey);
+    const accountRate = await takeAuthAttempt(rateLimitKey);
+    const ipRate = await takeAuthAttempt(`login-ip:${ipAddress.split(",")[0].trim()}`, 100, 10);
+    const rateCheck = accountRate.allowed ? ipRate : accountRate;
     if (!rateCheck.allowed) {
       return NextResponse.json(
         {
           success: false,
           error: {
             code: "TOO_MANY_REQUESTS",
-            message: rateCheck.message || "Xavfsizlik yuzasidan hisob vaqtincha bloklandi.",
+            message: "Ko‘p kirish urinishi. Birozdan keyin qayta urinib ko‘ring.",
           },
         },
-        { status: 429 }
+        { status: 429, headers: { "Retry-After": String(rateCheck.retryAfterSeconds) } }
       );
     }
 
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!user) {
-      const failResult = recordFailedLoginAttempt(rateLimitKey);
+      const failResult = accountRate;
       await logAudit({
         action: "TIZIMGA_KIRISH_XATOSI",
         entity: "User",
@@ -69,7 +71,7 @@ export async function POST(req: NextRequest) {
           success: false,
           error: {
             code: "INVALID_CREDENTIALS",
-            message: failResult.message || "Login yoki parol noto‘g‘ri!",
+            message: "Login yoki parol noto‘g‘ri!",
           },
         },
         { status: 401 }
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
     // 3. Verify password
     const isPasswordValid = await comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
-      const failResult = recordFailedLoginAttempt(rateLimitKey);
+      const failResult = accountRate;
       await logAudit({
         shopId: user.shopId,
         userId: user.id,
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest) {
           success: false,
           error: {
             code: "INVALID_CREDENTIALS",
-            message: failResult.message || "Login yoki parol noto‘g‘ri!",
+            message: "Login yoki parol noto‘g‘ri!",
           },
         },
         { status: 401 }
@@ -117,7 +119,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Login succeeded: reset rate limit attempts
-    resetLoginRateLimit(rateLimitKey);
+    await resetAuthAttempts(rateLimitKey);
 
     let trialDaysLeft: number | null = null;
     let subscriptionDaysLeft: number | null = null;

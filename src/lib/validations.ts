@@ -102,7 +102,7 @@ export const saleItemSchema = z.object({
   batchId: z.string().min(1),
   quantity: z.number().int().positive(),
   unitPrice: z.number().min(0),
-  discount: z.number().min(0).default(0),
+  discount: z.number().finite().min(0).max(0, "Chegirmani savatning umumiy chegirma maydoniga kiriting").default(0),
 });
 
 const offlineSaleFields = {
@@ -138,13 +138,14 @@ export const returnItemSchema = z.object({
   productId: z.string().min(1),
   batchId: z.string().min(1),
   quantity: z.number().int().positive(),
-  refundUnitPrice: z.number().min(0),
+  refundUnitPrice: z.number().finite().min(0),
 });
 
 export const returnSchema = z.object({
   saleId: z.string().min(1, "Sotuv ID kiritilmadi"),
-  reason: z.string().optional().nullable(),
-  items: z.array(returnItemSchema).min(1, "Kamida bitta qaytariladigan tovar belgilansin"),
+  reason: z.string().max(1000).optional().nullable(),
+  idempotencyKey: z.string().min(10).max(100).optional(),
+  items: z.array(returnItemSchema).min(1, "Kamida bitta qaytariladigan tovar belgilansin").max(500).refine(items => new Set(items.map(item => item.saleItemId)).size === items.length, "Bir mahsulot qatorini ikki marta yuborib bo‘lmaydi"),
 });
 
 export const staffSchema = z.object({

@@ -9,6 +9,9 @@ async function hashPassword(password) {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    throw new Error('Demo seed ishlab turgan serverda bajarilmaydi. Mavjud do‘kon ma’lumotlari saqlanadi.');
+  }
   console.log("Ma'lumotlar bazasini tozalash va o'zbekcha boshlang'ich ma'lumotlarni yuklash boshlandi...");
 
   // Clean existing data

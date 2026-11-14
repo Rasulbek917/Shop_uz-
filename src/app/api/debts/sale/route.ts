@@ -79,6 +79,9 @@ export async function POST(req: NextRequest) {
     const receiptNumber = await generateReceiptNumber(shopId, "QARZ");
 
     const result = await prisma.$transaction(async (tx) => {
+      if (validated.data.customerId && !await tx.customer.findFirst({ where: { id: validated.data.customerId, shopId }, select: { id: true } })) {
+        throw new Error("Mijoz ushbu do‘konga tegishli emas");
+      }
       // 1. Partiyalarni tekshirish, muddat va qoldiqni nazorat qilish
       let totalAmount = 0;
       const validatedItems: Array<{
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
           include: { product: true },
         });
 
-        if (!batch) {
+        if (!batch || batch.productId !== item.productId || batch.product.status !== "ACTIVE") {
           throw new Error(
             "Partiya topilmadi yoki ushbu do‘konga tegishli emas",
           );
@@ -133,7 +136,7 @@ export async function POST(req: NextRequest) {
           batchId: batch.id,
           batchNumber: batch.batchNumber,
           quantity: item.quantity,
-          unitPrice: Math.round(item.unitPrice),
+          unitPrice: item.unitPrice,
           discount: Math.round(item.discount),
           totalPrice: itemTotal,
           purchasePrice: batch.purchasePrice,

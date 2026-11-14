@@ -45,6 +45,7 @@ export default function CashierPosPage() {
   // Checkout modal & Receipt state
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [checkoutKey, setCheckoutKey] = useState<string>("");
+  const [debtKey, setDebtKey] = useState<string>("");
   const [completedReceipt, setCompletedReceipt] = useState<any | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -348,7 +349,7 @@ export default function CashierPosPage() {
       alert("Savatcha bo‘sh!");
       return;
     }
-    setCheckoutKey(`CHK_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
+    if (!checkoutKey) setCheckoutKey(`CHK_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
     setPaidAmount(cartTotal);
     setShowCheckoutModal(true);
   };
@@ -402,6 +403,7 @@ export default function CashierPosPage() {
       }
 
       // Success!
+      setCheckoutKey("");
       setShowCheckoutModal(false);
       setCompletedReceipt(data.data);
       setShowReceiptModal(true);
@@ -437,6 +439,7 @@ export default function CashierPosPage() {
       }
     }
 
+    if (!debtKey) setDebtKey(crypto.randomUUID());
     setDebtForm(prefill);
     setDebtError(null);
     setShowDebtModal(true);
@@ -468,6 +471,8 @@ export default function CashierPosPage() {
         customerId: selectedCustomerId || null,
         firstName,
         lastName,
+        idempotencyKey: debtKey,
+        expectedTotal: cartTotal,
         phone: debtForm.phone.trim() || null,
         discountAmount: Number(discountAmount) || 0,
         items: cart.map((item) => ({
@@ -491,6 +496,7 @@ export default function CashierPosPage() {
         return;
       }
 
+      setDebtKey("");
       const savedAmount = Number(data.data?.amount ?? cartTotal);
       setShowDebtModal(false);
       setCompletedReceipt(data.data.receipt);

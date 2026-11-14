@@ -333,6 +333,10 @@ model Return {
   receiptNumber     String
   returnedById      String
   totalRefundAmount Float
+  cashRefundAmount  Float?
+  creditAdjustment  Float @default(0)
+  idempotencyKey    String? @unique
+  requestHash       String?
   reason            String?
   createdAt         DateTime @default(now())
 
@@ -443,4 +447,11 @@ model CheckoutOrder {
   paidAt DateTime?
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
   @@index([shopId, status])
+}
+
+model AuthThrottle {
+  key String @id
+  attempts Int
+  resetAt DateTime
+  @@index([resetAt])
 }

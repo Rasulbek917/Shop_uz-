@@ -172,7 +172,7 @@ test('unpaid account can authenticate but product and sale APIs return 403', asy
     const route = load(file, {
       '@/lib/tenant': tenant,
       '@/lib/prisma': { prisma: new Proxy({}, { get() { assert.fail('Unpaid shop must not perform business queries'); } }) },
-      '@/lib/sale-replay': {}, '@/lib/validations': {}, '@/lib/audit': {}, '@/lib/logger': { logger: { error() {} } }, '@/lib/receipt': {},
+      '@/lib/refunds': {}, '@/lib/sale-replay': {}, '@/lib/validations': {}, '@/lib/audit': {}, '@/lib/logger': { logger: { error() {} } }, '@/lib/receipt': {},
     });
     const response = await route.POST(request);
     assert.equal(response.status, 403);
@@ -585,4 +585,15 @@ test('offline retries reject reuse with different cart, customer or payment', ()
   for (const patch of [{ paymentMethod: 'CARD' }, { customerId: 'other' }, { paidAmount: 3000 }, { expectedTotal: 3000 }, { items: [{ ...items[0], quantity: 3 }] }]) {
     assert.throws(() => assertReplay(sale, { ...input, ...patch }), /identifikatori/);
   }
+});
+
+test('refund amounts include original discount and tax and respect prior returns', () => {
+  const {withRefundInfo, refundForQuantity} = load('src/lib/refunds.ts');
+  const sale = withRefundInfo({payableAmount: 9001, items:[{id:'a',quantity:3,unitPrice:1000},{id:'b',quantity:1,unitPrice:7000}], returns:[]});
+  const a=sale.items[0], b=sale.items[1];
+  assert.equal(a.refundAllocation+b.refundAllocation,9001);
+  assert.equal(refundForQuantity(a,1)+refundForQuantity({...a,returnedQuantity:1,refundedAmount:refundForQuantity(a,1)},2),a.refundAllocation);
+  const returned=withRefundInfo({...sale,returns:[{items:[{saleItemId:'a',quantity:1,totalRefund:900}]}]});
+  assert.equal(returned.items[0].returnableQuantity,2);
+  assert.ok(refundForQuantity(returned.items[0],2)<=returned.items[0].refundAllocation-900);
 });

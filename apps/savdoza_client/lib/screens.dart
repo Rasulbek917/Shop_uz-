@@ -668,6 +668,8 @@ class ReturnsPage extends StatefulWidget {
 class _ReturnsPageState extends State<ReturnsPage> {
   List<Json> rows = [];
   String? error;
+  Json? pendingReturn;
+  bool creating = false;
   @override
   void initState() {
     super.initState();
@@ -686,7 +688,13 @@ class _ReturnsPageState extends State<ReturnsPage> {
   }
 
   Future<void> create() async {
+    if (creating) return;
+    setState(() => creating = true);
     try {
+      if (pendingReturn != null) {
+        await submitPending();
+        return;
+      }
       final form = await editForm(context, 'Asl chekni topish', const [
         Field('receiptNumber', 'Chek raqami', required: true),
       ]);
@@ -711,7 +719,7 @@ class _ReturnsPageState extends State<ReturnsPage> {
         for (final item in items)
           Field(
             '${item['id']}',
-            '${object(item['product'])['name']} (max ${item['quantity']})',
+            '${object(item['product'])['name']} (max ${item['returnableQuantity'] ?? item['quantity']})',
             number: true,
             integer: true,
           ),
@@ -722,7 +730,8 @@ class _ReturnsPageState extends State<ReturnsPage> {
       for (final item in items) {
         final amount = (quantities['${item['id']}'] as num?) ?? 0;
         if (amount <= 0) continue;
-        if (amount > (item['quantity'] as num)) {
+        if (amount >
+            ((item['returnableQuantity'] ?? item['quantity']) as num)) {
           throw Exception('Qaytarish miqdori sotilgan miqdordan katta');
         }
         selected.add({
@@ -736,20 +745,33 @@ class _ReturnsPageState extends State<ReturnsPage> {
       if (selected.isEmpty) {
         throw Exception('Kamida bitta mahsulot miqdorini kiriting');
       }
-      await widget.data.api.call(
-        '/api/returns',
-        method: 'POST',
-        body: {
-          'saleId': sale['id'],
-          'reason': quantities['reason'],
-          'items': selected,
-        },
-      );
-      await load();
-      await widget.data.refresh();
+      pendingReturn = {
+        'saleId': sale['id'],
+        'reason': quantities['reason'],
+        'items': selected,
+        'idempotencyKey': saleKey(),
+      };
+      await submitPending();
     } catch (e) {
+      if (e is ApiError && e.status >= 400 && e.status < 500)
+        pendingReturn = null;
       if (mounted) await message(context, e);
+    } finally {
+      if (mounted) setState(() => creating = false);
     }
+  }
+
+  Future<void> submitPending() async {
+    final result = await widget.data.api.call(
+      '/api/returns',
+      method: 'POST',
+      body: pendingReturn!,
+    );
+    pendingReturn = null;
+    await load();
+    await widget.data.refresh();
+    if (mounted)
+      await message(context, result['message'] ?? 'Qaytarish saqlandi');
   }
 
   @override
@@ -766,9 +788,13 @@ class _ReturnsPageState extends State<ReturnsPage> {
               ),
             ),
             FilledButton.icon(
-              onPressed: widget.data.online ? create : null,
+              onPressed: widget.data.online && !creating ? create : null,
               icon: const Icon(Icons.keyboard_return),
-              label: const Text('Tovar qaytarish'),
+              label: Text(
+                pendingReturn != null
+                    ? 'Natijani tekshirish'
+                    : 'Tovar qaytarish',
+              ),
             ),
           ],
         ),

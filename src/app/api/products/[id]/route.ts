@@ -94,6 +94,14 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: "Mahsulot topilmadi" }, { status: 404 });
     }
 
+    const relations = validated.data;
+    if (relations.categoryId && !await prisma.category.findFirst({ where: { id: relations.categoryId, shopId }, select: { id: true } })) {
+      return NextResponse.json({ success: false, error: "Kategoriya ushbu do‘konga tegishli emas" }, { status: 400 });
+    }
+    if (relations.manufacturerId && !await prisma.manufacturer.findFirst({ where: { id: relations.manufacturerId, shopId }, select: { id: true } })) {
+      return NextResponse.json({ success: false, error: "Ishlab chiqaruvchi ushbu do‘konga tegishli emas" }, { status: 400 });
+    }
+
     const updated = await prisma.product.update({
       where: { id: params.id },
       data: validated.data,

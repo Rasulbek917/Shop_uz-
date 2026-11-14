@@ -44,9 +44,13 @@ export async function POST(req: NextRequest) {
     }
 
     const expDate = new Date(expiryDate);
+    if (!Number.isFinite(expDate.getTime())) return NextResponse.json({ success: false, error: "Yaroqlilik sanasi noto‘g‘ri" }, { status: 400 });
     const { status: expiryStatus } = getExpiryStatus(expDate);
 
     const result = await prisma.$transaction(async (tx) => {
+      if (supplierId && !await tx.supplier.findFirst({ where: { id: supplierId, shopId }, select: { id: true } })) {
+        throw new Error("Yetkazib beruvchi ushbu do‘konga tegishli emas");
+      }
       // 1. Create product batch
       const batch = await tx.productBatch.create({
         data: {
@@ -118,8 +122,8 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     logger.error("Inflow error", { error: error });
     return NextResponse.json(
-      { success: false, error: "Omborga kirim qilishda xatolik yuz berdi" },
-      { status: 500 }
+      { success: false, error: "Kirim ma’lumotlari, mahsulot va yetkazib beruvchini tekshiring" },
+      { status: 400 }
     );
   }
 }

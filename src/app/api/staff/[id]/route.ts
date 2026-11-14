@@ -74,13 +74,17 @@ export async function PATCH(
       status?: string;
       username?: string;
       passwordHash?: string;
+      tokenVersion?: { increment: number };
     } = {};
     if (rest.fullName !== undefined) data.fullName = rest.fullName;
     if (rest.phone !== undefined) data.phone = rest.phone;
     if (rest.role !== undefined) data.role = rest.role;
     if (rest.status !== undefined) data.status = rest.status;
     if (newUsername && newUsername !== staff.username) data.username = newUsername;
-    if (password) data.passwordHash = await hashPassword(password);
+    if (password) {
+      data.passwordHash = await hashPassword(password);
+      data.tokenVersion = { increment: 1 };
+    }
 
     if (Object.keys(data).length === 0) {
       const { passwordHash, ...safeStaff } = staff;
@@ -149,28 +153,25 @@ export async function DELETE(
 
     const staff = await prisma.user.findFirst({
       where: { id: params.id, shopId },
-      include: { sales: true },
+
     });
 
     if (!staff) {
       return NextResponse.json({ success: false, error: "Xodim topilmadi" }, { status: 404 });
     }
 
-    // If staff has sales, deactivate instead of delete.
-    // Login band bo'lib qolmasligi uchun uni ham bo'shatamiz.
-    if (staff.sales.length > 0) {
-      await prisma.user.update({
-        where: { id: params.id },
-        data: {
-          status: "INACTIVE",
-          username: `${staff.username}__inactive_${staff.id.slice(0, 8)}`,
-        },
-      });
-    } else {
-      await prisma.user.delete({
-        where: { id: params.id },
-      });
-    }
+    if (staff.id === user.id) return NextResponse.json({ success: false, error: "O‘z hisobingizni bu bo‘limdan o‘chira olmaysiz" }, { status: 409 });
+
+    // Keep the cashier's sales, warehouse movements and audit history intact.
+    const suffix = `__inactive_${staff.id}`;
+    await prisma.user.update({
+      where: { id: staff.id },
+      data: {
+        status: "INACTIVE",
+        username: staff.username.endsWith(suffix) ? staff.username : `${staff.username}${suffix}`,
+        tokenVersion: { increment: 1 },
+      },
+    });
 
     await logAudit({
       shopId,
