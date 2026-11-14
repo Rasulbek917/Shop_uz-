@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import {
   Boxes,
   Plus,
   Search,
   Filter,
-  ArrowDownToLine,
   RefreshCw,
   AlertTriangle,
   Clock,
@@ -65,13 +63,6 @@ export default function InventoryPage() {
           </p>
         </div>
 
-        <Link
-          href="/omborchi/kirim"
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors"
-        >
-          <ArrowDownToLine className="h-4 w-4" />
-          <span>Omborga Kirim Qilish</span>
-        </Link>
       </div>
 
       {/* Filter and Search Bar */}

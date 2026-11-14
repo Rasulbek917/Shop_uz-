@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import { CalendarClock, Search, ArrowDownToLine, RefreshCw, AlertTriangle } from "lucide-react";
+import { CalendarClock, Search, RefreshCw, AlertTriangle } from "lucide-react";
 import { formatCurrency, formatDate, EXPIRY_WARNING_DAYS } from "@/lib/formatters";
 
 export default function PartiyalarPage() {
@@ -53,13 +52,6 @@ export default function PartiyalarPage() {
           </p>
         </div>
 
-        <Link
-          href="/omborchi/kirim"
-          className="flex items-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA]"
-        >
-          <ArrowDownToLine className="h-4 w-4" />
-          <span>Yangi Partiya Kirim Qilish</span>
-        </Link>
       </div>
 
       {/* Filter and Search */}

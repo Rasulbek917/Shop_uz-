@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
+import 'dashboard.dart';
 import 'management.dart';
 import 'pos.dart';
 import 'screens.dart';
@@ -206,110 +207,11 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
     }
   }
 
-  Widget dashboard() {
-    final report = object(data.cache['reports']);
-    final today = object(report['today']);
-    return RefreshIndicator(
-      onRefresh: data.refresh,
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text(
-            'Salom, ${data.user['fullName']}',
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${data.user['shopName'] ?? ''} · ${data.online ? 'Online' : 'Offline'}',
-          ),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              stat(
-                'Bugungi savdo',
-                money((today['revenue'] as num?) ?? 0),
-                Icons.trending_up,
-              ),
-              stat(
-                'Savdolar',
-                '${today['salesCount'] ?? 0} ta',
-                Icons.receipt_long,
-              ),
-              stat(
-                'Mahsulotlar',
-                '${data.products.length} ta',
-                Icons.inventory_2_outlined,
-              ),
-              stat('Sinxronlash', '${data.pending.length} ta', Icons.sync),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (data.sell)
-            FilledButton.icon(
-              onPressed: () => setState(() => section = 'pos'),
-              icon: const Icon(Icons.point_of_sale),
-              label: const Text('POS terminalni ochish'),
-            ),
-          if (data.pending.isNotEmpty)
-            Card(
-              color: const Color(0xfffff3dc),
-              child: ListTile(
-                title: Text(
-                  '${data.pending.length} ta savdo telefonda saqlangan',
-                ),
-                subtitle: const Text('Internet qaytganda avtomatik yuboriladi'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => setState(() => section = 'queue'),
-              ),
-            ),
-          const SizedBox(height: 20),
-          const Text(
-            'Tezkor bo‘limlar',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          for (final destination in destinations.where(
-            (item) => [
-              'products',
-              'categories',
-              'receipts',
-              'reports',
-            ].contains(item.key),
-          ))
-            Card(
-              child: ListTile(
-                leading: Icon(destination.icon),
-                title: Text(destination.title),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => setState(() => section = destination.key),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget stat(String title, String value, IconData icon) => SizedBox(
-    width: 230,
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: const Color(0xff24634f)),
-            const SizedBox(height: 10),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
-            ),
-            Text(title),
-          ],
-        ),
-      ),
-    ),
+  Widget dashboard() => DashboardPage(
+    data: data,
+    onNavigate: (destination) => setState(() => section = destination),
   );
+
   Future<void> logout() async {
     if (data.pending.isNotEmpty) {
       final confirmed = await showDialog<bool>(
