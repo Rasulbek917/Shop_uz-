@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 export function middleware(req: NextRequest) {
-  if (req.nextUrl.pathname === "/api/webhooks/tezcheck" || req.nextUrl.pathname.startsWith("/api/webhooks/tezcheck/pos/")) return NextResponse.next();
+  if (req.nextUrl.pathname === "/api/webhooks/tezcheck") return NextResponse.next();
   if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
     const origin = req.headers.get("origin");
     const allowed = process.env.APP_URL ? new URL(process.env.APP_URL).origin : req.nextUrl.origin;

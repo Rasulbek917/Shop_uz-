@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
-import 'pos_payment.dart';
 import 'updates.dart';
 import 'dashboard.dart';
 import 'widgets.dart';
@@ -302,17 +301,6 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           if (data.owner) ...[
-            ListTile(
-              leading: const Icon(Icons.qr_code_2),
-              title: const Text('POS elektron to‘lovlari'),
-              enabled: data.online,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => PosGatewayPage(data: data),
-                ),
-              ),
-            ),
             ListTile(
               leading: const Icon(Icons.storefront),
               title: const Text('Do‘kon sozlamalari'),

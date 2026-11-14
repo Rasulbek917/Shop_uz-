@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { ScanBarcode, Boxes, Users, ArrowRight, Check, Play } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ScanBarcode, Boxes, Users, ArrowRight, Check } from "lucide-react";
 
 export function ScrollMotion() {
   useEffect(() => {
@@ -31,9 +31,12 @@ export function WorkflowExplorer() {
  }} onClick={()=>setActive(i)}><w.icon size={19}/>{w.title}{i===2&&<small>MAX</small>}</button>)}</div><div id="flow-panel" role="tabpanel" aria-labelledby={`flow-tab-${active}`} className="workflow-panel" key={active}><div><span className="eyebrow">0{active+1} / ISH JARAYONI</span><h3>{item.heading}</h3><p>{item.text}</p><ul>{item.steps.map(s=><li key={s}><Check size={17}/>{s}</li>)}</ul><a href="/register">Hisob yaratish <ArrowRight size={17}/></a></div><figure><img src={`/media/${item.image}`} alt={`${item.title} — namunaviy interfeys`} loading="lazy" width="1280" height="720"/><figcaption>Namunaviy ko‘rinish · Haqiqiy do‘kon ma’lumotlari emas</figcaption></figure></div></section>;
 }
 export function DemoPlayer() {
- const ref=useRef<HTMLVideoElement>(null);const [chapter,setChapter]=useState(0);
- const chapters=["Hisob ochish","Mahsulot tanlash","To‘lov va chek","Dashboard"];
- return <div className="demo-player"><video ref={ref} controls playsInline preload="metadata" poster="/media/demo-poster.webp" onTimeUpdate={()=>setChapter(Math.min(3,Math.floor((ref.current?.currentTime||0)/6)))} aria-label="Savdoza namoyish videosi"><source src="/media/savdoza-demo.webm" type="video/webm"/><track kind="captions" src="/media/demo-captions.vtt" srcLang="uz" label="O‘zbekcha" default/></video><div className="demo-chapters">{chapters.map((name,i)=><button key={name} className={chapter===i?"selected":""} aria-label={`${name}, ${i*6}-soniyadan ko‘rish`} onClick={()=>{if(ref.current){ref.current.currentTime=i*6;void ref.current.play().catch(()=>{});}}}><Play size={12}/><span><small>00:{String(i*6).padStart(2,"0")}</small>{name}</span></button>)}</div></div>;
+  return <div className="demo-player demo-player-portrait">
+    <video controls playsInline preload="metadata" width="1080" height="1440" aria-label="Savdoza haqida ovozli reklama videosi">
+      <source src="/media/savdoza-reklama.mp4" type="video/mp4"/>
+      Videoni brauzeringizda ijro etib bo‘lmadi. <a href="/media/savdoza-reklama.mp4">Videoni ochish</a>
+    </video>
+  </div>;
 }
 export function PlanComparison() {
  return <div className="plan-compare"><h3>Farqini bir qarashda ko‘ring.</h3><div className="comparison-scroll"><table><caption className="sr-only">Pro va Max imkoniyatlari</caption><thead><tr><th>Imkoniyat</th><th>Pro</th><th>Max</th></tr></thead><tbody>{[["POS, naqd, karta va nasiya",true],["Ombor, partiyalar va mijozlar",true],["Hisobot va chek chop etish",true],["Kassir va omborchi hisoblari",false],["Yetkazib beruvchilar bazasi",false],["Amallar jurnali va markaziy import",false],["Cheklar CSV hisoboti va to‘lov tahlili",false]].map(([name,both])=><tr key={String(name)}><th scope="row">{name}</th><td>{both?"✓":"—"}</td><td>✓</td></tr>)}</tbody></table></div></div>;

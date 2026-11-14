@@ -24,8 +24,6 @@ model Shop {
   approvalNote          String?
   checkoutOrders        CheckoutOrder[]
   purchaseRequests      PurchaseRequest[]
-  posGateway            PosGateway?
-  posPayments           PosPayment[]
   taxRate               Float     @default(0)
   taxIncluded           Boolean   @default(false)
   notes                 String?
@@ -287,7 +285,6 @@ model Sale {
   items    SaleItem[]
   payments Payment[]
   returns  Return[]
-  posPayment PosPayment?
 
   @@index([shopId])
   @@index([cashierId])
@@ -445,32 +442,5 @@ model CheckoutOrder {
   createdAt DateTime @default(now())
   paidAt DateTime?
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  @@index([shopId, status])
-}
-
-// Separate from subscription billing. Secrets are encrypted on the server.
-model PosGateway {
-  shopId String @id
-  credentials String
-  cashDeskCode String
-  updatedAt DateTime @updatedAt
-  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
-}
-
-model PosPayment {
-  id String @id @default(uuid())
-  shopId String
-  saleId String @unique
-  requestKey String @unique
-  credentials String
-  billId String? @unique
-  paymentId String? @unique
-  paymentUrl String?
-  returnUrl String
-  status String @default("PENDING")
-  createdAt DateTime @default(now())
-  paidAt DateTime?
-  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
   @@index([shopId, status])
 }

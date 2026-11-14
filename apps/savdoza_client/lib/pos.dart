@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import 'data.dart';
 import 'widgets.dart';
-import 'pos_payment.dart';
 
 class CartLine {
   CartLine(this.product, this.batch);
@@ -41,7 +40,6 @@ class _PosPageState extends State<PosPage> {
   final List<CartLine> cart = [];
   String payment = 'CASH', category = '', customer = '';
   bool saving = false, showCart = false;
-  String? electronicKey;
   num get reduction => num.tryParse(discount.text) ?? 0;
   Json get settings => object(widget.data.cache['shopSettings']);
   num get taxRate => settings['taxRate'] as num? ?? 0;
@@ -179,65 +177,25 @@ class _PosPageState extends State<PosPage> {
       await message(context, 'Kassir uchun chegirma chegarasi 15%');
       return;
     }
-    if (electronicKey == null || debt || payment != 'ELECTRONIC') {
-      for (final line in cart) {
-        final product = widget.data.products
-            .where((p) => p['id'] == line.product['id'])
-            .firstOrNull;
-        final batch = records(product?['batches'])
-            .where((b) => b['id'] == line.batch['id'])
-            .firstOrNull;
-        if (batch == null ||
-            (batch['currentQuantity'] as num) < line.quantity ||
-            !DateTime.parse('${batch['expiryDate']}').isAfter(DateTime.now())) {
-          await message(
-            context,
-            '${line.product['name']} qoldig‘ini yoki muddatini tekshiring',
-          );
-          return;
-        }
+    for (final line in cart) {
+      final product = widget.data.products
+          .where((p) => p['id'] == line.product['id'])
+          .firstOrNull;
+      final batch = records(product?['batches'])
+          .where((b) => b['id'] == line.batch['id'])
+          .firstOrNull;
+      if (batch == null ||
+          (batch['currentQuantity'] as num) < line.quantity ||
+          !DateTime.parse('${batch['expiryDate']}').isAfter(DateTime.now())) {
+        await message(
+          context,
+          '${line.product['name']} qoldig‘ini yoki muddatini tekshiring',
+        );
+        return;
       }
     }
     setState(() => saving = true);
     try {
-      if (!debt && payment == 'ELECTRONIC') {
-        if (!widget.data.online) {
-          await message(context, 'Elektron to‘lov uchun internet kerak');
-          return;
-        }
-        electronicKey ??= saleKey();
-        final order = object(
-          (await widget.data.api.call(
-            '/api/pos/payments',
-            method: 'POST',
-            body: {
-              'paymentMethod': 'ELECTRONIC',
-              'paidAmount': 0,
-              'customerId': customer.isEmpty ? null : customer,
-              'discountAmount': reduction,
-              'expectedTotal': total,
-              'idempotencyKey': electronicKey,
-              'items': cart.map((line) => line.payload()).toList(),
-            },
-          ))['data'],
-        );
-        electronicKey = null;
-        setState(() {
-          cart.clear();
-          discount.text = '0';
-          customer = '';
-        });
-        if (!mounted) return;
-        final receipt = await showElectronicPayment(
-          context,
-          widget.data,
-          order,
-        );
-        await widget.data.refresh();
-        if (receipt != null && mounted)
-          await showReceipt(context, widget.data, receipt);
-        return;
-      }
       Json extra;
       if (debt) {
         final form = await editForm(context, 'Nasiya savdosi', const [
@@ -351,31 +309,6 @@ class _PosPageState extends State<PosPage> {
                 icon: const Icon(Icons.qr_code_scanner),
               ),
             ],
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: saving || !widget.data.online
-                ? null
-                : () async {
-                    final resumedKey = await pendingElectronicPayments(
-                      context,
-                      widget.data,
-                    );
-                    if (mounted &&
-                        resumedKey != null &&
-                        resumedKey == electronicKey) {
-                      setState(() {
-                        electronicKey = null;
-                        cart.clear();
-                        discount.text = '0';
-                        customer = '';
-                      });
-                    }
-                  },
-            icon: const Icon(Icons.pending_actions),
-            label: const Text('Kutilayotgan elektron to‘lovlar'),
           ),
         ),
         SizedBox(

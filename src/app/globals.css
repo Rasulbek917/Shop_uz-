@@ -394,3 +394,5 @@ body {
 
 .input-field { display: block; width: 100%; border: 1px solid #cbd5e1; border-radius: .65rem; background: white; padding: .65rem .8rem; color: #0f172a; font-size: .875rem; }
 .input-field:focus-visible { outline: 3px solid #9ec5a6; outline-offset: 2px; }
+
+.demo-player-portrait{width:100%;max-width:420px;justify-self:center}.demo-player-portrait video{display:block;width:100%;height:auto;aspect-ratio:3/4;object-fit:contain;background:#101b16}
