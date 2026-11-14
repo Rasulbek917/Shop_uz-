@@ -76,7 +76,7 @@ jobs:
           gh release view android-latest >/dev/null 2>&1 || gh release create android-latest --target "$GITHUB_SHA" --title "Savdoza Android" --notes "Android uchun Savdoza."
           gh release upload android-latest "$RUNNER_TEMP/savdoza-android.apk" --clobber
           gh release edit android-latest --title "Savdoza Android 2.0 — native va offline POS" --notes "Alohida Flutter Android ilova. Dashboard, POS, kategoriyalar, mahsulotlar, ombor, mijozlar, nasiya, cheklar, sozlamalar, Pro/Max va superadmin bo‘limlari. Offline katalog va savdolar shifrlangan telefonda saqlanadi, internet qaytganda Android WorkManager avtomatik yuboradi. Optimallashtirilgan sinov build, preview signing. Birinchi offline ishlatishdan oldin online login va katalogni yuklash kerak."
-          export APK_CERT_SHA256=$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android -J-Duser.language=en | awk '/SHA256:/{print $2}')
+          keytool -exportcert -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android -file "$RUNNER_TEMP/apk-signing.der"
           APK_PATH="$RUNNER_TEMP/savdoza-android.apk" python3 - <<'PY'
           import os, json, hashlib
           from pathlib import Path
@@ -85,7 +85,8 @@ jobs:
           manifest = json.loads(target.read_text())
           manifest['android'] = {'url': 'https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/releases/download/android-latest/savdoza-android.apk', 'version': '2.0.0+' + os.environ['GITHUB_RUN_NUMBER'], 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'channel': 'preview'}
           target.write_text(json.dumps(manifest, indent=2) + '\n')
-          certificate = os.environ['APK_CERT_SHA256']
+          certificate_bytes = Path(os.environ['RUNNER_TEMP'], 'apk-signing.der').read_bytes()
+          certificate = ':'.join(f'{byte:02X}' for byte in hashlib.sha256(certificate_bytes).digest())
           if len(certificate) != 95:
               raise RuntimeError('APK signing certificate topilmadi')
           links = Path('public/.well-known/assetlinks.json')
