@@ -61,6 +61,17 @@ AppData sample() {
 }
 
 void main() {
+  test('native totals match server rounding and tax rules', () {
+    final items = [
+      {'unitPrice': 1000, 'quantity': 3},
+    ];
+    expect(SaleTotals(items, .3, 0, false).total, 3000);
+    expect(SaleTotals(items, 100, 12, false).total, 3248);
+    final included = SaleTotals(items, 100, 12, true);
+    expect(included.total, 2900);
+    expect(included.tax, 311);
+  });
+
   test('offline keys are random capability references', () {
     final keys = List.generate(100, (_) => saleKey());
     expect(keys.toSet().length, 100);

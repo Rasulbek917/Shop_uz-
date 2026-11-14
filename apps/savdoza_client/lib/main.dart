@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
-import 'widgets.dart';
 import 'management.dart';
 import 'pos.dart';
 import 'screens.dart';

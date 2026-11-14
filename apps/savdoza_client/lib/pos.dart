@@ -38,24 +38,18 @@ class _PosPageState extends State<PosPage> {
   final List<CartLine> cart = [];
   String payment = 'CASH', category = '', customer = '';
   bool saving = false, showCart = false;
-  num get subtotal => cart.fold<num>(
-    0,
-    (sum, line) => sum + (line.price * line.quantity).round(),
-  );
   num get reduction => num.tryParse(discount.text) ?? 0;
   Json get settings => object(widget.data.cache['shopSettings']);
   num get taxRate => settings['taxRate'] as num? ?? 0;
-  num get tax {
-    final base = (subtotal - reduction).clamp(0, double.infinity);
-    if (taxRate == 0) return 0;
-    return settings['taxIncluded'] == true
-        ? (base - base / (1 + taxRate / 100)).round()
-        : (base * taxRate / 100).round();
-  }
-
-  num get total =>
-      (subtotal - reduction).clamp(0, double.infinity) +
-      (settings['taxIncluded'] == true ? 0 : tax);
+  SaleTotals get totals => SaleTotals(
+    cart.map((line) => line.payload()).toList(),
+    reduction,
+    taxRate,
+    settings['taxIncluded'] == true,
+  );
+  num get subtotal => totals.subtotal;
+  num get tax => totals.tax;
+  num get total => totals.total;
   @override
   void dispose() {
     search.dispose();

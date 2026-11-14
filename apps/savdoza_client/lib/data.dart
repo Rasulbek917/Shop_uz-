@@ -18,8 +18,31 @@ List<Json> records(dynamic value) =>
     value is List ? value.map(object).toList() : [];
 String money(num value) =>
     '${value.round().toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => '${match[1]} ')} so‘m';
-String saleKey() =>
-    'MOB-${List.generate(32, (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0')).join()}';
+String saleKey() {
+  final random = Random.secure();
+  return 'MOB-${List.generate(32, (_) => random.nextInt(256).toRadixString(16).padLeft(2, '0')).join()}';
+}
+
+class SaleTotals {
+  SaleTotals(List<Json> items, num discount, num rate, bool included) {
+    subtotal = items.fold<num>(
+      0,
+      (sum, item) =>
+          sum +
+          ((item['unitPrice'] as num) * (item['quantity'] as num)).round(),
+    );
+    final base = (subtotal - discount).clamp(0, double.infinity);
+    if (included) {
+      total = base.round();
+      tax = rate > 0 ? (total - total / (1 + rate / 100)).round() : 0;
+    } else {
+      tax = rate > 0 ? (base * rate / 100).round() : 0;
+      total = (base + tax).round();
+    }
+  }
+  late final num subtotal, tax, total;
+}
+
 String dateText(dynamic value) {
   final date = DateTime.tryParse('$value')
       ?.toUtc()
@@ -120,8 +143,9 @@ class DeviceStore {
         (_memory['caches'] as Map)[values['scope']] = values['cache'];
       case 'enqueue':
         final orders = _memory['outbox'] as List;
-        if (!orders.any((order) => order['key'] == values['order']['key']))
+        if (!orders.any((order) => order['key'] == values['order']['key'])) {
           orders.add(values['order']);
+        }
       case 'retry':
         for (final item in _memory['outbox']) {
           if (item['key'] == values['key']) item['status'] = 'pending';
