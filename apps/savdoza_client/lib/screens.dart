@@ -461,27 +461,66 @@ class ReportsPage extends StatelessWidget {
               'Qoldiq ${row['totalStock'] ?? row['currentStock']}',
             ),
           ),
-        if (data.owner && data.max)
-          FutureBuilder<dynamic>(
-            future: data.get(
-              '/api/receipts/analytics',
-              cacheKey: 'receiptAnalytics',
-            ),
-            builder: (context, snapshot) => Column(
-              children: [
-                const Text('To‘lov turlari bo‘yicha · Max'),
-                for (final group in records(snapshot.data))
-                  ListTile(
-                    title: Text('${group['paymentMethod']}'),
-                    subtitle: Text('${group['count']} ta savdo'),
-                    trailing: Text(money(group['amount'] as num)),
-                  ),
-              ],
-            ),
-          ),
+        if (data.owner && data.max) _PaymentBreakdown(data: data),
       ],
     );
   }
+}
+
+class _PaymentBreakdown extends StatefulWidget {
+  const _PaymentBreakdown({required this.data});
+  final AppData data;
+  @override
+  State<_PaymentBreakdown> createState() => _PaymentBreakdownState();
+}
+
+class _PaymentBreakdownState extends State<_PaymentBreakdown> {
+  late Future<dynamic> analytics;
+  @override
+  void initState() {
+    super.initState();
+    analytics = widget.data.get(
+      '/api/receipts/analytics',
+      cacheKey: 'receiptAnalytics',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Row(
+        children: [
+          const Expanded(child: Text('To‘lov turlari bo‘yicha · Max')),
+          IconButton(
+            tooltip: 'Tahlilni yangilash',
+            onPressed: () => setState(
+              () => analytics = widget.data.get(
+                '/api/receipts/analytics',
+                cacheKey: 'receiptAnalytics',
+              ),
+            ),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      FutureBuilder<dynamic>(
+        future: analytics,
+        builder: (context, snapshot) => Column(
+          children: [
+            if (snapshot.connectionState == ConnectionState.waiting)
+              const LinearProgressIndicator(),
+            if (snapshot.hasError) Text('${snapshot.error}'),
+            for (final group in records(snapshot.data))
+              ListTile(
+                title: Text('${group['paymentMethod']}'),
+                subtitle: Text('${group['count']} ta savdo'),
+                trailing: Text(money((group['amount'] as num?) ?? 0)),
+              ),
+          ],
+        ),
+      ),
+    ],
+  );
 }
 
 class InflowPage extends StatelessWidget {

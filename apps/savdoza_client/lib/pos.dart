@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'data.dart';
@@ -520,7 +522,7 @@ class _PosPageState extends State<PosPage> {
       ),
     );
     return LayoutBuilder(
-      builder: (context, size) => size.maxWidth >= 820
+      builder: (context, size) => Platform.isWindows || size.maxWidth >= 820
           ? Row(
               children: [
                 Expanded(child: catalog),

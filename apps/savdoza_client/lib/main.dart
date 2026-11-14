@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'data.dart';
+import 'navigation.dart';
+import 'desktop_shell.dart';
 import 'password_field.dart';
 import 'updates.dart';
 import 'dashboard.dart';
@@ -43,13 +46,6 @@ void main() {
       home: const Savdoza(),
     ),
   );
-}
-
-class Destination {
-  const Destination(this.key, this.title, this.icon, {this.max = false});
-  final String key, title;
-  final IconData icon;
-  final bool max;
 }
 
 class Savdoza extends StatefulWidget {
@@ -215,10 +211,15 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
     }
   }
 
-  Widget dashboard() => DashboardPage(
-    data: data,
-    onNavigate: (destination) => setState(() => section = destination),
-  );
+  Widget dashboard() => Platform.isWindows
+      ? DesktopDashboard(
+          data: data,
+          onNavigate: (destination) => setState(() => section = destination),
+        )
+      : DashboardPage(
+          data: data,
+          onNavigate: (destination) => setState(() => section = destination),
+        );
 
   Future<void> logout() async {
     if (data.pending.isNotEmpty) {
@@ -284,6 +285,26 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
       section = destinations.first.key;
     }
     final selected = destinations.firstWhere((item) => item.key == section);
+    if (Platform.isWindows) {
+      return DesktopShell(
+        data: data,
+        destinations: destinations,
+        section: section,
+        onNavigate: (destination) => setState(() => section = destination),
+        onLogout: logout,
+        child: KeyedSubtree(key: ValueKey(section), child: body()),
+      );
+    }
+    final quickLinks = destinations
+        .where(
+          (destination) => [
+            'dashboard',
+            data.sell ? 'pos' : 'batches',
+            'receipts',
+            'settings',
+          ].contains(destination.key),
+        )
+        .toList();
     return Scaffold(
       appBar: AppBar(
         title: Text(data.access ? selected.title : 'Tarifni yangilang'),
@@ -315,62 +336,71 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
           ),
         ],
       ),
-      drawer: Drawer(
-        child: SafeArea(
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.storefront, size: 38),
-                title: const Text(
-                  'SAVDOZA',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+      drawer: Theme(
+        data: ThemeData.dark(useMaterial3: true).copyWith(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xff24634f),
+            brightness: Brightness.dark,
+          ),
+        ),
+        child: Drawer(
+          backgroundColor: const Color(0xff142d25),
+          child: SafeArea(
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.storefront, size: 38),
+                  title: const Text(
+                    'SAVDOZA',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                  ),
+                  subtitle: Text(
+                    '${data.user['shopName'] ?? data.user['fullName']}',
+                  ),
                 ),
-                subtitle: Text(
-                  '${data.user['shopName'] ?? data.user['fullName']}',
+                const Divider(),
+                Expanded(
+                  child: ListView(
+                    children: [
+                      for (final destination in destinations)
+                        ListTile(
+                          selected: section == destination.key,
+                          enabled:
+                              (!destination.max || data.max) &&
+                              (data.access ||
+                                  [
+                                    'settings',
+                                    'queue',
+                                  ].contains(destination.key)),
+                          leading: Icon(destination.icon),
+                          title: Text(destination.title),
+                          subtitle: destination.max && !data.max
+                              ? const Text('Max tarifiga o‘ting')
+                              : null,
+                          trailing: destination.max && !data.max
+                              ? const Icon(Icons.lock_outline, size: 18)
+                              : null,
+                          onTap: () {
+                            Navigator.pop(context);
+                            setState(() => section = destination.key);
+                          },
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(),
-              Expanded(
-                child: ListView(
-                  children: [
-                    for (final destination in destinations)
-                      ListTile(
-                        selected: section == destination.key,
-                        enabled:
-                            (!destination.max || data.max) &&
-                            (data.access ||
-                                [
-                                  'settings',
-                                  'queue',
-                                ].contains(destination.key)),
-                        leading: Icon(destination.icon),
-                        title: Text(destination.title),
-                        subtitle: destination.max && !data.max
-                            ? const Text('Max tarifiga o‘ting')
-                            : null,
-                        trailing: destination.max && !data.max
-                            ? const Icon(Icons.lock_outline, size: 18)
-                            : null,
-                        onTap: () {
-                          Navigator.pop(context);
-                          setState(() => section = destination.key);
-                        },
-                      ),
-                  ],
+                ListTile(
+                  leading: Icon(
+                    data.online ? Icons.cloud_done_outlined : Icons.cloud_off,
+                  ),
+                  title: Text(
+                    data.online ? 'Online' : 'Offline · Telefonda saqlanadi',
+                  ),
+                  subtitle: Text(
+                    '${data.pending.length} ta savdo yuborish kutilmoqda',
+                  ),
                 ),
-              ),
-              ListTile(
-                leading: Icon(
-                  data.online ? Icons.cloud_done_outlined : Icons.cloud_off,
-                ),
-                title: Text(
-                  data.online ? 'Online' : 'Offline · Telefonda saqlanadi',
-                ),
-                subtitle: Text(
-                  '${data.pending.length} ta savdo yuborish kutilmoqda',
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -411,35 +441,76 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
           ),
         ],
       ),
-      bottomNavigationBar: data.access && data.user['role'] != 'SUPER_ADMIN'
-          ? NavigationBar(
-              selectedIndex: section == 'pos'
-                  ? 1
-                  : section == 'settings'
-                  ? 2
-                  : 0,
-              onDestinationSelected: (index) => setState(
-                () => section = index == 1
-                    ? 'pos'
-                    : index == 2
-                    ? 'settings'
-                    : 'dashboard',
+      bottomNavigationBar: data.user['role'] != 'SUPER_ADMIN'
+          ? SafeArea(
+              top: false,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xffdce6dd))),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                child: Row(
+                  children: [
+                    for (final destination in quickLinks)
+                      Expanded(
+                        child: Tooltip(
+                          message: destination.title,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () =>
+                                setState(() => section = destination.key),
+                            child: Semantics(
+                              selected: section == destination.key,
+                              button: true,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: section == destination.key
+                                      ? const Color(0xffe7f0e8)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      destination.icon,
+                                      size: 22,
+                                      color: section == destination.key
+                                          ? const Color(0xff24634f)
+                                          : Colors.blueGrey,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      {
+                                        'dashboard': 'Bosh sahifa',
+                                        'pos': 'POS',
+                                        'batches': 'Ombor',
+                                        'receipts': 'Cheklar',
+                                        'settings': 'Sozlamalar',
+                                      }[destination.key]!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: section == destination.key
+                                            ? FontWeight.w700
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              destinations: [
-                const NavigationDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  label: 'Dashboard',
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.point_of_sale),
-                  label: 'POS',
-                  enabled: data.sell,
-                ),
-                const NavigationDestination(
-                  icon: Icon(Icons.settings_outlined),
-                  label: 'Sozlamalar',
-                ),
-              ],
             )
           : null,
     );
@@ -540,113 +611,117 @@ class _AuthPageState extends State<AuthPage> {
   );
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: SizedBox(
-            width: 460,
-            child: AutofillGroup(
-              child: Form(
-                key: form,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Icon(
-                      Icons.storefront,
-                      size: 64,
-                      color: Color(0xff24634f),
-                    ),
-                    const Text(
-                      'Savdoza',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 38,
-                        fontWeight: FontWeight.bold,
+    body: DesktopAuthFrame(
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
+              width: 460,
+              child: AutofillGroup(
+                child: Form(
+                  key: form,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Icon(
+                        Icons.storefront,
+                        size: 64,
+                        color: Color(0xff24634f),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      register
-                          ? 'Do‘kon hisobini yarating'
-                          : 'Hisobingizga kiring',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                    const SizedBox(height: 28),
-                    if (register) ...[
-                      input('fullName', 'Ism va familiya'),
-                      input('shopName', 'Do‘kon nomi'),
-                      input('phone', 'Telefon +998…'),
-                      input('email', 'Email'),
-                    ],
-                    input('username', 'Login (lotin harflari)'),
-                    input(
-                      'password',
-                      register ? 'Parol (kamida 10 belgi)' : 'Parol',
-                      secret: true,
-                    ),
-                    if (register) ...[
-                      DropdownButtonFormField<String>(
-                        initialValue: plan,
-                        decoration: const InputDecoration(labelText: 'Tarif'),
-                        items: const [
-                          DropdownMenuItem(value: 'PRO', child: Text('Pro')),
-                          DropdownMenuItem(value: 'MAX', child: Text('Max')),
-                        ],
-                        onChanged: (value) => setState(() => plan = value!),
+                      const Text(
+                        'Savdoza',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      CheckboxListTile(
-                        value: consent,
-                        onChanged: (value) =>
-                            setState(() => consent = value ?? false),
-                        title: const Text(
-                          'Foydalanish shartlarini qabul qilaman',
+                      const SizedBox(height: 8),
+                      Text(
+                        register
+                            ? 'Do‘kon hisobini yarating'
+                            : 'Hisobingizga kiring',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                      const SizedBox(height: 28),
+                      if (register) ...[
+                        input('fullName', 'Ism va familiya'),
+                        input('shopName', 'Do‘kon nomi'),
+                        input('phone', 'Telefon +998…'),
+                        input('email', 'Email'),
+                      ],
+                      input('username', 'Login (lotin harflari)'),
+                      input(
+                        'password',
+                        register ? 'Parol (kamida 10 belgi)' : 'Parol',
+                        secret: true,
+                      ),
+                      if (register) ...[
+                        DropdownButtonFormField<String>(
+                          initialValue: plan,
+                          decoration: const InputDecoration(labelText: 'Tarif'),
+                          items: const [
+                            DropdownMenuItem(value: 'PRO', child: Text('Pro')),
+                            DropdownMenuItem(value: 'MAX', child: Text('Max')),
+                          ],
+                          onChanged: (value) => setState(() => plan = value!),
+                        ),
+                        CheckboxListTile(
+                          value: consent,
+                          onChanged: (value) =>
+                              setState(() => consent = value ?? false),
+                          title: const Text(
+                            'Foydalanish shartlarini qabul qilaman',
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => launchUrl(
+                            Uri.parse('$serverUrl/terms'),
+                            mode: LaunchMode.externalApplication,
+                          ),
+                          child: const Text('Shartlarni o‘qish'),
+                        ),
+                      ],
+                      if (error.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            error,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      FilledButton(
+                        onPressed: busy ? null : submit,
+                        child: Text(
+                          busy
+                              ? 'Kutilmoqda…'
+                              : register
+                              ? 'Hisob yaratish'
+                              : 'Kirish',
                         ),
                       ),
                       TextButton(
-                        onPressed: () => launchUrl(
-                          Uri.parse('$serverUrl/terms'),
-                          mode: LaunchMode.externalApplication,
+                        onPressed: busy
+                            ? null
+                            : () => setState(() {
+                                register = !register;
+                                error = '';
+                              }),
+                        child: Text(
+                          register
+                              ? 'Hisobim bor · Kirish'
+                              : 'Ro‘yxatdan o‘tish',
                         ),
-                        child: const Text('Shartlarni o‘qish'),
+                      ),
+                      const Text(
+                        'Birinchi kirish uchun internet kerak. Kirgandan keyin katalog va POS offline ishlaydi.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                     ],
-                    if (error.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          error,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    FilledButton(
-                      onPressed: busy ? null : submit,
-                      child: Text(
-                        busy
-                            ? 'Kutilmoqda…'
-                            : register
-                            ? 'Hisob yaratish'
-                            : 'Kirish',
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: busy
-                          ? null
-                          : () => setState(() {
-                              register = !register;
-                              error = '';
-                            }),
-                      child: Text(
-                        register ? 'Hisobim bor · Kirish' : 'Ro‘yxatdan o‘tish',
-                      ),
-                    ),
-                    const Text(
-                      'Birinchi kirish uchun internet kerak. Kirgandan keyin katalog va POS offline ishlaydi.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

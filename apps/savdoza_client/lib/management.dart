@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'data.dart';
+import 'desktop_table.dart';
 import 'widgets.dart';
 
 class CrudConfig {
@@ -294,6 +295,80 @@ class _ManagementPageState extends State<ManagementPage> {
     });
   }
 
+  Widget rowActions(Json row) => Wrap(
+    spacing: 4,
+    children: [
+      if (!config.readOnly && config.canEdit)
+        TextButton.icon(
+          onPressed: busy ? null : () => edit(row),
+          icon: const Icon(Icons.edit_outlined),
+          label: const Text('Tahrirlash'),
+        ),
+      if (widget.section == 'products')
+        TextButton.icon(
+          onPressed: busy ? null : () => productCode(row),
+          icon: const Icon(Icons.qr_code),
+          label: const Text('QR kodi'),
+        ),
+      if (widget.section == 'debts' && row['status'] == 'OPEN')
+        TextButton(
+          onPressed: busy
+              ? null
+              : () => action(() async {
+                  await widget.data.api.call(
+                    '/api/debts/${row['id']}',
+                    method: 'PATCH',
+                    body: {'status': 'PAID'},
+                  );
+                  await load();
+                }),
+          child: const Text('To‘landi'),
+        ),
+      if (config.canDelete)
+        TextButton.icon(
+          onPressed: busy ? null : () => remove(row),
+          icon: const Icon(Icons.delete_outline),
+          label: const Text('O‘chirish'),
+        ),
+      if (widget.section == 'shops' && row['planCode'] == 'LEGACY')
+        TextButton(
+          onPressed: busy
+              ? null
+              : () => action(() async {
+                  final body = await editForm(
+                    context,
+                    'Obunani faollashtirish',
+                    const [
+                      Field(
+                        'durationDays',
+                        'Kunlar',
+                        number: true,
+                        integer: true,
+                        required: true,
+                      ),
+                      Field(
+                        'planName',
+                        'Tarif',
+                        required: true,
+                        options: {'PRO': 'Pro', 'MAX': 'Max'},
+                      ),
+                      Field('price', 'Summa', number: true),
+                    ],
+                  );
+                  if (body != null) {
+                    await widget.data.api.call(
+                      '/api/shops/${row['id']}/activate',
+                      method: 'POST',
+                      body: body,
+                    );
+                    await load();
+                  }
+                }),
+          child: const Text('Obuna berish'),
+        ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     final visible = rows
@@ -337,128 +412,59 @@ class _ManagementPageState extends State<ManagementPage> {
           ),
         if (loading || busy) const LinearProgressIndicator(),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: visible.length,
-            itemBuilder: (context, index) {
-              final row = visible[index];
-              final title =
-                  '${row['name'] ?? row['fullName'] ?? row['title'] ?? row['firstName'] ?? row['action'] ?? row['batchNumber'] ?? row['id']}';
-              final details = <String>[
-                if (row['salePrice'] is num) money(row['salePrice']),
-                if (row['amount'] is num) money(row['amount']),
-                if (row['totalStock'] != null) 'Qoldiq ${row['totalStock']}',
-                if (row['currentQuantity'] != null)
-                  'Qoldiq ${row['currentQuantity']}',
-                if (row['phone'] != null) '${row['phone']}',
-                if (row['role'] != null) '${row['role']}',
-                if (row['status'] != null) '${row['status']}',
-                if (row['message'] != null) '${row['message']}',
-                if (row['details'] != null) '${row['details']}',
-                if (row['expiryDate'] != null)
-                  'Yaroqlilik ${dateText(row['expiryDate'])}',
-                if (row['_count'] is Map &&
-                    object(row['_count'])['products'] != null)
-                  '${row['_count']['products']} ta mahsulot',
-              ];
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+          child: Platform.isWindows
+              ? DesktopRecordsTable(
+                  key: ValueKey('${config.path}:$search'),
+                  rows: visible,
+                  title: config.title,
+                  actions: rowActions,
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: visible.length,
+                  itemBuilder: (context, index) {
+                    final row = visible[index];
+                    final title =
+                        '${row['name'] ?? row['fullName'] ?? row['title'] ?? row['firstName'] ?? row['action'] ?? row['batchNumber'] ?? row['id']}';
+                    final details = <String>[
+                      if (row['salePrice'] is num) money(row['salePrice']),
+                      if (row['amount'] is num) money(row['amount']),
+                      if (row['totalStock'] != null)
+                        'Qoldiq ${row['totalStock']}',
+                      if (row['currentQuantity'] != null)
+                        'Qoldiq ${row['currentQuantity']}',
+                      if (row['phone'] != null) '${row['phone']}',
+                      if (row['role'] != null) '${row['role']}',
+                      if (row['status'] != null) '${row['status']}',
+                      if (row['message'] != null) '${row['message']}',
+                      if (row['details'] != null) '${row['details']}',
+                      if (row['expiryDate'] != null)
+                        'Yaroqlilik ${dateText(row['expiryDate'])}',
+                      if (row['_count'] is Map &&
+                          object(row['_count'])['products'] != null)
+                        '${row['_count']['products']} ta mahsulot',
+                    ];
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            for (final detail in details) Text(detail),
+                            rowActions(row),
+                          ],
                         ),
                       ),
-                      for (final detail in details) Text(detail),
-                      Wrap(
-                        spacing: 4,
-                        children: [
-                          if (!config.readOnly && config.canEdit)
-                            TextButton.icon(
-                              onPressed: busy ? null : () => edit(row),
-                              icon: const Icon(Icons.edit_outlined),
-                              label: const Text('Tahrirlash'),
-                            ),
-                          if (widget.section == 'products')
-                            TextButton.icon(
-                              onPressed: busy ? null : () => productCode(row),
-                              icon: const Icon(Icons.qr_code),
-                              label: const Text('QR kodi'),
-                            ),
-                          if (widget.section == 'debts' &&
-                              row['status'] == 'OPEN')
-                            TextButton(
-                              onPressed: busy
-                                  ? null
-                                  : () => action(() async {
-                                      await widget.data.api.call(
-                                        '/api/debts/${row['id']}',
-                                        method: 'PATCH',
-                                        body: {'status': 'PAID'},
-                                      );
-                                      await load();
-                                    }),
-                              child: const Text('To‘landi'),
-                            ),
-                          if (config.canDelete)
-                            TextButton.icon(
-                              onPressed: busy ? null : () => remove(row),
-                              icon: const Icon(Icons.delete_outline),
-                              label: const Text('O‘chirish'),
-                            ),
-                          if (widget.section == 'shops' &&
-                              row['planCode'] == 'LEGACY')
-                            TextButton(
-                              onPressed: busy
-                                  ? null
-                                  : () => action(() async {
-                                      final body = await editForm(
-                                        context,
-                                        'Obunani faollashtirish',
-                                        const [
-                                          Field(
-                                            'durationDays',
-                                            'Kunlar',
-                                            number: true,
-                                            integer: true,
-                                            required: true,
-                                          ),
-                                          Field(
-                                            'planName',
-                                            'Tarif',
-                                            required: true,
-                                            options: {
-                                              'PRO': 'Pro',
-                                              'MAX': 'Max',
-                                            },
-                                          ),
-                                          Field('price', 'Summa', number: true),
-                                        ],
-                                      );
-                                      if (body != null) {
-                                        await widget.data.api.call(
-                                          '/api/shops/${row['id']}/activate',
-                                          method: 'POST',
-                                          body: body,
-                                        );
-                                        await load();
-                                      }
-                                    }),
-                              child: const Text('Obuna berish'),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
