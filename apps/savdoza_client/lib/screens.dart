@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -259,20 +260,21 @@ class SettingsPage extends StatelessWidget {
         style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
       ),
       Text('${data.user['username']} · ${data.user['role']}'),
-      ListenableBuilder(
-        listenable: appUpdates,
-        builder: (context, _) => ListTile(
-          leading: const Icon(Icons.system_update),
-          title: const Text('Ilovani yangilash'),
-          subtitle: Text(
-            appUpdates.available
-                ? 'Yangi versiya ${appUpdates.release!.version}'
-                : 'Versiyani tekshirish',
+      if (Platform.isAndroid)
+        ListenableBuilder(
+          listenable: appUpdates,
+          builder: (context, _) => ListTile(
+            leading: const Icon(Icons.system_update),
+            title: const Text('Ilovani yangilash'),
+            subtitle: Text(
+              appUpdates.available
+                  ? 'Yangi versiya ${appUpdates.release!.version}'
+                  : 'Versiyani tekshirish',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => openUpdates(context),
           ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => openUpdates(context),
         ),
-      ),
       Card(
         child: Column(
           children: [

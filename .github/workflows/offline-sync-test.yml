@@ -8,6 +8,10 @@ on:
       - 'src/lib/sale-replay.ts'
       - 'prisma/**'
       - 'tests/offline-database.cjs'
+      - 'tests/backup-restore.cjs'
+      - 'scripts/backup.mjs'
+      - 'scripts/restore.mjs'
+      - 'scripts/postgres-tools.mjs'
       - '.github/workflows/offline-sync-test.yml'
   workflow_dispatch:
 permissions:
@@ -38,3 +42,4 @@ jobs:
       - run: npx prisma generate
       - run: npx prisma migrate deploy
       - run: node tests/offline-database.cjs
+      - run: node tests/backup-restore.cjs

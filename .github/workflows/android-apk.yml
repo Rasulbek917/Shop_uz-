@@ -4,8 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/savdoza_client/**'
+      - 'apps/savdoza_client/lib/**'
+      - 'apps/savdoza_client/android/**'
+      - 'apps/savdoza_client/test/**'
+      - 'apps/savdoza_client/pubspec.*'
       - '.github/workflows/android-apk.yml'
+      - 'scripts/publish-app-release.mjs'
 permissions:
   contents: write
 concurrency:
@@ -95,27 +99,4 @@ jobs:
           gh release upload android-latest "$RUNNER_TEMP/savdoza-android.apk" --clobber
           gh release edit android-latest --title "Savdoza Android 2.0 — native va offline POS" --notes "Alohida Flutter Android ilova. Dashboard, POS, kategoriyalar, mahsulotlar, ombor, mijozlar, nasiya, cheklar, sozlamalar, Pro/Max va superadmin bo‘limlari. Offline katalog va savdolar shifrlangan telefonda saqlanadi, internet qaytganda Android WorkManager avtomatik yuboradi. Optimallashtirilgan sinov build, preview signing. Birinchi offline ishlatishdan oldin online login va katalogni yuklash kerak."
           keytool -exportcert -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android -file "$RUNNER_TEMP/apk-signing.der"
-          APK_PATH="$RUNNER_TEMP/savdoza-android.apk" python3 - <<'PY'
-          import os, json, hashlib
-          from pathlib import Path
-          data = Path(os.environ['APK_PATH']).read_bytes()
-          target = Path('public/releases/manifest.json')
-          manifest = json.loads(target.read_text())
-          manifest['android'] = {'url': 'https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/releases/download/android-latest/savdoza-android.apk', 'version': '2.0.0+' + os.environ['GITHUB_RUN_NUMBER'], 'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'channel': 'preview'}
-          target.write_text(json.dumps(manifest, indent=2) + '\n')
-          certificate_bytes = Path(os.environ['RUNNER_TEMP'], 'apk-signing.der').read_bytes()
-          certificate = ':'.join(f'{byte:02X}' for byte in hashlib.sha256(certificate_bytes).digest())
-          if len(certificate) != 95:
-              raise RuntimeError('APK signing certificate topilmadi')
-          links = Path('public/.well-known/assetlinks.json')
-          links.parent.mkdir(parents=True, exist_ok=True)
-          links.write_text(json.dumps([{'relation': ['delegate_permission/common.handle_all_urls'], 'target': {'namespace': 'android_app', 'package_name': 'uz.savdoza.savdoza_client', 'sha256_cert_fingerprints': [certificate]}}], indent=2) + '\n')
-          PY
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/releases/manifest.json public/.well-known/assetlinks.json apps/savdoza_client/pubspec.lock
-          git diff --cached --quiet && exit 0
-          git commit -m "chore: publish native offline Android APK and dependency lock"
-          git restore --worktree apps/savdoza_client
-          git pull --rebase origin main
-          git push origin HEAD:main
+          node scripts/publish-app-release.mjs android "$RUNNER_TEMP/savdoza-android.apk" "$RUNNER_TEMP/apk-signing.der"

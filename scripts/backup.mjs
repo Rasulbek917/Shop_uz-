@@ -1,10 +1,12 @@
 // Production database backup: SQLite (file copy) yoki PostgreSQL (pg_dump).
 // Ishlatish: node scripts/backup.mjs
-import { copyFile, readFile } from "fs/promises";
+import { randomBytes } from "node:crypto";
+import { copyFile, readFile, chmod, rename, unlink } from "fs/promises";
 import { existsSync, mkdirSync, statSync } from "fs";
 import { execFileSync } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import { postgresConnection } from "./postgres-tools.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -24,14 +26,23 @@ async function loadEnv() {
 await loadEnv();
 
 const DATABASE_URL = process.env.DATABASE_URL || "";
-const backupDir = path.join(root, "backups");
-const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+const backupDir = path.resolve(process.env.BACKUP_DIR || path.join(root, "backups"));
+const stamp = new Date().toISOString().replace(/[:.]/g, "-") + "-" + randomBytes(4).toString("hex");
 
 if (!existsSync(backupDir)) mkdirSync(backupDir, { recursive: true });
 
-if (DATABASE_URL.startsWith("postgresql")) {
+if (/^postgres(?:ql)?:/.test(DATABASE_URL)) {
   const out = path.join(backupDir, `backup-${stamp}.dump`);
-  execFileSync("pg_dump", ["--format=custom", "--file", out, DATABASE_URL], { stdio: "inherit" });
+  const connection = postgresConnection();
+  const temporary = out + '.partial';
+  try {
+    execFileSync("pg_dump", ["--format=custom", "--no-owner", "--no-acl", "--file", temporary, connection.url], { stdio: "inherit", env: connection.env });
+    await chmod(temporary, 0o600);
+    await rename(temporary, out);
+  } catch (error) {
+    await unlink(temporary).catch(() => {});
+    throw new Error('PostgreSQL backup bajarilmadi', { cause: error.code });
+  }
   console.log(`✓ PostgreSQL backup yaratildi: ${out}`);
 } else if (DATABASE_URL.startsWith("file:")) {
   const rel = DATABASE_URL.replace("file:", "");

@@ -53,13 +53,14 @@ class Destination {
 }
 
 class Savdoza extends StatefulWidget {
-  const Savdoza({super.key});
+  const Savdoza({super.key, this.data});
+  final AppData? data;
   @override
   State<Savdoza> createState() => _SavdozaState();
 }
 
 class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
-  final data = AppData();
+  late final data = widget.data ?? AppData();
   Timer? timer, localTimer;
   bool loading = true;
   String section = 'dashboard', error = '';
@@ -182,7 +183,8 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
   }
 
   Widget body() {
-    if (!data.access && section != 'queue') return PlansPage(data: data);
+    if (!data.access && !['queue', 'settings'].contains(section))
+      return PlansPage(data: data);
     switch (section) {
       case 'dashboard':
         return dashboard();

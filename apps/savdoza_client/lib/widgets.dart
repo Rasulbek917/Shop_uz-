@@ -156,7 +156,7 @@ Future<Json?> editForm(
   // Controllers stay alive until the dialog's closing transition has completed.
   await Future<void>.delayed(const Duration(milliseconds: 250));
   for (final controller in controllers.values) {
-    controller.dispose();
+    controller?.dispose();
   }
   return result;
 }
@@ -169,10 +169,10 @@ class ScannerPage extends StatefulWidget {
 
 class _ScannerPageState extends State<ScannerPage> {
   bool returned = false;
-  final controller = MobileScannerController();
+  final controller = Platform.isWindows ? null : MobileScannerController();
   @override
   void dispose() {
-    controller.dispose();
+    controller?.dispose();
     super.dispose();
   }
 
@@ -181,21 +181,36 @@ class _ScannerPageState extends State<ScannerPage> {
     appBar: AppBar(
       title: const Text('QR / Shtrix-kod'),
       actions: [
-        IconButton(
-          onPressed: controller.toggleTorch,
-          icon: const Icon(Icons.flash_on),
-        ),
+        if (controller != null)
+          IconButton(
+            onPressed: controller!.toggleTorch,
+            icon: const Icon(Icons.flash_on),
+          ),
       ],
     ),
-    body: MobileScanner(
-      controller: controller,
-      onDetect: (capture) {
-        final code = capture.barcodes.firstOrNull?.rawValue;
-        if (returned || code == null || code.isEmpty) return;
-        returned = true;
-        Navigator.pop(context, code);
-      },
-    ),
+    body: Platform.isWindows
+        ? Padding(
+            padding: const EdgeInsets.all(24),
+            child: TextField(
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Shtrix-kod',
+                hintText: 'USB skaner yoki klaviatura orqali kiriting',
+              ),
+              onSubmitted: (code) {
+                if (code.trim().isNotEmpty) Navigator.pop(context, code.trim());
+              },
+            ),
+          )
+        : MobileScanner(
+            controller: controller,
+            onDetect: (capture) {
+              final code = capture.barcodes.firstOrNull?.rawValue;
+              if (returned || code == null || code.isEmpty) return;
+              returned = true;
+              Navigator.pop(context, code);
+            },
+          ),
   );
 }
 
@@ -257,7 +272,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();
       if (bytes == null) throw Exception('Chek rasmi olinmadi');
-      if (!Platform.isAndroid) {
+      if (!Platform.isAndroid && !Platform.isWindows) {
         throw Exception(
           'Chop etish va saqlash ushbu versiyada Android uchun ochilgan',
         );

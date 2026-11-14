@@ -13,7 +13,7 @@ class TestApi extends Api {
 }
 
 AppData sample() {
-  final data = AppData(api: TestApi());
+  final data = AppData(api: TestApi(), store: DeviceStore(desktop: false));
   final exp =
       DateTime.now().add(const Duration(days: 2)).millisecondsSinceEpoch ~/
       1000;
@@ -176,7 +176,11 @@ void main() {
     },
   );
   testWidgets('native app opens login and registration', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: Savdoza()));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Savdoza(data: AppData(store: DeviceStore(desktop: false))),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Hisobingizga kiring'), findsOneWidget);
     await tester.tap(find.text('Ro‘yxatdan o‘tish'));

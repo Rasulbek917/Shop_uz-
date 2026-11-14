@@ -1,0 +1,68 @@
+name: Savdoza Windows
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/savdoza_client/lib/**'
+      - 'apps/savdoza_client/windows/**'
+      - 'apps/savdoza_client/pubspec.*'
+      - '.github/workflows/windows-app.yml'
+      - 'scripts/publish-app-release.mjs'
+permissions:
+  contents: write
+concurrency:
+  group: savdoza-windows
+  cancel-in-progress: true
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-2025
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Flutter
+        shell: pwsh
+        run: |
+          git clone --depth 1 --branch 3.50.0 https://github.com/flutter/flutter.git "$env:RUNNER_TEMP/flutter"
+          "$env:RUNNER_TEMP/flutter/bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Verify and build Windows app
+        working-directory: apps/savdoza_client
+        shell: pwsh
+        run: |
+          flutter config --no-analytics
+          flutter pub get
+          if ($LASTEXITCODE -ne 0) { throw 'Paketlar yuklanmadi' }
+          flutter analyze --no-pub --no-fatal-infos
+          if ($LASTEXITCODE -ne 0) { throw 'Tekshiruv bajarilmadi' }
+          flutter test --no-pub
+          if ($LASTEXITCODE -ne 0) { throw 'Testlar bajarilmadi' }
+          flutter build windows --release --no-pub --dart-define=API_URL=https://shop.aminboyevrasulbek.uz --build-name=2.0.0 --build-number=${{ github.run_number }}
+          if ($LASTEXITCODE -ne 0) { throw 'Windows yig‘ilmadi' }
+      - name: Build installer
+        working-directory: apps/savdoza_client
+        shell: pwsh
+        run: |
+          $compiler = 'C:/Program Files (x86)/Inno Setup 6/ISCC.exe'
+          if (!(Test-Path $compiler)) { choco install innosetup --yes --no-progress }
+          & $compiler /DBuildNumber=${{ github.run_number }} windows/installer.iss
+          if ($LASTEXITCODE -ne 0) { throw 'O‘rnatish fayli yig‘ilmadi' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: savdoza-windows-setup
+          path: apps/savdoza_client/build/installer/savdoza-windows-setup.exe
+      - name: Publish Windows installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release view windows-latest
+          if ($LASTEXITCODE -ne 0) { gh release create windows-latest --target $env:GITHUB_SHA --title 'Savdoza Windows' --notes 'Windows uchun Savdoza.' }
+          gh release upload windows-latest apps/savdoza_client/build/installer/savdoza-windows-setup.exe --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Fayl e’lon qilinmadi' }
+          node scripts/publish-app-release.mjs windows apps/savdoza_client/build/installer/savdoza-windows-setup.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Yuklab olish ma’lumoti yangilanmadi' }

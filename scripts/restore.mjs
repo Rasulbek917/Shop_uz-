@@ -6,6 +6,7 @@ import { existsSync } from "fs";
 import { execFileSync } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import { postgresConnection } from "./postgres-tools.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -34,9 +35,10 @@ if (!backupFile || !existsSync(backupFile)) {
   process.exit(1);
 }
 
-if (backupFile.endsWith(".dump") || DATABASE_URL.startsWith("postgresql")) {
-  execFileSync("pg_restore", ["--clean", "--if-exists", "--dbname", DATABASE_URL, backupFile], {
-    stdio: "inherit",
+if (backupFile.endsWith(".dump") || /^postgres(?:ql)?:/.test(DATABASE_URL)) {
+  const connection = postgresConnection();
+  execFileSync("pg_restore", ["--exit-on-error", "--single-transaction", "--no-owner", "--no-acl", "--clean", "--if-exists", "--dbname", connection.url, backupFile], {
+    stdio: "inherit", env: connection.env,
   });
   console.log("✓ PostgreSQL restore yakunlandi");
 } else if (DATABASE_URL.startsWith("file:")) {

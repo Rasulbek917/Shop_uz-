@@ -125,9 +125,14 @@ class Api {
 }
 
 class DeviceStore {
+  DeviceStore({bool? desktop}) : desktop = desktop ?? Platform.isWindows;
+  final bool desktop;
   final Json _memory = {'caches': <String, dynamic>{}, 'outbox': <dynamic>[]};
+  Future<void> _writes = Future.value();
+  bool _syncing = false;
   Future<Json> read() async {
-    if (!Platform.isAndroid) return object(jsonDecode(jsonEncode(_memory)));
+    if (!Platform.isAndroid && !desktop)
+      return object(jsonDecode(jsonEncode(_memory)));
     return object(
       jsonDecode(await device.invokeMethod<String>('readStore') ?? '{}'),
     );
@@ -138,6 +143,26 @@ class DeviceStore {
       await device.invokeMethod('store', {'action': action, ...values});
       return;
     }
+    if (desktop) {
+      final operation = _writes.then((_) async {
+        final saved = await read();
+        _memory
+          ..clear()
+          ..addAll({
+            'caches': <String, dynamic>{},
+            'outbox': <dynamic>[],
+            ...saved,
+          });
+        _mutate(action, values);
+        await device.invokeMethod('writeStore', jsonEncode(_memory));
+      });
+      _writes = operation.catchError((Object _) {});
+      return operation;
+    }
+    _mutate(action, values);
+  }
+
+  void _mutate(String action, Json values) {
     switch (action) {
       case 'session':
         _memory['session'] = values['session'];
@@ -148,6 +173,12 @@ class DeviceStore {
         if (!orders.any((order) => order['key'] == values['order']['key'])) {
           orders.add(values['order']);
         }
+      case 'ack':
+        for (final item in _memory['outbox']) {
+          if (item['key'] == values['key'] && item['status'] != 'synced') {
+            item.addAll(object(values['changes']));
+          }
+        }
       case 'retry':
         for (final item in _memory['outbox']) {
           if (item['key'] == values['key']) item['status'] = 'pending';
@@ -157,6 +188,66 @@ class DeviceStore {
 
   Future<void> sync({bool force = false}) async {
     if (Platform.isAndroid) await device.invokeMethod('sync', {'force': force});
+    if (!desktop || _syncing) return;
+    _syncing = true;
+    try {
+      final root = await read();
+      final session = object(root['session']);
+      final cookie = session['cookie'] as String?;
+      if (cookie == null) return;
+      final api = Api(cookie: cookie);
+      try {
+        for (final order in records(root['outbox']).where(
+          (entry) =>
+              entry['scope'] == session['scope'] &&
+              entry['status'] == 'pending',
+        )) {
+          final current = object((await read())['session']);
+          if (current['scope'] != session['scope'] ||
+              current['cookie'] != cookie)
+            return;
+          final path = '${order['path']}';
+          if (order['server'] != serverUrl ||
+              !['/api/sales', '/api/debts/sale'].contains(path))
+            continue;
+          try {
+            final result = object(
+              (await api.call(
+                path,
+                method: 'POST',
+                body: object(order['payload']),
+              ))['data'],
+            );
+            await mutate('ack', {
+              'key': order['key'],
+              'changes': {
+                'status': 'synced',
+                'syncedAt': DateTime.now().toUtc().toIso8601String(),
+                'receipt': path.endsWith('/sale') ? result['receipt'] : result,
+              },
+            });
+          } on ApiError catch (error) {
+            await mutate('ack', {
+              'key': order['key'],
+              'changes': {
+                'status': [400, 404, 409, 422].contains(error.status)
+                    ? 'conflict'
+                    : 'pending',
+                'error': error.message,
+              },
+            });
+            if ([401, 403].contains(error.status) || error.status >= 500)
+              return;
+          }
+        }
+      } finally {
+        api.client.close(force: true);
+      }
+    } catch (_) {
+      // Orders remain on disk for the next foreground connection check.
+    } finally {
+      _syncing = false;
+    }
   }
 }
 
