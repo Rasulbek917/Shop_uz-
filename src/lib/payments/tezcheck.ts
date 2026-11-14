@@ -21,17 +21,20 @@ export function tezcheck(path: string, body?: unknown, idempotencyKey?: string):
   return promise;
 }
 
-async function sendTezcheck(path: string, body?: unknown, idempotencyKey?: string) {
-  if (!paymentConfigured()) throw new BusinessError("Tezcheck API tokeni hali sozlanmagan", 503);
+export interface TezcheckCredentials { token: string; cashDeskCode: string; webhookSecret: string }
+export async function sendTezcheck(path: string, body?: unknown, idempotencyKey?: string, credentials?: TezcheckCredentials) {
+  if (!credentials && !paymentConfigured()) throw new BusinessError("Tezcheck API tokeni hali sozlanmagan", 503);
+  const token = credentials?.token || process.env.TEZCHECK_API_TOKEN!;
+  const cashDeskCode = credentials?.cashDeskCode || process.env.TEZCHECK_CASH_DESK_CODE!;
   const method = "POST";
   const raw = body === undefined ? "" : JSON.stringify(body);
   const timestamp = String(Math.floor(Date.now() / 1000));
   const url = new URL(baseUrl + path);
-  const signature = createHmac("sha256", process.env.TEZCHECK_API_TOKEN!)
+  const signature = createHmac("sha256", token)
     .update(`${timestamp}.${method}.${url.pathname}.${createHash("sha256").update(raw).digest("hex")}`).digest("hex");
   const response = await fetch(url, {
     method, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(7000),
-    headers: { Authorization: `Bearer ${process.env.TEZCHECK_API_TOKEN}`, "X-Cash-Desk-Code": process.env.TEZCHECK_CASH_DESK_CODE!, "Content-Type": "application/json", "X-TezCheck-Timestamp": timestamp, "X-TezCheck-Signature": `v1=${signature}`, ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
+    headers: { Authorization: `Bearer ${token}`, "X-Cash-Desk-Code": cashDeskCode, "Content-Type": "application/json", "X-TezCheck-Timestamp": timestamp, "X-TezCheck-Signature": `v1=${signature}`, ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
     body: raw || undefined,
   });
   if (!response.ok) {

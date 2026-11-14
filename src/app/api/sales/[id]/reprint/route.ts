@@ -23,6 +23,7 @@ export async function POST(
     const sale = await prisma.sale.findFirst({
       where: {
         id: params.id,
+        status: { not: "AWAITING_PAYMENT" },
         shopId,
       },
       include: {

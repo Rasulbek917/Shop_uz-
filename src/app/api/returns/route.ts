@@ -87,6 +87,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (sale.status !== "COMPLETED") return NextResponse.json({ success: false, error: "Faqat yakunlangan savdoni qaytarish mumkin" }, { status: 409 });
+
     // Atomic return transaction
     const result = await prisma.$transaction(async (tx) => {
       let totalRefundAmount = 0;

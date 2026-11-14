@@ -4,6 +4,12 @@ on:
     branches: [main]
     paths:
       - 'src/app/api/sales/**'
+      - 'src/app/api/pos/**'
+      - 'src/app/api/shop/pos-gateway/**'
+      - 'src/app/api/webhooks/tezcheck/pos/**'
+      - 'src/lib/payments/**'
+      - 'src/lib/record-sale.ts'
+      - 'tests/pos-payments.cjs'
       - 'src/app/api/debts/**'
       - 'src/app/api/platform/requests/**'
       - 'src/app/api/shops/**'
@@ -35,6 +41,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/savdoza_test
       JWT_SECRET: offline-database-ci-only-secret-123456789
+      APP_URL: https://shop.example.uz
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,4 +52,5 @@ jobs:
       - run: npx prisma generate
       - run: npx prisma migrate deploy
       - run: node tests/offline-database.cjs
+      - run: node tests/pos-payments.cjs
       - run: node tests/backup-restore.cjs

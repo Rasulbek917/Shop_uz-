@@ -21,6 +21,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import BarcodeScannerModal from "@/components/scanner/BarcodeScannerModal";
 import UsbBarcodeDetector from "@/components/scanner/UsbBarcodeDetector";
+import { ElectronicPayment, PendingPayments } from "@/components/pos/ElectronicPayment";
 import ReceiptModal from "@/components/pos/ReceiptModal";
 import CentralProductModal from "@/components/pos/CentralProductModal";
 import { CartItem } from "@/types";
@@ -45,6 +46,7 @@ export default function CashierPosPage() {
   // Checkout modal & Receipt state
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [checkoutKey, setCheckoutKey] = useState<string>("");
+  const [electronicOrder, setElectronicOrder] = useState<any>(null);
   const [completedReceipt, setCompletedReceipt] = useState<any | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -357,7 +359,7 @@ export default function CashierPosPage() {
   const handleCompleteSale = async () => {
     if (cart.length === 0 || isProcessing) return;
 
-    if (Number(paidAmount) < cartTotal) {
+    if (paymentMethod !== "ELECTRONIC" && Number(paidAmount) < cartTotal) {
       alert(
         `To‘langan summa (${formatCurrency(paidAmount)}) to‘lov summasidan (${formatCurrency(
           cartTotal
@@ -377,7 +379,8 @@ export default function CashierPosPage() {
         customerId: selectedCustomerId || null,
         paymentMethod,
         discountAmount: Number(discountAmount) || 0,
-        paidAmount: Number(paidAmount) || cartTotal,
+        paidAmount: paymentMethod === "ELECTRONIC" ? 0 : Number(paidAmount) || cartTotal,
+        expectedTotal: cartTotal,
         idempotencyKey: checkoutKey,
         items: cart.map((item) => ({
           productId: item.productId,
@@ -388,7 +391,7 @@ export default function CashierPosPage() {
         })),
       };
 
-      const res = await fetch("/api/sales", {
+      const res = await fetch(paymentMethod === "ELECTRONIC" ? "/api/pos/payments" : "/api/sales", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -401,6 +404,15 @@ export default function CashierPosPage() {
         return;
       }
 
+      if (paymentMethod === "ELECTRONIC") {
+        setElectronicOrder(data.data);
+        setShowCheckoutModal(false);
+        setCart([]);
+        setDiscountAmount(0);
+        setSelectedCustomerId("");
+        loadProducts();
+        return;
+      }
       // Success!
       setShowCheckoutModal(false);
       setCompletedReceipt(data.data);
@@ -526,6 +538,7 @@ export default function CashierPosPage() {
 
   return (
     <div className="space-y-4">
+      <PendingPayments onOpen={setElectronicOrder}/>
       <div className="rounded-2xl border border-primary-200 bg-white p-5 flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-bold text-slate-900">POS · Savdo terminali</h1><p className="mt-1 text-sm text-slate-500">Mahsulotni toping, savatga qo‘shing va to‘lovni yakunlang.</p></div><div className="rounded-xl bg-primary-50 px-4 py-2 text-primary-800 text-sm font-semibold">Savatda {cart.reduce((sum, item) => sum + item.quantity, 0)} ta · {formatCurrency(cartTotal)}</div></div>
       <div className="flex flex-wrap gap-3 items-center"><label className="sr-only" htmlFor="pos-category">Kategoriya</label><select id="pos-category" className="rounded-xl border bg-white px-4 py-3 text-sm" value={categoryId} onChange={e => setCategoryId(e.target.value)}><option value="">Barcha kategoriyalar</option>{categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={stockOnly} onChange={e => setStockOnly(e.target.checked)}/>Faqat qoldig‘i bor mahsulotlar</label><button className="btn-secondary" onClick={loadProducts} disabled={isLoading}>Qoldiqni yangilash</button></div>
       {/* USB Hardware Barcode Detector */}
@@ -831,6 +844,7 @@ export default function CashierPosPage() {
         </div>
       </div>
 
+      {electronicOrder && <ElectronicPayment order={electronicOrder} onClose={() => { setElectronicOrder(null); loadProducts(); }} onDone={receipt => { setElectronicOrder(null); setCompletedReceipt(receipt); setShowReceiptModal(true); loadProducts(); }}/ >}
       {/* CHECKOUT PAYMENT MODAL (Section 21) */}
       {showCheckoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
@@ -870,7 +884,7 @@ export default function CashierPosPage() {
                     }`}
                   >
                     <CreditCard className="h-5 w-5 text-primary-600" />
-                    <span>Bank kartasi</span>
+                    <span>Terminal (qayd)</span>
                   </button>
 
                   <button
@@ -916,6 +930,7 @@ export default function CashierPosPage() {
                     step="1000"
                     value={paidAmount}
                     onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
+                    disabled={paymentMethod === "ELECTRONIC"}
                     className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-base font-extrabold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
                   />
                 </div>
@@ -942,7 +957,7 @@ export default function CashierPosPage() {
 
               <button
                 type="button"
-                disabled={isProcessing || paidAmount < cartTotal}
+                disabled={isProcessing || (paymentMethod !== "ELECTRONIC" && paidAmount < cartTotal)}
                 onClick={handleCompleteSale}
                 className="flex items-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#4338CA] disabled:opacity-50"
               >
@@ -951,7 +966,7 @@ export default function CashierPosPage() {
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4" />
-                    <span>Sotuvni Yakunlash va Chek Chiqarish</span>
+                    <span>{paymentMethod === "ELECTRONIC" ? "To‘lov QR kodini yaratish" : "Sotuvni yakunlash va chek chiqarish"}</span>
                   </>
                 )}
               </button>
