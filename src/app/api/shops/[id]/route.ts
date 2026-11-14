@@ -226,6 +226,8 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: "Do‘kon topilmadi" }, { status: 404 });
     }
 
+    if (existing.status === "DELETED") return NextResponse.json({ success: true, message: "Hisob o‘chirilgan" });
+
     // Do'kon soft-delete qilinadi, ammo unga tegishli foydalanuvchilarning
     // loginlari band bo'lib qolmasligi uchun ularni bo'shatamiz (nofaol qilib,
     // login nomini noyob ko'rinishga o'zgartiramiz). Aks holda o'chirilgan
@@ -243,6 +245,7 @@ export async function DELETE(
           where: { id: u.id },
           data: {
             status: "INACTIVE",
+            tokenVersion: { increment: 1 },
             username: `${u.username}__deleted_${u.id.slice(0, 8)}`,
           },
         });

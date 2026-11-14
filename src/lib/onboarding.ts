@@ -27,6 +27,34 @@ export async function reviewRegistration(db: PrismaClient, shopId: string, appro
     await tx.auditLog.create({ data: { shopId, userId: reviewer, action: approve ? "REGISTRATION_APPROVED" : "REGISTRATION_REJECTED", entity: "Shop", entityId: shopId, details: note } });
   });
 }
+
+export async function grantRegistrationAccess(db: PrismaClient, shopId: string, planCode: "PRO" | "MAX", durationDays: number, reviewer: string, note: string) {
+  const now = new Date();
+  const end = new Date(now.getTime() + durationDays * 86400000);
+  if (!Number.isSafeInteger(durationDays) || durationDays < 1 || !Number.isFinite(end.getTime())) throw new BusinessError("Kunlar soni noto‘g‘ri");
+  return db.$transaction(async tx => {
+    const shop = await tx.shop.findUnique({ where: { id: shopId } });
+    if (!shop || shop.status === "DELETED") throw new BusinessError("Hisob topilmadi", 404);
+    await tx.shop.update({ where: { id: shopId }, data: {
+      status: "ACTIVE", planCode, subscriptionType: planCode, approvedAt: now,
+      subscriptionStartDate: now, subscriptionEndDate: end,
+    } });
+    await tx.subscription.create({ data: {
+      shopId, planName: planCode, price: 0, durationDays, startDate: now, endDate: end,
+      status: "ACTIVE", paymentMethod: "ADMIN_GRANT", activatedBy: reviewer,
+      notes: note || "Administrator tomonidan ruxsat berildi",
+    } });
+    await tx.notification.create({ data: {
+      shopId, type: "SYSTEM", title: "Hisobga ruxsat berildi",
+      message: `${planCode} tarifi ${durationDays} kunga ochildi. ${end.toLocaleDateString("uz-UZ")} gacha faol.`,
+    } });
+    await tx.auditLog.create({ data: {
+      shopId, userId: reviewer, action: "ACCESS_GRANTED", entity: "Shop", entityId: shopId,
+      details: JSON.stringify({ planCode, durationDays, endDate: end.toISOString(), note }),
+    } });
+    return { endDate: end.toISOString(), planCode, durationDays };
+  }, { isolationLevel: "Serializable" });
+}
 export async function requestPurchase(db: PrismaClient, shopId: string, code: string, reference: string, paymentMethod: "UZUM" | "PAYME" | "CLICK" | "MANUAL" = "MANUAL") {
   return db.$transaction(async tx => {
     const shop = await tx.shop.findUnique({ where: { id: shopId } });

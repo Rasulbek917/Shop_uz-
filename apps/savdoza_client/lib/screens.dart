@@ -677,6 +677,7 @@ class AdminRequests extends StatefulWidget {
 class _AdminRequestsState extends State<AdminRequests> {
   Json rows = {};
   Timer? refreshTimer;
+  bool busy = false;
   String? error;
   @override
   void initState() {
@@ -724,6 +725,72 @@ class _AdminRequestsState extends State<AdminRequests> {
     }
   }
 
+  Future<void> manage(Json row, {required bool remove}) async {
+    if (busy) return;
+    setState(() => busy = true);
+    try {
+      if (remove) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialog) => AlertDialog(
+            title: const Text('Hisobni o‘chirish'),
+            content: Text(
+              '${row['name']} hisobiga kirish to‘xtatiladi. O‘chirishni tasdiqlang.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialog, false),
+                child: const Text('Bekor qilish'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialog, true),
+                child: const Text('O‘chirish'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) return;
+        await widget.data.api.call('/api/shops/${row['id']}', method: 'DELETE');
+      } else {
+        final values = await editForm(
+          context,
+          'Hisobga ruxsat berish',
+          const [
+            Field(
+              'planCode',
+              'Tarif',
+              required: true,
+              options: {'PRO': 'Pro', 'MAX': 'Max'},
+            ),
+            Field(
+              'durationDays',
+              'Bugundan necha kunga ruxsat berilsin',
+              required: true,
+              number: true,
+              integer: true,
+            ),
+            Field('note', 'Izoh'),
+          ],
+          values: {
+            'planCode': row['subscriptionType'] == 'MAX' ? 'MAX' : 'PRO',
+            'durationDays': 30,
+          },
+        );
+        if (values == null) return;
+        await widget.data.api.call(
+          '/api/platform/requests',
+          method: 'PATCH',
+          body: {'kind': 'access', 'id': row['id'], ...values},
+        );
+      }
+      await load();
+    } catch (e) {
+      if (mounted) await message(context, e);
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.all(20),
@@ -732,7 +799,7 @@ class _AdminRequestsState extends State<AdminRequests> {
       for (final kind in ['registrations', 'purchases']) ...[
         Text(
           kind == 'registrations'
-              ? 'Yangi hisoblar va arizalar'
+              ? 'Hisoblar va arizalar'
               : 'To‘lov so‘rovlari',
           style: const TextStyle(fontSize: 24),
         ),
@@ -752,8 +819,8 @@ class _AdminRequestsState extends State<AdminRequests> {
                       child: Text(
                         'To‘lov kutilmoqda · ${row['subscriptionType']}',
                       ),
-                    )
-                  else
+                    ),
+                  if (kind == 'purchases' || row['status'] == 'PENDING')
                     Row(
                       children: [
                         TextButton(
@@ -778,6 +845,31 @@ class _AdminRequestsState extends State<AdminRequests> {
                         ),
                       ],
                     ),
+                  if (kind == 'registrations') ...[
+                    if (row['subscriptionEndDate'] != null)
+                      Text(
+                        'Ruxsat ${dateText(row['subscriptionEndDate'])} gacha',
+                      ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => manage(row, remove: false),
+                          icon: const Icon(Icons.key),
+                          label: const Text('Ruxsat berish'),
+                        ),
+                        TextButton.icon(
+                          onPressed: busy
+                              ? null
+                              : () => manage(row, remove: true),
+                          icon: const Icon(Icons.delete_outline),
+                          label: const Text('O‘chirish'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
