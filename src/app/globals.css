@@ -396,3 +396,18 @@ body {
 .input-field:focus-visible { outline: 3px solid #9ec5a6; outline-offset: 2px; }
 
 .demo-player-portrait{width:100%;max-width:420px;justify-self:center}.demo-player-portrait video{display:block;width:100%;height:auto;aspect-ratio:3/4;object-fit:contain;background:#101b16}
+
+.login-showcase{padding:32px clamp(24px,4vw,56px);gap:20px;align-items:center;background:radial-gradient(ellipse at 50% 50%,#285444 0%,#173c30 70%)}
+.login-showcase>.wordmark{align-self:flex-start}
+.login-showcase-copy{width:100%;max-width:420px}
+.login-showcase h1{font-size:clamp(30px,3.2vw,44px);line-height:1.12;margin:0 0 12px}
+.login-showcase p{font-size:14px;color:#c6dacd}
+.login-showcase .demo-player{max-width:300px;width:100%}
+.login-showcase video{max-height:52vh;border-color:#5c7969;box-shadow:0 20px 50px #08221866}
+.login-showcase>span{margin-top:4px}
+.login-password{position:relative}
+.login-password input{padding-right:52px!important}
+.login-password button{position:absolute;right:4px;top:12px;width:40px;height:40px;display:grid;place-items:center;border-radius:8px;color:#55705f}
+.login-password button:hover{background:#edf3ed}
+.login-password button:focus-visible{outline:2px solid #2a7657;outline-offset:1px}
+@media(max-width:700px){.login-screen{display:flex;flex-direction:column}.login-screen .auth-form-area{order:0;padding:30px 6% 38px}.login-showcase.auth-story{order:1;display:flex;padding:28px 6%;gap:20px}.login-showcase>.wordmark,.login-showcase>span{display:none}.login-showcase-copy{text-align:center}.login-showcase h1{display:none}.login-showcase video{max-height:none}.login-screen .auth-back{margin-bottom:28px}}
