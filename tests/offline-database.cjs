@@ -62,7 +62,10 @@ const { randomBytes } = require('node:crypto');
     assert.equal(await prisma.sale.count({ where: { shopId: shop.id } }), 3);
     console.log('Database integration passed: concurrent cash/debt deduplication, stock rollback, quote conflicts, original offline date, expired account guard.');
   } finally {
-    if (shop) await prisma.shop.delete({ where: { id: shop.id } });
+    if (shop) {
+      await prisma.sale.deleteMany({ where: { shopId: shop.id } });
+      await prisma.shop.delete({ where: { id: shop.id } });
+    }
     await prisma.$disconnect();
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });
