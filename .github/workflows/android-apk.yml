@@ -10,6 +10,8 @@ on:
       - 'apps/savdoza_client/pubspec.*'
       - '.github/workflows/android-apk.yml'
       - 'scripts/publish-app-release.mjs'
+      - 'src/lib/refunds.ts'
+      - 'src/app/api/returns/**'
 permissions:
   contents: write
 concurrency:

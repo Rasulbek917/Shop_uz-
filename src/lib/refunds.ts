@@ -1,8 +1,9 @@
 type SaleLine = { id: string; quantity: number; unitPrice: number };
 type ReturnedLine = { saleItemId: string; quantity: number; totalRefund: number };
 type RefundSale = { payableAmount: number; items: SaleLine[]; returns?: { items: ReturnedLine[] }[] };
+type RefundInfo = { returnedQuantity: number; refundedAmount: number; refundAllocation: number; returnableQuantity: number };
 
-export function withRefundInfo<T extends RefundSale>(sale: T) {
+export function withRefundInfo<T extends RefundSale>(sale: T): Omit<T, "items"> & { items: (T["items"][number] & RefundInfo)[] } {
   const sorted = [...sale.items].sort((a, b) => a.id.localeCompare(b.id));
   const gross = sorted.reduce((sum, item) => sum + Math.round(item.quantity * item.unitPrice), 0);
   const returned = sale.returns?.flatMap(record => record.items) || [];
@@ -21,7 +22,7 @@ export function withRefundInfo<T extends RefundSale>(sale: T) {
       const returnedQuantity = history.reduce((sum, row) => sum + row.quantity, 0);
       const refundedAmount = history.reduce((sum, row) => sum + row.totalRefund, 0);
       const refundAllocation = allocations.get(item.id) || 0;
-      return { ...item, returnedQuantity, refundedAmount, refundAllocation, returnableQuantity: Math.max(0, item.quantity - returnedQuantity) } as T["items"][number] & { returnedQuantity: number; refundedAmount: number; refundAllocation: number; returnableQuantity: number };
+      return { ...item, returnedQuantity, refundedAmount, refundAllocation, returnableQuantity: Math.max(0, item.quantity - returnedQuantity) } as T["items"][number] & RefundInfo;
     }),
   };
 }
