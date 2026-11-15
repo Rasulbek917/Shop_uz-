@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScanBarcode, Boxes, Users, ArrowRight, Check } from "lucide-react";
 
 export function ScrollMotion() {
@@ -21,7 +21,7 @@ const workflows = [
 ];
 export function WorkflowExplorer() {
  const [active,setActive]=useState(0); const item=workflows[active];
- return <section id="demo" className="public-section workflow-section"><div className="section-heading"><div><span className="eyebrow">BIR PLATFORMADA</span><h2>Bir kunlik ishni<br/>bir joydan boshqaring.</h2></div><p>Bo‘limni tanlang va Savdoza do‘koningizdagi kundalik vazifalarni qanday birlashtirishini ko‘ring.</p></div><div className="workflow-tabs" role="tablist" aria-label="Ish jarayonlari">{workflows.map((w,i)=><button key={w.title} id={`flow-tab-${i}`} role="tab" aria-selected={i===active} tabIndex={i===active?0:-1} aria-controls="flow-panel" onKeyDown={event=>{
+ return <section className="public-section workflow-section"><div className="section-heading"><div><span className="eyebrow">BIR PLATFORMADA</span><h2>Bir kunlik ishni<br/>bir joydan boshqaring.</h2></div><p>Bo‘limni tanlang va Savdoza do‘koningizdagi kundalik vazifalarni qanday birlashtirishini ko‘ring.</p></div><div className="workflow-tabs" role="tablist" aria-label="Ish jarayonlari">{workflows.map((w,i)=><button key={w.title} id={`flow-tab-${i}`} role="tab" aria-selected={i===active} tabIndex={i===active?0:-1} aria-controls="flow-panel" onKeyDown={event=>{
    const keys=["ArrowRight","ArrowLeft","Home","End"];
    if(!keys.includes(event.key)) return;
    event.preventDefault();
@@ -30,6 +30,41 @@ export function WorkflowExplorer() {
    document.getElementById(`flow-tab-${next}`)?.focus();
  }} onClick={()=>setActive(i)}><w.icon size={19}/>{w.title}{i===2&&<small>MAX</small>}</button>)}</div><div id="flow-panel" role="tabpanel" aria-labelledby={`flow-tab-${active}`} className="workflow-panel" key={active}><div><span className="eyebrow">0{active+1} / ISH JARAYONI</span><h3>{item.heading}</h3><p>{item.text}</p><ul>{item.steps.map(s=><li key={s}><Check size={17}/>{s}</li>)}</ul><a href="/register">Hisob yaratish <ArrowRight size={17}/></a></div><figure><img src={`/media/${item.image}`} alt={`${item.title} — namunaviy interfeys`} loading="lazy" width="1280" height="720"/><figcaption>Namunaviy ko‘rinish · Haqiqiy do‘kon ma’lumotlari emas</figcaption></figure></div></section>;
 }
+export function DemoPlayer() {
+  const video = useRef<HTMLVideoElement>(null);
+  const [chapters, setChapters] = useState<{title: string; start: number}[]>([]);
+  const [active, setActive] = useState(0);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    fetch("/media/savdoza-tutorial.json")
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (mounted && Array.isArray(data?.chapters)) {
+          setChapters(data.chapters.filter((chapter: {title?: unknown; start?: unknown}) => typeof chapter.title === "string" && typeof chapter.start === "number" && chapter.start >= 0));
+        }
+      }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+  return <div className="usage-tutorial">
+    <video ref={video} controls playsInline preload="metadata" width="1280" height="888" poster="/media/savdoza-tutorial-poster.webp" aria-label="Savdoza ishlatish bo‘yicha amaliy video qo‘llanma" onError={() => setFailed(true)} onPlay={() => setFailed(false)} onTimeUpdate={() => {
+      const current = video.current?.currentTime || 0;
+      setActive(chapters.reduce((selected, chapter, index) => chapter.start <= current ? index : selected, 0));
+    }}>
+      <source src="/media/savdoza-tutorial.mp4" type="video/mp4"/>
+      <track kind="captions" src="/media/savdoza-tutorial.vtt" srcLang="uz" label="O‘zbekcha izohlar"/>
+      <a href="/media/savdoza-tutorial.mp4">Video qo‘llanmani ochish</a>
+    </video>
+    {failed && <p role="alert">Video yuklanmadi. <a href="/media/savdoza-tutorial.mp4">Videoni alohida oching</a>.</p>}
+    {!!chapters.length && <nav className="tutorial-chapters" aria-label="Video bosqichlari">{chapters.map((chapter,index) => <button key={chapter.start} type="button" aria-pressed={active === index} onClick={() => {
+      if (video.current) {
+        video.current.currentTime = chapter.start;
+        void video.current.play().catch(() => {});
+      }
+    }}><small>{String(Math.floor(chapter.start / 60)).padStart(2,"0")}:{String(Math.floor(chapter.start % 60)).padStart(2,"0")}</small>{chapter.title}</button>)}</nav>}
+  </div>;
+}
+
 export function PlanComparison() {
  return <div className="plan-compare"><h3>Farqini bir qarashda ko‘ring.</h3><div className="comparison-scroll"><table><caption className="sr-only">Pro va Max imkoniyatlari</caption><thead><tr><th>Imkoniyat</th><th>Pro</th><th>Max</th></tr></thead><tbody>{[["POS, naqd, karta va nasiya",true],["Ombor, partiyalar va mijozlar",true],["Hisobot va chek chop etish",true],["Kassir va omborchi hisoblari",false],["Yetkazib beruvchilar bazasi",false],["Amallar jurnali va markaziy import",false],["Cheklar CSV hisoboti va to‘lov tahlili",false]].map(([name,both])=><tr key={String(name)}><th scope="row">{name}</th><td>{both?"✓":"—"}</td><td>✓</td></tr>)}</tbody></table></div></div>;
 }
