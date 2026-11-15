@@ -69,11 +69,11 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
   };
 
   return (
-    <>
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+    createPortal(<>
+    <div role="dialog" aria-modal="true" aria-label="Sotuv cheki" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
+      <div className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
         {/* Header Actions */}
-        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-3.5 no-print">
+        <div className="flex items-center justify-between shrink-0 border-b border-slate-100 bg-slate-50 px-5 py-3.5 no-print">
           <span className="text-xs font-bold uppercase tracking-wider text-primary-700 flex items-center gap-1.5">
             <Check className="h-4 w-4" />
             {isReprint ? "Chekni Qayta Chop Etish" : "Sotuv Muvaffaqiyatli"}
@@ -104,6 +104,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
 
             <button
               onClick={onClose}
+              aria-label="Chekni yopish"
               className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200"
             >
               <X className="h-4 w-4" />
@@ -115,7 +116,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
         {!qrUrl && !qrError && <p role="status" className="p-3 text-sm">Chek QR havolasi tayyorlanmoqda…</p>}
         {/* Printable Thermal Receipt Container */}
         <div
-          className={`p-6 bg-white max-h-[65vh] overflow-y-auto transition-all ${
+          className={`min-h-0 shrink overflow-y-auto p-6 bg-white transition-all ${
             paperWidth === "58mm" ? "max-w-[280px] mx-auto text-[11px]" : "max-w-full text-xs"
           }`}
         >
@@ -232,10 +233,9 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
         </div>
 
         {/* Modal Action Buttons Footer */}
-        <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50 p-4 no-print">
+        <div className="flex shrink-0 flex-col gap-2 border-t border-slate-100 bg-slate-50 p-4 no-print">
           <button
             onClick={handleStandardPrint}
-            disabled={!qrUrl}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
           >
             <Printer className="h-4 w-4"/> Chek chiqarish
@@ -244,16 +244,13 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
             onClick={onClose}
             className="w-full rounded-xl bg-slate-900 py-2.5 text-xs font-bold text-white hover:bg-slate-800 transition-colors shadow-sm"
           >
-            {isReprint ? "Yopish" : "Yangi savdoni boshlash"}
+            {isReprint ? "Yopish" : "Yangi savdo"}
           </button>
         </div>
       </div>
     </div>
-    {createPortal(
-      <PrintReceipt receipt={receipt} qrUrl={qrUrl} isReprint={isReprint} />,
-      document.body
-    )}
-    </>
+    <PrintReceipt receipt={receipt} qrUrl={qrUrl} isReprint={isReprint} />
+    </>, document.body)
   );
 }
 

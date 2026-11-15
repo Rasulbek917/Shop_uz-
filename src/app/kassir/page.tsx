@@ -548,7 +548,13 @@ export default function CashierPosPage() {
       {/* Printable Receipt Modal */}
       <ReceiptModal
         isOpen={showReceiptModal}
-        onClose={() => setShowReceiptModal(false)}
+        onClose={() => {
+          setShowReceiptModal(false);
+          setCompletedReceipt(null);
+          setSearch("");
+          setStatusMessage(null);
+          searchInputRef.current?.focus();
+        }}
         receipt={completedReceipt}
       />
 
@@ -840,7 +846,7 @@ export default function CashierPosPage() {
       {/* CHECKOUT PAYMENT MODAL (Section 21) */}
       {showCheckoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+          <div className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white shadow-2xl">
             <div className="border-b border-slate-100 bg-slate-50 px-6 py-4">
               <h3 className="text-base font-extrabold text-slate-900">To‘lovni Qabul Qilish</h3>
               <p className="text-xs text-slate-500 mt-0.5">To‘lov turini tanlang va summani kiriting</p>
