@@ -23,6 +23,7 @@ try {
       name: "Chek sinovi",
       adminName: "Sinov foydalanuvchi",
       phone: "+998900000000",
+      address: "Sinov manzili",
       status: "ACTIVE",
       planCode: "MAX",
       subscriptionType: "MAX",
