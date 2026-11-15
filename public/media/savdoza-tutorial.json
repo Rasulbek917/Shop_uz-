@@ -1,5 +1,5 @@
 {
-  "duration": 62.51,
+  "duration": 62.81,
   "chapters": [
     {
       "title": "Hisobga kirish",
@@ -7,43 +7,43 @@
     },
     {
       "title": "Dashboard",
-      "start": 7.78
+      "start": 7.86
     },
     {
       "title": "Mahsulot qo‘shish",
-      "start": 13.41
+      "start": 13.51
     },
     {
       "title": "Narxni belgilang",
-      "start": 19.77
+      "start": 19.91
     },
     {
       "title": "Ombor qoldig‘i",
-      "start": 25.78
+      "start": 25.92
     },
     {
       "title": "POS terminal",
-      "start": 30.22
+      "start": 30.38
     },
     {
       "title": "Savatni tekshiring",
-      "start": 36.25
+      "start": 36.42
     },
     {
       "title": "To‘lovni qayd eting",
-      "start": 39.14
+      "start": 39.34
     },
     {
       "title": "Chek tayyor",
-      "start": 42.31
+      "start": 42.57
     },
     {
       "title": "Cheklar tarixi",
-      "start": 48.07
+      "start": 48.36
     },
     {
       "title": "Hisobotlar",
-      "start": 55.29
+      "start": 55.59
     }
   ],
   "kind": "actual-interface-sample-data",
