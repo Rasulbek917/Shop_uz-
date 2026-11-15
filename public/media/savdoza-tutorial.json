@@ -1,0 +1,51 @@
+{
+  "duration": 62.51,
+  "chapters": [
+    {
+      "title": "Hisobga kirish",
+      "start": 0
+    },
+    {
+      "title": "Dashboard",
+      "start": 7.78
+    },
+    {
+      "title": "Mahsulot qo‘shish",
+      "start": 13.41
+    },
+    {
+      "title": "Narxni belgilang",
+      "start": 19.77
+    },
+    {
+      "title": "Ombor qoldig‘i",
+      "start": 25.78
+    },
+    {
+      "title": "POS terminal",
+      "start": 30.22
+    },
+    {
+      "title": "Savatni tekshiring",
+      "start": 36.25
+    },
+    {
+      "title": "To‘lovni qayd eting",
+      "start": 39.14
+    },
+    {
+      "title": "Chek tayyor",
+      "start": 42.31
+    },
+    {
+      "title": "Cheklar tarixi",
+      "start": 48.07
+    },
+    {
+      "title": "Hisobotlar",
+      "start": 55.29
+    }
+  ],
+  "kind": "actual-interface-sample-data",
+  "narration": "uzbek-captions"
+}
