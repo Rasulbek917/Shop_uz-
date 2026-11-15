@@ -463,13 +463,13 @@ test('receipt modal has a single print action and new sale action', t => {
   t.after(() => { global.document = before; });
   const React = require('react');
   const { default: ReceiptModal } = load('src/components/pos/ReceiptModal.tsx', {
-    'react-dom': { createPortal: () => null },
+    'react-dom': { createPortal: children => children },
     '@/lib/client-api': {}, '@/lib/formatters': load('src/lib/formatters.ts'),
   });
   const receipt = { receiptNumber: 'CHK-001', shopName: 'Shop', cashierName: 'Cashier', createdAt: '2026-11-13T01:00:00Z', totalAmount: 1000, discountAmount: 0, payableAmount: 1000, paidAmount: 1000, changeAmount: 0, paymentMethod: 'CASH', items: [] };
   const html = require('react-dom/server').renderToStaticMarkup(React.createElement(ReceiptModal, { isOpen: true, onClose() {}, receipt }));
   assert.ok(html.includes('Chek chiqarish'));
-  assert.ok(html.includes('Yangi savdoni boshlash'));
+  assert.ok(html.includes('Yangi savdo'));
   assert.ok(!html.includes('ESC/POS Termal'));
   assert.ok(!html.includes('Standart Chop'));
 });

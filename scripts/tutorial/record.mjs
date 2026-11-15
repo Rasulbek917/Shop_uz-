@@ -137,7 +137,7 @@ try {
   await page.getByRole('button',{name:'Chek chiqarish',exact:true}).waitFor();
   mark('Chek tayyor', 'Chekni ko‘ring. “Chek chiqarish” tugmasidan chop etish oynasi ochiladi.');
   await hold(); await snapshot('receipt'); await hold();
-  await page.getByRole('button',{name:'Yangi savdoni boshlash',exact:true}).click();
+  await page.getByRole('button',{name:'Yangi savdo',exact:true}).click();
 
   mark('Cheklar tarixi', 'Cheklar bo‘limida oldingi savdolar saqlanadi. Kerakli chekni qayta ochishingiz mumkin.');
   await navigate('/admin/cheklar');
