@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { DemoPlayer } from "@/components/marketing/Experience";
 import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function LoginPage() {
@@ -44,7 +43,7 @@ export default function LoginPage() {
         <h1>Do‘koningiz.<br/>Bir joyda.</h1>
         <p>Savdoza bilan yaqindan tanishing.</p>
       </div>
-      <DemoPlayer/>
+      <img className="login-preview" src="/media/dashboard-preview.webp" width="1280" height="720" alt="Savdoza boshqaruv panelining namunaviy ko‘rinishi"/>
       <span><ShieldCheck size={17}/> Shaxsiy hisob orqali xavfsiz kirish</span>
     </aside>
     <main className="auth-form-area">
