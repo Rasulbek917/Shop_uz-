@@ -1,0 +1,71 @@
+name: Record Savdoza tutorial
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/tutorial/**'
+      - '.github/workflows/tutorial-video.yml'
+permissions:
+  contents: write
+concurrency:
+  group: savdoza-tutorial
+  cancel-in-progress: true
+jobs:
+  record:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tutorial
+          POSTGRES_PASSWORD: isolated-tutorial-only
+          POSTGRES_DB: savdoza_tutorial
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U tutorial -d savdoza_tutorial" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://tutorial:isolated-tutorial-only@localhost:5432/savdoza_tutorial
+      JWT_SECRET: isolated-tutorial-jwt-secret-000000000000000000
+      APP_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      TUTORIAL_OUTPUT: ${{ runner.temp }}/tutorial
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run build
+      - name: Prepare recording tools
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@latest
+          npx playwright install --with-deps chromium
+          command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core)
+      - name: Record real application flows
+        run: node scripts/tutorial/record.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tutorial-review
+          path: ${{ runner.temp }}/tutorial
+          retention-days: 7
+      - name: Publish tutorial media
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp "$TUTORIAL_OUTPUT"/savdoza-tutorial* public/media/
+            git add public/media/savdoza-tutorial*
+            git diff --cached --quiet && exit 0
+            git commit -m 'docs: publish recorded Savdoza usage tutorial'
+            git push origin HEAD:main && exit 0
+          done
+          exit 1
