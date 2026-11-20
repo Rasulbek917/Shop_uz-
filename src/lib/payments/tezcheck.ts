@@ -58,6 +58,19 @@ export async function createCheckout(shopId: string, planCode: "PRO" | "MAX", pr
   if (!origin || new URL(origin).protocol !== "https:") throw new BusinessError("To‘lov uchun HTTPS sayt manzilini sozlang", 503);
   const activeKey = `${shopId}:${planCode}:${providerCode}:${amount}`;
   let order = await prisma.checkoutOrder.findUnique({ where: { activeKey } });
+  if (order?.billId) {
+    const result = await reconcileCheckout(order.id);
+    if (result.status === "PAID") throw new BusinessError("To‘lov tasdiqlangan. Hisobingizni yangilang", 409);
+    if (result.status === "EXPIRED") order = null;
+    else if (order.paymentUrl) return { id: order.id, paymentUrl: order.paymentUrl };
+  }
+  if (order && !order.billId && Date.now() - order.createdAt.getTime() > 23 * 3600000) {
+    await prisma.checkoutOrder.updateMany({
+      where: { id: order.id, status: "PENDING", billId: null },
+      data: { status: "EXPIRED", activeKey: null },
+    });
+    order = null;
+  }
   if (!order) {
     const id = randomUUID();
     const returnUrl = new URL("/checkout", origin);
@@ -71,7 +84,6 @@ export async function createCheckout(shopId: string, planCode: "PRO" | "MAX", pr
     }
   }
   if (order.paymentUrl) return { id: order.id, paymentUrl: order.paymentUrl };
-  if (Date.now() - order.createdAt.getTime() > 23 * 3600000) throw new BusinessError("Oldingi to‘lov natijasi tekshirilishi kerak. Administratorga murojaat qiling", 409);
   const result = z.object({ bill: z.object({ id: z.string(), external_reference: z.string(), amount_minor: z.number().int(), currency: z.literal("UZS") }), payment_url: z.string().url() }).parse(await tezcheck("/bills", {
     amount_minor: order.amount * 100, title: `Savdoza ${order.planCode} — 30 kun`, external_reference: order.id, return_url: order.returnUrl, allowed_provider_codes: [order.providerCode],
   }, `savdoza-${order.id}`));
@@ -88,9 +100,12 @@ export async function reconcileCheckout(id: string) {
   const remote = await tezcheck(`/bills/${encodeURIComponent(order.billId)}`);
   const paymentId = verifiedPayment(remote, order);
   if (!paymentId) {
-    if (!remote.bill.paid && ["expired", "revoked"].includes(remote.bill.state)) {
-      await prisma.checkoutOrder.updateMany({ where: { id, status: "PENDING" }, data: { status: "EXPIRED", activeKey: null } });
-      return { status: "EXPIRED" };
+    const unavailable = ["expired", "revoked", "exhausted"].includes(remote.bill.state)
+      || ["expired", "use_limit_reached"].includes(remote.bill.unavailability_reason)
+      || (remote.bill.available_until && new Date(remote.bill.available_until).getTime() <= Date.now());
+    if (!remote.bill.paid && unavailable) {
+      const changed = await prisma.checkoutOrder.updateMany({ where: { id, status: "PENDING" }, data: { status: "EXPIRED", activeKey: null } });
+      return { status: changed.count ? "EXPIRED" : (await prisma.checkoutOrder.findUniqueOrThrow({ where: { id } })).status };
     }
     return { status: "PENDING" };
   }

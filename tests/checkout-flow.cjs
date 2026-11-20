@@ -72,7 +72,7 @@ test('checkout creates a linked return URL and reuses the existing bill', async 
     shop: { findUnique: async () => ({ status: 'AWAITING_PAYMENT' }) },
     plan: { findUnique: async () => ({ enabled: true, price: 299000 }) },
     checkoutOrder: {
-      findUnique: async () => order || null,
+      findUnique: async () => order?.activeKey ? order : null,
       create: async ({ data }) => (order = { ...data, status: 'PENDING', createdAt: new Date() }),
       update: async ({ data }) => Object.assign(order, data),
     },
@@ -81,7 +81,9 @@ test('checkout creates a linked return URL and reuses the existing bill', async 
     requests.push({ url: String(url), ...options });
     const data = String(url).endsWith('/payment-methods')
       ? [{ provider_code: 'payme', name: 'Payme', currency: 'UZS', min_amount_minor: null, max_amount_minor: null }]
-      : { bill: { id: 'bill-1', external_reference: order.id, amount_minor: 29900000, currency: 'UZS' }, payment_url: 'https://tezcheck.uz/pay/test-only' };
+      : String(url).endsWith('/bills/bill-1')
+        ? { bill: { id: 'bill-1', external_reference: order.id, amount_minor: 29900000, currency: 'UZS', paid: false, livemode: true, environment: null, state: 'active', available_until: new Date(Date.now() + 86400000).toISOString() }, payment: null }
+        : { bill: { id: 'bill-1', external_reference: order.id, amount_minor: 29900000, currency: 'UZS' }, payment_url: 'https://tezcheck.uz/pay/test-only' };
     return Response.json({ data });
   });
   const api = payments(db);
@@ -94,6 +96,45 @@ test('checkout creates a linked return URL and reuses the existing bill', async 
   assert.equal(billRequest.headers['Idempotency-Key'], `savdoza-${order.id}`);
   assert.deepEqual(await api.createCheckout('shop-1', 'PRO', 'payme'), first);
   assert.equal(requests.filter(request => request.url.endsWith('/bills')).length, 1);
+});
+
+test('expired Tezcheck link creates a fresh bill before redirecting', async t => {
+  configure(t);
+  const orders = [];
+  const db = {
+    shop: { findUnique: async () => ({ status: 'AWAITING_PAYMENT' }) },
+    plan: { findUnique: async () => ({ enabled: true, price: 299000 }) },
+    checkoutOrder: {
+      findUnique: async ({ where }) => orders.find(order => where.activeKey ? order.activeKey === where.activeKey : order.id === where.id) || null,
+      findUniqueOrThrow: async ({ where }) => orders.find(order => order.id === where.id),
+      create: async ({ data }) => { const order = { ...data, status: 'PENDING', createdAt: new Date() }; orders.push(order); return order; },
+      update: async ({ where, data }) => Object.assign(orders.find(order => order.id === where.id), data),
+      updateMany: async ({ where, data }) => {
+        const order = orders.find(item => item.id === where.id && item.status === where.status);
+        if (!order) return { count: 0 };
+        Object.assign(order, data);
+        return { count: 1 };
+      },
+    },
+  };
+  let billCount = 0;
+  t.mock.method(global, 'fetch', async url => {
+    const path = String(url);
+    if (path.endsWith('/payment-methods')) return Response.json({ data: [{ provider_code: 'payme', name: 'Payme', currency: 'UZS', min_amount_minor: null, max_amount_minor: null }] });
+    if (path.endsWith('/bills')) {
+      billCount++;
+      const id = `bill-${billCount}`;
+      return Response.json({ data: { bill: { id, external_reference: orders.at(-1).id, amount_minor: 29900000, currency: 'UZS' }, payment_url: `https://tezcheck.uz/pay/${id}` } });
+    }
+    return Response.json({ data: { bill: { id: 'bill-1', external_reference: orders[0].id, amount_minor: 29900000, currency: 'UZS', paid: false, livemode: true, environment: null, state: 'expired', unavailability_reason: 'expired' }, payment: null } });
+  });
+  const api = payments(db);
+  const first = await api.createCheckout('shop-1', 'PRO', 'payme');
+  const second = await api.createCheckout('shop-1', 'PRO', 'payme');
+  assert.notEqual(second.id, first.id);
+  assert.notEqual(second.paymentUrl, first.paymentUrl);
+  assert.equal(orders[0].status, 'EXPIRED');
+  assert.equal(billCount, 2);
 });
 
 test('verified payment activates once and extends an existing subscription', async t => {
