@@ -17,9 +17,11 @@ type Sale = {
 export default function ReceiptsPage({
   canExport,
   canUpgrade,
+  isCashier = false,
 }: {
   canExport: boolean;
   canUpgrade: boolean;
+  isCashier?: boolean;
 }) {
   const [data, setData] = useState<{
     sales: Sale[];
@@ -118,10 +120,19 @@ export default function ReceiptsPage({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Cheklar</h1>
-          <p className="mt-2 text-sm">
-            Chop etilgan va chop etilmagan savdo cheklari shu yerda saqlanadi.
-          </p>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {isCashier ? "Savdo tarixi" : "Cheklar"}
+          </h1>
+          {isCashier && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link href="/kassir/tarixim" className="btn-secondary">
+                Sotuvlar jami
+              </Link>
+              <Link href="/kassir/qaytarish" className="btn-secondary">
+                Tovarni qaytarish
+              </Link>
+            </div>
+          )}
         </div>
         <button
           className="btn-secondary"

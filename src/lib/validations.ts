@@ -113,6 +113,7 @@ const offlineSaleFields = {
 export const saleSchema = z.object({
   ...offlineSaleFields,
   customerId: z.string().optional().nullable(),
+  loyaltyPointsUsed: z.number().int().min(0).default(0),
   paymentMethod: z.enum(["CASH", "CARD", "ELECTRONIC"]),
   discountAmount: z.number().min(0).default(0),
   paidAmount: z.number().min(0),

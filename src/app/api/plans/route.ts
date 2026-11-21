@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireApiAuth } from "@/lib/tenant";
 import { platformError } from "@/lib/platform-api";
 import { z } from "zod";
+import { PLAN_NAMES } from "@/lib/plans";
 export const dynamic = "force-dynamic";
 export async function GET() {
   try { return NextResponse.json({ success: true, data: await prisma.plan.findMany({ orderBy: { price: "asc" } }) }); }
@@ -13,6 +14,6 @@ export async function PUT(req: NextRequest) {
     const auth = await requireApiAuth(req, ["SUPER_ADMIN"]); if (auth.errorResponse) return auth.errorResponse;
     const body = z.object({ code: z.enum(["PRO", "MAX"]), price: z.number().int().min(0).max(100000000), enabled: z.boolean(), paymentInstructions: z.string().trim().max(2000) }).refine(v => !v.enabled || v.price > 0, "Tarifni yoqish uchun musbat narx kiriting").parse(await req.json());
     const { code, ...data } = body;
-    return NextResponse.json({ success: true, data: await prisma.plan.upsert({ where: { code }, create: { code, name: code === "PRO" ? "Pro" : "Max", ...data }, update: data }) });
+    return NextResponse.json({ success: true, data: await prisma.plan.upsert({ where: { code }, create: { code, name: PLAN_NAMES[code], ...data }, update: { ...data, name: PLAN_NAMES[code] } }) });
   } catch (e) { return platformError(e); }
 }

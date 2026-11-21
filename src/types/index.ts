@@ -16,6 +16,7 @@ export type NotificationType =
   | 'SYSTEM';
 
 export interface AuthUser {
+  menuVisibility?: Record<string, boolean>;
   subscriptionEndDate?: string | null;
   tokenVersion?: number;
   planCode?: string | null;

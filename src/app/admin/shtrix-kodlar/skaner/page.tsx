@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -159,7 +159,7 @@ export default function ScannerLookupPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <ScanLine className="w-6 h-6 text-[#4F46E5]" />
+            <ScanLine className="w-6 h-6 text-[#1e50b3]" />
             Skaner & Tezkor Tovarni Qidirish
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -214,14 +214,14 @@ export default function ScannerLookupPage() {
               placeholder="Shtrix-kodni USB skaner orqali o'qing yoki raqamini yozing..."
               value={scannedCode}
               onChange={(e) => setScannedCode(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#4F46E5] text-xs font-mono outline-none"
+              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 focus:border-[#1e50b3] text-xs font-mono outline-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="px-6 py-3 rounded-2xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-bold text-xs shadow-sm transition-all disabled:opacity-50"
+            className="px-6 py-3 rounded-2xl bg-[#1e50b3] hover:bg-[#123d99] text-white font-bold text-xs shadow-sm transition-all disabled:opacity-50"
           >
             {isLoading ? "Qidirilmoqda..." : "Qidirish"}
           </button>
@@ -274,7 +274,7 @@ export default function ScannerLookupPage() {
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2 text-xs">
                 <div className="flex justify-between py-1 border-b border-slate-200/60">
                   <span className="text-slate-500">Do'kondagi narxi:</span>
-                  <span className="font-extrabold text-[#4F46E5] text-base">
+                  <span className="font-extrabold text-[#1e50b3] text-base">
                     {formatCurrency(product.salePrice)}
                   </span>
                 </div>
@@ -323,7 +323,7 @@ export default function ScannerLookupPage() {
               <div className="pt-2">
                 <Link
                   href="/kassir"
-                  className="w-full py-3 px-4 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                  className="w-full py-3 px-4 rounded-xl bg-[#1e50b3] hover:bg-[#123d99] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   Kassaga o'tish va Savatga qo'shish

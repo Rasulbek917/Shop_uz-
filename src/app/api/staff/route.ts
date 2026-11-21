@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
       where: {
         shopId,
         role: { in: ["SHOP_ADMIN", "WAREHOUSEMAN", "CASHIER"] },
+        status: { not: "INACTIVE" },
       },
       select: {
         id: true,

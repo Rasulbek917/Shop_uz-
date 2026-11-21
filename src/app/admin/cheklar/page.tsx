@@ -6,6 +6,7 @@ export default async function ChecksPage() {
   return (
     <ReceiptsPage
       canUpgrade={user?.role === "SHOP_ADMIN"}
+      isCashier={user?.role === "CASHIER"}
       canExport={
         user?.role === "SUPER_ADMIN" ||
         (user?.role === "SHOP_ADMIN" && isMax(user.planCode))

@@ -27,6 +27,7 @@ model Shop {
   taxRate               Float     @default(0)
   taxIncluded           Boolean   @default(false)
   notes                 String?
+  menuVisibility        Json      @default("{}")
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -39,6 +40,8 @@ model Shop {
   batches               ProductBatch[]
   inventoryTransactions InventoryTransaction[]
   sales                 Sale[]
+  shifts                Shift[]
+  cashMovements         CashMovement[]
   customers             Customer[]
   debts                 Debt[]
   returns               Return[]
@@ -65,6 +68,8 @@ model User {
 
   shop         Shop?                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
   sales        Sale[]
+  shifts       Shift[]
+  cashMovements CashMovement[]
   transactions InventoryTransaction[]
   returns      Return[]
   auditLogs    AuditLog[]
@@ -229,6 +234,7 @@ model Customer {
   phone          String?
   totalSpent     Float    @default(0)
   purchasesCount Int      @default(0)
+  loyaltyPoints  Int      @default(0)
   notes          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -265,6 +271,9 @@ model Sale {
   receiptNumber  String   @unique
   idempotencyKey String?  @unique
   cashierId      String
+  shiftId        String?
+  loyaltyPointsUsed   Int @default(0)
+  loyaltyPointsEarned Int @default(0)
   customerId     String?
   totalAmount    Float    @default(0)
   discountAmount Float    @default(0)
@@ -281,6 +290,7 @@ model Sale {
 
   shop     Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
   cashier  User       @relation(fields: [cashierId], references: [id])
+  shift    Shift?      @relation(fields: [shiftId], references: [id], onDelete: SetNull)
   customer Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items    SaleItem[]
   payments Payment[]
@@ -288,8 +298,48 @@ model Sale {
 
   @@index([shopId])
   @@index([cashierId])
+  @@index([shiftId])
   @@index([receiptNumber])
   @@index([createdAt])
+}
+
+model Shift {
+  id           String    @id @default(uuid())
+  shopId       String
+  cashierId    String
+  status       String    @default("OPEN")
+  openingCash  Float     @default(0)
+  closingCash  Float?
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+  notes        String?
+
+  shop         Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  cashier      User      @relation(fields: [cashierId], references: [id])
+  sales        Sale[]
+  returns      Return[]
+  cashMovements CashMovement[]
+
+  @@index([shopId, openedAt])
+  @@index([cashierId, status])
+}
+
+model CashMovement {
+  id          String   @id @default(uuid())
+  shopId      String
+  shiftId     String
+  cashierId   String
+  type        String
+  amount      Float
+  note        String
+  createdAt   DateTime @default(now())
+
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  cashier     User     @relation(fields: [cashierId], references: [id])
+
+  @@index([shopId, createdAt])
+  @@index([shiftId])
 }
 
 model SaleItem {
@@ -330,10 +380,13 @@ model Return {
   id                String   @id @default(uuid())
   shopId            String
   saleId            String
+  shiftId           String?
   receiptNumber     String
   returnedById      String
   totalRefundAmount Float
   cashRefundAmount  Float?
+  loyaltyPointsReversed Int @default(0)
+  loyaltyPointsRestored Int @default(0)
   creditAdjustment  Float @default(0)
   idempotencyKey    String? @unique
   requestHash       String?
@@ -342,11 +395,13 @@ model Return {
 
   shop       Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
   sale       Sale         @relation(fields: [saleId], references: [id])
+  shift      Shift?       @relation(fields: [shiftId], references: [id], onDelete: SetNull)
   returnedBy User         @relation(fields: [returnedById], references: [id])
   items      ReturnItem[]
 
   @@index([shopId])
   @@index([saleId])
+  @@index([shiftId])
 }
 
 model ReturnItem {

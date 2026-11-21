@@ -29,7 +29,7 @@ try {
  Object.assign(process.env,env);
  const {PrismaClient}=await import('@prisma/client');const {default:bcrypt}=await import('bcryptjs');const db=new PrismaClient();
  try { await db.user.upsert({where:{username:'superadmin'},update:{},create:{username:'superadmin',fullName:'Lokal administrator',role:'SUPER_ADMIN',passwordHash:await bcrypt.hash(credentials.admin,12)}}); } finally {await db.$disconnect();}
- console.log('Lokal login: superadmin');console.log('Lokal parol: '+credentials.admin);
+ console.log('Lokal login: superadmin (parol .local-credentials.json faylida)');
  app=spawn(process.execPath,['node_modules/next/dist/bin/next','dev','-H','127.0.0.1','-p','3000'],{env,stdio:'inherit'});
  await new Promise((ok,fail)=>{app.on('error',fail);app.on('exit',ok);});await stop();
 } catch(e){console.error('Lokal server ishga tushmadi:',e.message);await stop();process.exitCode=1;}

@@ -47,6 +47,11 @@ export async function PATCH(
       );
     }
 
+    if (staff.status === "INACTIVE") return NextResponse.json({ success: false, error: "Xodim o‘chirilgan" }, { status: 404 });
+    if (staff.id === user.id && ((validated.data.role && validated.data.role !== staff.role) || (validated.data.status && validated.data.status !== staff.status))) {
+      return NextResponse.json({ success: false, error: "O‘z rolingiz yoki holatingizni bu yerdan o‘zgartira olmaysiz" }, { status: 409 });
+    }
+
     const { username, password, ...rest } = validated.data;
     const newUsername = username?.trim();
 
@@ -80,6 +85,7 @@ export async function PATCH(
     if (rest.phone !== undefined) data.phone = rest.phone;
     if (rest.role !== undefined) data.role = rest.role;
     if (rest.status !== undefined) data.status = rest.status;
+    if ((data.role && data.role !== staff.role) || (data.status && data.status !== staff.status)) data.tokenVersion = { increment: 1 };
     if (newUsername && newUsername !== staff.username) data.username = newUsername;
     if (password) {
       data.passwordHash = await hashPassword(password);

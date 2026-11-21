@@ -11,6 +11,7 @@ import {
   Boxes,
   Package,
   BarChart3,
+  CreditCard,
 } from "lucide-react";
 import { AuthUser } from "@/types";
 
@@ -22,12 +23,12 @@ export default function BottomNav({ user }: { user: AuthUser }) {
   if (user.role === "CASHIER") {
     items = [
       { label: "Savdo (POS)", href: "/kassir", icon: BadgePercent },
-      { label: "Cheklar", href: "/kassir/cheklar", icon: Receipt },
+      { label: "Savdo tarixi", href: "/kassir/cheklar", icon: Receipt },
     ];
   } else if (user.role === "WAREHOUSEMAN") {
     items = [
       { label: "Bosh sahifa", href: "/omborchi", icon: LayoutDashboard },
-      { label: "Ombor", href: "/admin/ombor", icon: Boxes },
+      { label: "Ombor", href: "/omborchi/ombor", icon: Boxes },
     ];
   } else if (user.role === "SUPER_ADMIN") {
     items = [
@@ -37,17 +38,28 @@ export default function BottomNav({ user }: { user: AuthUser }) {
   } else {
     items = [
       { label: "Bosh sahifa", href: "/admin", icon: LayoutDashboard },
-      { label: "POS", href: "/admin/pos", icon: BadgePercent },
-      { label: "Cheklar", href: "/admin/cheklar", icon: Receipt },
-      { label: "Hisobot", href: "/admin/hisobotlar", icon: BarChart3 },
+      { label: "Kassa", href: "/admin/pos", icon: BadgePercent },
+      { label: "Tovarlar", href: "/admin/tovarlar", icon: Package },
+      { label: "Hisobotlar", href: "/admin/hisobotlar", icon: BarChart3 },
+      { label: "Moliya", href: "/admin/moliya", icon: CreditCard },
     ];
+  }
+
+  if (user.role === "SHOP_ADMIN") {
+    items = items.filter((item) =>
+      (item.href !== "/admin/tovarlar" || user.menuVisibility?.products !== false) &&
+      (item.href !== "/admin/hisobotlar" || user.menuVisibility?.reports !== false) &&
+      (item.href !== "/admin/moliya" || user.menuVisibility?.finance !== false)
+    );
   }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 flex h-16 border-t border-slate-200 bg-white shadow-lg md:hidden">
       {items.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href;
+        const isActive =
+          pathname === item.href ||
+          (item.href === "/kassir/cheklar" && pathname === "/kassir/tarixim");
 
         return (
           <Link

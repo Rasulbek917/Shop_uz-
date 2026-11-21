@@ -1,7 +1,8 @@
-export const PLAN_PRICES = { PRO: 299000, MAX: 499000 } as const;
+export const PLAN_PRICES = { PRO: 100000, MAX: 200000 } as const;
+export const PLAN_NAMES = { PRO: "Standard", MAX: "Premium" } as const;
 export const PLAN_FEATURES = {
   PRO: ["POS: naqd, karta va nasiya savdosi", "Mahsulotlar, ombor va partiyalar", "Mijozlar, qaytarishlar va hisobot", "QR / shtrix-kod va chek chop etish", "Do‘kon egasi uchun boshqaruv"],
-  MAX: ["Pro tarifidagi barcha imkoniyatlar", "Kassir va omborchi hisoblari", "Xodimlar huquqlarini boshqarish", "Yetkazib beruvchilar bazasi", "Amallar jurnali va markaziy import", "Cheklar hisobotini CSV faylga yuklash", "To‘lov turlari bo‘yicha savdo tahlili"],
+  MAX: ["Standard tarifidagi barcha imkoniyatlar", "Kassir va omborchi hisoblari", "Xodimlar huquqlarini boshqarish", "Yetkazib beruvchilar bazasi", "Amallar jurnali va markaziy import", "Cheklar hisobotini CSV faylga yuklash", "To‘lov turlari bo‘yicha savdo tahlili"],
 };
 export function hasShopAccess(shop: { status: string; planCode?: string; trialEndDate?: Date | string | null; subscriptionEndDate?: Date | string | null } | null | undefined) {
   if (!shop || !["ACTIVE", "TRIAL"].includes(shop.status)) return false;

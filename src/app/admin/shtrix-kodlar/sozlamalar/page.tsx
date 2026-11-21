@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -50,7 +50,7 @@ export default function BarcodeSettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-          <Settings className="w-6 h-6 text-[#4F46E5]" />
+          <Settings className="w-6 h-6 text-[#1e50b3]" />
           Shtrix-kod va Etiketka Sozlamalari
         </h1>
         <p className="text-xs text-slate-500 mt-1">
@@ -87,7 +87,7 @@ export default function BarcodeSettingsPage() {
                 onClick={() => setDefaultCodeType(item.id)}
                 className={`p-3.5 rounded-2xl border text-center transition-all ${
                   defaultCodeType === item.id
-                    ? "border-[#4F46E5] bg-primary-50 text-[#4F46E5] ring-2 ring-primary-500 font-bold"
+                    ? "border-[#1e50b3] bg-primary-50 text-[#1e50b3] ring-2 ring-primary-500 font-bold"
                     : "border-slate-200 hover:border-slate-300 text-slate-700"
                 }`}
               >
@@ -115,7 +115,7 @@ export default function BarcodeSettingsPage() {
                 onClick={() => setDefaultLabelSize(item.id)}
                 className={`p-3.5 rounded-2xl border text-center transition-all ${
                   defaultLabelSize === item.id
-                    ? "border-[#4F46E5] bg-primary-50 text-[#4F46E5] ring-2 ring-primary-500 font-bold"
+                    ? "border-[#1e50b3] bg-primary-50 text-[#1e50b3] ring-2 ring-primary-500 font-bold"
                     : "border-slate-200 hover:border-slate-300 text-slate-700"
                 }`}
               >
@@ -135,7 +135,7 @@ export default function BarcodeSettingsPage() {
             type="text"
             value={skuPrefix}
             onChange={(e) => setSkuPrefix(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono outline-none focus:border-[#4F46E5]"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono outline-none focus:border-[#1e50b3]"
             placeholder="SM-"
           />
           <p className="text-[11px] text-slate-400 mt-1">
@@ -156,7 +156,7 @@ export default function BarcodeSettingsPage() {
             type="checkbox"
             checked={soundEnabled}
             onChange={(e) => setSoundEnabled(e.target.checked)}
-            className="w-5 h-5 accent-[#4F46E5] rounded cursor-pointer"
+            className="w-5 h-5 accent-[#1e50b3] rounded cursor-pointer"
           />
         </div>
 
@@ -164,7 +164,7 @@ export default function BarcodeSettingsPage() {
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-bold shadow-md transition-all flex items-center gap-2"
+            className="px-6 py-2.5 rounded-xl bg-[#1e50b3] hover:bg-[#123d99] text-white text-xs font-bold shadow-md transition-all flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
             Sozlamalarni saqlash

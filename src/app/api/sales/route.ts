@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
 
     const {
       customerId,
+      loyaltyPointsUsed,
       paymentMethod,
       discountAmount,
       paidAmount,
@@ -262,6 +263,16 @@ export async function POST(req: NextRequest) {
         payableAmount = Math.max(0, Math.round(totalAmount - discountAmount));
       }
 
+      const loyaltyDiscount = loyaltyPointsUsed * 1000;
+      if (loyaltyPointsUsed && !customerId) {
+        throw new Error("Ball ishlatish uchun mijozni tanlang");
+      }
+      if (loyaltyDiscount >= payableAmount && loyaltyPointsUsed > 0) {
+        throw new Error("Ball chegirmasi to‘lov summasidan oshdi");
+      }
+      payableAmount -= loyaltyDiscount;
+      const loyaltyPointsEarned = customerId ? Math.floor(payableAmount / 10000) : 0;
+
       if (
         validated.data.expectedTotal !== undefined &&
         Math.abs(validated.data.expectedTotal - payableAmount) > 0.5
@@ -280,9 +291,12 @@ export async function POST(req: NextRequest) {
       const changeAmount = Math.max(0, Math.round(paidAmount - payableAmount));
 
       // 4. Create Sale Record
+      const activeShift = await tx.shift.findFirst({ where: { shopId, cashierId: user.id, status: "OPEN" }, select: { id: true } });
+      if (!activeShift) throw new Error("Savdodan oldin kassa smenasini oching");
       const sale = await tx.sale.create({
         data: {
           shopId,
+          shiftId: activeShift.id,
           receiptNumber,
           ...(validated.data.occurredAt
             ? { createdAt: new Date(validated.data.occurredAt) }
@@ -291,7 +305,9 @@ export async function POST(req: NextRequest) {
           cashierId: user.id,
           customerId: customerId || null,
           totalAmount,
-          discountAmount: Math.round(discountAmount),
+          discountAmount: Math.round(discountAmount) + loyaltyDiscount,
+          loyaltyPointsUsed,
+          loyaltyPointsEarned,
           taxRate: shopTaxRate,
           taxAmount,
           payableAmount,
@@ -400,13 +416,15 @@ export async function POST(req: NextRequest) {
 
       // 7. Update customer statistics
       if (customerId) {
-        await tx.customer.update({
-          where: { id: customerId },
+        const customerUpdate = await tx.customer.updateMany({
+          where: { id: customerId, shopId, ...(loyaltyPointsUsed > 0 ? { loyaltyPoints: { gte: loyaltyPointsUsed } } : {}) },
           data: {
             totalSpent: { increment: payableAmount },
             purchasesCount: { increment: 1 },
+            loyaltyPoints: { increment: loyaltyPointsEarned - loyaltyPointsUsed },
           },
         });
+        if (customerUpdate.count !== 1) throw new Error("Mijoz ballari yetarli emas. Ma’lumotni yangilang");
       }
 
       return {

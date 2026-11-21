@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { hasShopAccess, isMax } from "./plans";
+import { menuVisibilityFrom } from "./menu-visibility";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
@@ -66,6 +67,7 @@ export async function resolveUser(claims: AuthUser | null): Promise<AuthUser | n
     : null;
   const access = user.role === "SUPER_ADMIN" || (hasShopAccess(user.shop) && (user.role === "SHOP_ADMIN" || isMax(user.shop?.planCode)));
   return { id: user.id, username: user.username, fullName: user.fullName, role: user.role as UserRole,
+    menuVisibility: menuVisibilityFrom(user.shop?.menuVisibility),
     shopId: user.shopId, shopName: user.shop?.name, shopStatus: user.shop?.status as AuthUser["shopStatus"],
     subscriptionEndDate: user.shop?.subscriptionEndDate?.toISOString() || null,
     subscriptionDaysLeft: user.shop?.subscriptionEndDate ? Math.max(0, Math.ceil((user.shop.subscriptionEndDate.getTime() - Date.now()) / 86400000)) : null,

@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   Search,
   Camera,
@@ -13,12 +14,11 @@ import {
   Smartphone,
   CheckCircle,
   AlertCircle,
-  Package,
-  Printer,
   RotateCcw,
+  FileText,
   X,
 } from "lucide-react";
-import { formatCurrency, formatDate } from "@/lib/formatters";
+import { formatCurrency } from "@/lib/formatters";
 import BarcodeScannerModal from "@/components/scanner/BarcodeScannerModal";
 import UsbBarcodeDetector from "@/components/scanner/UsbBarcodeDetector";
 import ReceiptModal from "@/components/pos/ReceiptModal";
@@ -26,10 +26,13 @@ import CentralProductModal from "@/components/pos/CentralProductModal";
 import { CartItem } from "@/types";
 import { getErrorMessage } from "@/lib/errorMessage";
 
+type HeldCheck = { number: number; cart: CartItem[]; discountAmount: number; customerId: string; loyaltyPointsUsed: number };
+
 export default function CashierPosPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [shiftOpen, setShiftOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [stockOnly, setStockOnly] = useState(false);
@@ -37,13 +40,19 @@ export default function CashierPosPage() {
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [heldChecks, setHeldChecks] = useState<HeldCheck[]>([]);
+  const [checkNumber, setCheckNumber] = useState(1);
+  const [nextCheckNumber, setNextCheckNumber] = useState(2);
+  const [draftKey, setDraftKey] = useState<string | null>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [loyaltyPointsUsed, setLoyaltyPointsUsed] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CARD" | "ELECTRONIC">("CASH");
   const [paidAmount, setPaidAmount] = useState<number>(0);
 
   // Checkout modal & Receipt state
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showPrecheck, setShowPrecheck] = useState(false);
   const [checkoutKey, setCheckoutKey] = useState<string>("");
   const [debtKey, setDebtKey] = useState<string>("");
   const [completedReceipt, setCompletedReceipt] = useState<any | null>(null);
@@ -71,7 +80,39 @@ export default function CashierPosPage() {
     loadProducts();
     loadCustomers();
     loadTaxSettings();
+    const refreshShift = () => { fetch("/api/shifts", { cache: "no-store" }).then((r) => r.json()).then((result) => { if (result.success) setShiftOpen(result.data.some((shift: { mine: boolean; status: string }) => shift.mine && shift.status === "OPEN")); }).catch(() => {}); };
+    refreshShift();
+    window.addEventListener("focus", refreshShift);
+    return () => window.removeEventListener("focus", refreshShift);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/me", { cache: "no-store" }).then((response) => response.json()).then((result) => {
+      if (!active || !result.success || !result.user?.id || !result.user?.shopId) return;
+      const key = `savdoza-pos-drafts-${result.user.shopId}-${result.user.id}`;
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(key) || "null");
+        if (saved && Array.isArray(saved.cart) && Array.isArray(saved.heldChecks)) {
+          setCart(saved.cart);
+          setHeldChecks(saved.heldChecks);
+          setDiscountAmount(Number(saved.discountAmount) || 0);
+          setSelectedCustomerId(typeof saved.selectedCustomerId === "string" ? saved.selectedCustomerId : "");
+          setLoyaltyPointsUsed(Number(saved.loyaltyPointsUsed) || 0);
+          setCheckNumber(Number(saved.checkNumber) || 1);
+          setNextCheckNumber(Number(saved.nextCheckNumber) || 2);
+          setCheckoutKey(typeof saved.checkoutKey === "string" ? saved.checkoutKey : "");
+        }
+      } catch { /* Corrupt browser draft is ignored. */ }
+      setDraftKey(key);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!draftKey) return;
+    sessionStorage.setItem(draftKey, JSON.stringify({ cart, heldChecks, discountAmount, selectedCustomerId, loyaltyPointsUsed, checkNumber, nextCheckNumber, checkoutKey }));
+  }, [draftKey, cart, heldChecks, discountAmount, selectedCustomerId, loyaltyPointsUsed, checkNumber, nextCheckNumber, checkoutKey]);
 
   const loadTaxSettings = async () => {
     try {
@@ -208,7 +249,6 @@ export default function CashierPosPage() {
 
   // Add product to cart with FEFO batch selection
   const addToCart = (product: any) => {
-    setStatusMessage(null);
     const now = new Date();
 
     // 1. Check if batches exist with quantity > 0
@@ -243,9 +283,16 @@ export default function CashierPosPage() {
       (a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
     );
 
-    const bestBatch = sortedBatches[0];
-
-    // Check if item already in cart
+    // A product may span several batches. Use the next valid batch once the
+    // earliest one is already fully represented in the current check.
+    const bestBatch = sortedBatches.find((batch) => {
+      const reserved = cart.filter((item) => item.batchId === batch.id).reduce((sum, item) => sum + item.quantity, 0);
+      return reserved < batch.currentQuantity;
+    });
+    if (!bestBatch) {
+      setStatusMessage({ text: `"${product.name}" uchun yaroqli qoldiq savatga qo‘shib bo‘lindi.`, type: "error" });
+      return;
+    }
     setCart((prev) => {
       const existingIndex = prev.findIndex(
         (item) => item.productId === product.id && item.batchId === bestBatch.id
@@ -253,14 +300,6 @@ export default function CashierPosPage() {
 
       if (existingIndex > -1) {
         const item = prev[existingIndex];
-        if (item.quantity + 1 > item.availableQuantity) {
-          setStatusMessage({
-            text: `"${product.name}" partiyasida maksimal qoldiq: ${item.availableQuantity} ta!`,
-            type: "error",
-          });
-          return prev;
-        }
-
         const updated = [...prev];
         updated[existingIndex] = {
           ...item,
@@ -286,26 +325,22 @@ export default function CashierPosPage() {
         return [...prev, newItem];
       }
     });
-
-    setStatusMessage({
-      text: `"${product.name}" savatchaga qo‘shildi.`,
-      type: "success",
-    });
+    setStatusMessage(null);
   };
 
   const updateQuantity = (index: number, newQty: number) => {
-    if (newQty <= 0) {
-      removeFromCart(index);
+    if (newQty <= 0) return;
+    const item = cart[index];
+    if (!item) return;
+    if (newQty > item.availableQuantity) {
+      setStatusMessage({ text: `Ushbu partiyada faqat ${item.availableQuantity} ta mavjud. Qolganini mahsulotdan qayta qo‘shing.`, type: "error" });
       return;
     }
-
+    if (!Number.isInteger(newQty)) return;
     setCart((prev) => {
       const updated = [...prev];
       const item = updated[index];
-      if (newQty > item.availableQuantity) {
-        alert(`Ushbu partiyada faqat ${item.availableQuantity} ta mavjud!`);
-        return prev;
-      }
+      if (!item) return prev;
 
       updated[index] = {
         ...item,
@@ -329,6 +364,31 @@ export default function CashierPosPage() {
     }
   };
 
+  const newCheck = () => {
+    if (cart.length > 0) {
+      setHeldChecks((previous) => [...previous.filter((check) => check.number !== checkNumber), { number: checkNumber, cart, discountAmount, customerId: selectedCustomerId, loyaltyPointsUsed }]);
+    }
+    setCheckNumber(nextCheckNumber);
+    setNextCheckNumber((number) => number + 1);
+    setCart([]);
+    setDiscountAmount(0);
+    setSelectedCustomerId("");
+    setLoyaltyPointsUsed(0);
+    setCheckoutKey("");
+  };
+
+  const restoreCheck = (number: number) => {
+    const chosen = heldChecks.find((check) => check.number === number);
+    if (!chosen) return;
+    setHeldChecks((previous) => [...previous.filter((check) => check.number !== number && check.number !== checkNumber), ...(cart.length > 0 ? [{ number: checkNumber, cart, discountAmount, customerId: selectedCustomerId, loyaltyPointsUsed }] : [])]);
+    setCheckNumber(number);
+    setCart(chosen.cart);
+    setDiscountAmount(chosen.discountAmount);
+    setSelectedCustomerId(chosen.customerId);
+    setLoyaltyPointsUsed(chosen.loyaltyPointsUsed);
+    setCheckoutKey("");
+  };
+
   // Calculations (must mirror server-side logic in /api/sales)
   const cartSubtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const afterDiscount = Math.max(0, cartSubtotal - discountAmount);
@@ -342,15 +402,24 @@ export default function CashierPosPage() {
       cartTotal = afterDiscount + taxAmount;
     }
   }
+  const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId);
+  const availablePoints = Math.max(0, selectedCustomer?.loyaltyPoints || 0);
+  const maxRedeemablePoints = Math.min(availablePoints, Math.max(0, Math.floor((cartTotal - 1) / 1000)));
+  const payableTotal = cartTotal - loyaltyPointsUsed * 1000;
 
   // Open Checkout Modal
   const handleOpenCheckout = () => {
+    if (!shiftOpen) { setStatusMessage({ text: "Savdodan oldin kassa smenasini oching.", type: "error" }); return; }
     if (cart.length === 0) {
       alert("Savatcha bo‘sh!");
       return;
     }
+    if (!Number.isFinite(discountAmount) || discountAmount < 0 || discountAmount >= cartSubtotal) {
+      setStatusMessage({ text: "Chegirma mahsulotlar jami summasidan kam bo‘lishi kerak.", type: "error" });
+      return;
+    }
     if (!checkoutKey) setCheckoutKey(`CHK_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
-    setPaidAmount(cartTotal);
+    setPaidAmount(payableTotal);
     setShowCheckoutModal(true);
   };
 
@@ -358,10 +427,14 @@ export default function CashierPosPage() {
   const handleCompleteSale = async () => {
     if (cart.length === 0 || isProcessing) return;
 
-    if (Number(paidAmount) < cartTotal) {
+    if (loyaltyPointsUsed > maxRedeemablePoints) {
+      alert("Mijoz ballari yoki savat summasi o‘zgargan. Ball miqdorini tekshiring.");
+      return;
+    }
+    if (Number(paidAmount) < payableTotal) {
       alert(
         `To‘langan summa (${formatCurrency(paidAmount)}) to‘lov summasidan (${formatCurrency(
-          cartTotal
+          payableTotal
         )}) kam bo‘lishi mumkin emas!`
       );
       return;
@@ -376,9 +449,10 @@ export default function CashierPosPage() {
     try {
       const payload = {
         customerId: selectedCustomerId || null,
+        loyaltyPointsUsed,
         paymentMethod,
         discountAmount: Number(discountAmount) || 0,
-        paidAmount: Number(paidAmount) || cartTotal,
+        paidAmount: Number(paidAmount),
         idempotencyKey: checkoutKey,
         items: cart.map((item) => ({
           productId: item.productId,
@@ -411,6 +485,8 @@ export default function CashierPosPage() {
       setDiscountAmount(0);
       setPaidAmount(0);
       setSelectedCustomerId("");
+      setLoyaltyPointsUsed(0);
+      loadCustomers();
       loadProducts(); // Refresh stock
     } catch (err: any) {
       alert("Server bilan bog‘lanishda xatolik: " + (err.message || ""));
@@ -421,6 +497,7 @@ export default function CashierPosPage() {
 
   // Qarzga sotish modalini ochish
   const handleOpenDebtSale = () => {
+    if (!shiftOpen) { setStatusMessage({ text: "Qarzga sotishdan oldin smenani oching.", type: "error" }); return; }
     if (cart.length === 0) {
       alert("Savatcha bo‘sh!");
       return;
@@ -503,7 +580,9 @@ export default function CashierPosPage() {
       setShowReceiptModal(true);
       setPaidAmount(0);
       setSelectedCustomerId("");
+      setLoyaltyPointsUsed(0);
       setCart([]);
+      loadCustomers();
       setDiscountAmount(0);
       setStatusMessage({
         text: `${firstName} ${lastName} nomiga ${formatCurrency(
@@ -531,11 +610,11 @@ export default function CashierPosPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-primary-200 bg-white p-5 flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-bold text-slate-900">POS · Savdo terminali</h1><p className="mt-1 text-sm text-slate-500">Mahsulotni toping, savatga qo‘shing va to‘lovni yakunlang.</p></div><div className="rounded-xl bg-primary-50 px-4 py-2 text-primary-800 text-sm font-semibold">Savatda {cart.reduce((sum, item) => sum + item.quantity, 0)} ta · {formatCurrency(cartTotal)}</div></div>
-      <div className="flex flex-wrap gap-3 items-center"><label className="sr-only" htmlFor="pos-category">Kategoriya</label><select id="pos-category" className="rounded-xl border bg-white px-4 py-3 text-sm" value={categoryId} onChange={e => setCategoryId(e.target.value)}><option value="">Barcha kategoriyalar</option>{categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={stockOnly} onChange={e => setStockOnly(e.target.checked)}/>Faqat qoldig‘i bor mahsulotlar</label><button className="btn-secondary" onClick={loadProducts} disabled={isLoading}>Qoldiqni yangilash</button></div>
+    <div className="pos-workspace space-y-4">
+      <div className="pos-terminal-header"><div><span className="pos-terminal-kicker"><span className="pos-live-dot" /> KASSA ISH JOYI</span><h1>Yangi savdo</h1><p>Mahsulotni qidiring, chekni tuzing va to‘lovni yakunlang.</p></div><div className="pos-terminal-total"><span>FAOL CHEK</span><strong>{formatCurrency(payableTotal)}</strong><small>{cart.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot</small></div></div>
+      <div className="pos-terminal-toolbar"><div className="pos-category-tabs" role="group" aria-label="Mahsulot kategoriyasi"><button type="button" className={!categoryId ? "selected" : ""} onClick={() => setCategoryId("")}>Barchasi</button>{categories.map((c: any) => <button type="button" key={c.id} className={categoryId === c.id ? "selected" : ""} onClick={() => setCategoryId(c.id)}>{c.name}</button>)}</div><label className="pos-stock-filter"><input type="checkbox" checked={stockOnly} onChange={e => setStockOnly(e.target.checked)}/> Omborda bor</label><button className="pos-stock-refresh" onClick={loadProducts} disabled={isLoading}><RotateCcw size={14} /> Yangilash</button></div>
       {/* USB Hardware Barcode Detector */}
-      <UsbBarcodeDetector onScan={handleBarcodeScanned} enabled={!showCheckoutModal && !showReceiptModal && !showCameraScanner && !showDebtModal && !showCentralImportModal} />
+      <UsbBarcodeDetector onScan={handleBarcodeScanned} enabled={!showCheckoutModal && !showPrecheck && !showReceiptModal && !showCameraScanner && !showDebtModal && !showCentralImportModal} />
 
       {/* Camera Barcode Scanner Modal */}
       <BarcodeScannerModal
@@ -579,269 +658,32 @@ export default function CashierPosPage() {
         </div>
       )}
 
-      {/* Main POS Interface (Grid: 2 Columns on Desktop) */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-        {/* LEFT: Product Search and Fast Catalog (7 Cols) */}
-        <div className="lg:col-span-7 space-y-4">
-          {/* Barcode Search & Camera Button */}
-          <div className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Mahsulot nomi yoki shtrix-kodini kiriting (yoki USB skanerlang)..."
-                className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-[#4F46E5] focus:outline-none"
-              />
-            </div>
+      {/* Terminal layout: active receipt, actions, and product lookup. */}
+      <div className="pos-steps" aria-label="Savdo tartibi"><span className={shiftOpen ? "done" : "current"}>1. <Link href="/kassir/smena">{shiftOpen ? "Smena ochiq" : "Smenani oching"}</Link></span><span className={shiftOpen && !cart.length ? "current" : ""}>2. Mahsulot tanlang</span><span className={cart.length ? "current" : ""}>3. To‘lovni oling</span><span>4. <Link href="/kassir/smena">Smenani yoping</Link></span><Link href="/kassir/cheklar">Cheklar</Link><Link href="/kassir/qaytarish">Qaytarish</Link></div>
+      <div className="terminal-layout">
+        <section className="terminal-receipt">
+          <div className="terminal-section-head"><div><span>FAOL CHEK</span><h2>Chek №{checkNumber} <small>· {cart.length} xil mahsulot</small></h2></div><button type="button" disabled={cart.length === 0} onClick={clearCart}><Trash2 size={15} /> Tozalash</button></div>
+          <div className="terminal-table-scroll"><table className="terminal-table"><thead><tr><th>№</th><th>Mahsulot / kod</th><th>Narxi</th><th>Miqdor</th><th>Summa</th><th aria-label="O‘chirish" /></tr></thead><tbody>{cart.length ? cart.map((item, index) => <tr key={`${item.productId}-${index}`}><td>{index + 1}</td><td><strong>{item.productName}</strong><small>{item.batchNumber ? `#${item.batchNumber}` : ""}</small></td><td>{formatCurrency(item.unitPrice)}</td><td><div className="terminal-qty"><button type="button" onClick={() => item.quantity === 1 ? removeFromCart(index) : updateQuantity(index, item.quantity - 1)} aria-label="Kamaytirish"><Minus size={14} /></button><input type="number" min={1} max={item.availableQuantity} value={item.quantity} onChange={(event) => updateQuantity(index, Number(event.target.value))} aria-label={`${item.productName} miqdori`} /><button type="button" onClick={() => updateQuantity(index, item.quantity + 1)} aria-label="Ko‘paytirish"><Plus size={14} /></button></div></td><td><b>{formatCurrency(item.totalPrice)}</b></td><td><button type="button" className="terminal-row-remove" onClick={() => removeFromCart(index)} aria-label={`${item.productName} ni o‘chirish`}><X size={15} /></button></td></tr>) : <tr><td colSpan={6} className="terminal-empty"><ShoppingCart size={30} /><strong>Chek bo‘sh</strong><span>Mahsulotni tanlang yoki shtrix-kodni skanerlang.</span></td></tr>}</tbody></table></div>
+          <div className="terminal-check-tabs"><span>Cheklar:</span><strong>№{checkNumber}</strong>{heldChecks.map((check) => <button key={check.number} type="button" onClick={() => restoreCheck(check.number)}>№{check.number} · {check.cart.length} ta</button>)}<button type="button" onClick={newCheck}><Plus size={13} /> Yangi chek</button></div>
+          <div className="terminal-receipt-foot"><span>{cart.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot</span><strong>Jami: {formatCurrency(payableTotal)}</strong></div>
+        </section>
 
-            <button
-              onClick={() => setShowCameraScanner(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors"
-              title="Telefon kamerasi orqali shtrix-kod skanerlash"
-            >
-              <Camera className="h-4 w-4 text-primary-400" />
-              <span className="hidden sm:inline">Kamera Skaner</span>
-            </button>
-          </div>
+        <aside className="terminal-actions" aria-label="Kassa amallari">
+          <div className="terminal-action-head"><span className="pos-live-dot" /><strong>{shiftOpen ? "Kassa faol" : "Smena yopiq"}</strong><small>{shiftOpen ? "Yangi savdo" : "Smenani oching"}</small></div>
+          <div className="terminal-action-buttons"><button type="button" onClick={newCheck}><RotateCcw size={17} /> Yangi chek</button><button type="button" disabled={cart.length === 0} onClick={() => setShowPrecheck(true)}><FileText size={17} /> Prechek</button><button type="button" onClick={() => setShowCameraScanner(true)}><Camera size={17} /> Skaner</button></div>
+          <label className="terminal-field">Mijoz<select value={selectedCustomerId} onChange={event => { setSelectedCustomerId(event.target.value); setLoyaltyPointsUsed(0); }}><option value="">Oddiy xaridor</option>{customers.map(customer => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</option>)}</select></label>
+          {selectedCustomer && <label className="terminal-field">Bonus ballari <small>{availablePoints} ball mavjud · 1 ball = 1 000 so‘m</small><input type="number" min={0} max={maxRedeemablePoints} value={loyaltyPointsUsed} onChange={event => setLoyaltyPointsUsed(Math.min(maxRedeemablePoints, Math.max(0, Number(event.target.value) || 0)))} /></label>}
+          <label className="terminal-field">Chegirma (so‘m)<input type="number" min={0} max={Math.max(0, cartSubtotal - 1)} step={500} value={discountAmount} onChange={event => setDiscountAmount(Math.min(Math.max(0, cartSubtotal - 1), Math.max(0, Number(event.target.value) || 0)))} /></label>
+          <div className="terminal-totals"><div><span>Mahsulotlar</span><b>{formatCurrency(cartSubtotal)}</b></div>{discountAmount > 0 && <div><span>Chegirma</span><b>−{formatCurrency(discountAmount)}</b></div>}{loyaltyPointsUsed > 0 && <div><span>Ball chegirmasi</span><b>−{formatCurrency(loyaltyPointsUsed * 1000)}</b></div>}{taxSettings.taxRate > 0 && <div><span>QQS {taxSettings.taxRate}%</span><b>{formatCurrency(taxAmount)}</b></div>}</div>
+          <div className="terminal-due"><span>TO‘LANADI</span><strong>{formatCurrency(payableTotal)}</strong></div>
+          <button type="button" className="terminal-pay" disabled={!shiftOpen || cart.length === 0 || loyaltyPointsUsed > maxRedeemablePoints} onClick={handleOpenCheckout}><CheckCircle size={20} /> To‘lovni qabul qilish</button>
+          <button type="button" className="terminal-debt" disabled={!shiftOpen || cart.length === 0} onClick={handleOpenDebtSale}><CreditCard size={17} /> Qarzga sotish</button>
+        </aside>
 
-          {/* Product Fast Selection Grid */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Mahsulotlar ({filteredProducts.length})
-              </span>
-              <span className="text-[11px] text-slate-400">
-                Bosish orqali tezkor savatga qo‘shish
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 max-h-[520px] overflow-y-auto pr-1">
-              {isLoading ? (
-                <div className="col-span-full py-12 text-center text-xs text-slate-400">
-                  Mahsulotlar yuklanmoqda...
-                </div>
-              ) : filteredProducts.length === 0 ? (
-                <div className="col-span-full py-12 text-center text-xs text-slate-400">
-                  Mos mahsulot topilmadi.
-                </div>
-              ) : (
-                filteredProducts.map((med) => {
-                  const hasStock = med.totalStock > 0;
-
-                  return (
-                    <button
-                      key={med.id}
-                      type="button"
-                      disabled={!hasStock}
-                      onClick={() => addToCart(med)}
-                      className={`flex flex-col justify-between rounded-xl border p-3 text-left transition-all active:scale-[0.98] ${
-                        hasStock
-                          ? "border-slate-200 bg-white hover:border-primary-500 hover:shadow-md cursor-pointer"
-                          : "border-slate-100 bg-slate-50 opacity-60 cursor-not-allowed"
-                      }`}
-                    >
-                      <div>
-                        <p className="font-bold text-slate-900 text-xs line-clamp-2">
-                          {med.name}
-                        </p>
-                        <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">
-                          {med.barcode || med.qrCode || "Kod yo'q"}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs">
-                        <span className="font-extrabold text-[#4F46E5]">
-                          {formatCurrency(med.salePrice)}
-                        </span>
-                        <span
-                          className={`text-[10px] font-semibold ${
-                            hasStock ? "text-slate-500" : "text-red-500"
-                          }`}
-                        >
-                          {hasStock ? `${med.totalStock} ${med.unit}` : "Tugagan"}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT: Active Cart and Payment Panel (5 Cols) */}
-        <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col h-full min-h-[580px]">
-          {/* Cart Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 p-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 text-primary-700">
-                <ShoppingCart className="h-4 w-4" />
-              </div>
-              <h3 className="font-extrabold text-slate-900 text-sm md:text-base">
-                Sotuv Savatchasi ({cart.length})
-              </h3>
-            </div>
-
-            {cart.length > 0 && (
-              <button
-                type="button"
-                onClick={clearCart}
-                className="text-xs font-semibold text-red-600 hover:text-red-700"
-              >
-                Tozalash
-              </button>
-            )}
-          </div>
-
-          {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 divide-y divide-slate-100">
-            {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-xs">
-                <ShoppingCart className="h-10 w-10 text-slate-200 mb-2" />
-                <p>Savatcha hozircha bo‘sh.</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Mahsulotni tanlang yoki shtrix-kodini skanerlang.
-                </p>
-              </div>
-            ) : (
-              cart.map((item, idx) => (
-                <div key={idx} className="pt-3 first:pt-0 flex items-center justify-between gap-3 text-xs">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-800 truncate">{item.productName}</p>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
-                      <span>{formatCurrency(item.unitPrice)}</span>
-                      <span>•</span>
-                      <span className="font-mono text-primary-700">#{item.batchNumber}</span>
-                      <span>•</span>
-                      <span>Yaroqlilik: {formatDate(item.expiryDate)}</span>
-                    </div>
-                  </div>
-
-                  {/* Quantity Controls */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => updateQuantity(idx, item.quantity - 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="w-7 text-center font-bold text-slate-900 text-sm">
-                      {item.quantity}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => updateQuantity(idx, item.quantity + 1)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-
-                  {/* Price */}
-                  <div className="text-right">
-                    <span className="font-extrabold text-slate-900 text-sm block">
-                      {formatCurrency(item.totalPrice)}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeFromCart(idx)}
-                    className="text-slate-300 hover:text-red-600 p-1"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Cart Bottom Summary & Checkout Button */}
-          <div className="border-t border-slate-100 bg-slate-50/60 p-4 space-y-3">
-            {/* Customer select */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                Mijoz (Ixtiyoriy)
-              </label>
-              <select
-                value={selectedCustomerId}
-                onChange={(e) => setSelectedCustomerId(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-[#4F46E5] focus:outline-none"
-              >
-                <option value="">Oddiy xaridor (Ro'yxatsiz)</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.phone && `(${c.phone})`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Subtotal & Discount */}
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between text-slate-600">
-                <span>Oraliq summa:</span>
-                <span>{formatCurrency(cartSubtotal)}</span>
-              </div>
-
-              <div className="flex items-center justify-between text-slate-600">
-                <span>Chegirma summasi:</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="500"
-                  value={discountAmount}
-                  onChange={(e) => setDiscountAmount(Number(e.target.value) || 0)}
-                  className="w-28 rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-xs font-bold text-red-600 focus:border-red-500 focus:outline-none"
-                />
-              </div>
-
-              {taxSettings.taxRate > 0 && (
-                <div className="flex justify-between text-slate-600">
-                  <span>
-                    QQS ({taxSettings.taxRate}%{taxSettings.taxIncluded ? ", ichida" : ""}):
-                  </span>
-                  <span>{formatCurrency(taxAmount)}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between items-baseline pt-2 border-t border-slate-200">
-                <span className="font-extrabold text-sm text-slate-900">Jami To‘lov:</span>
-                <span className="text-xl font-extrabold text-[#4F46E5]">
-                  {formatCurrency(cartTotal)}
-                </span>
-              </div>
-            </div>
-
-            {/* Pay Button */}
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                disabled={cart.length === 0}
-                onClick={handleOpenCheckout}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-3.5 text-sm font-extrabold text-white shadow-lg shadow-primary-600/20 hover:bg-[#4338CA] active:scale-[0.98] transition-all disabled:opacity-50"
-              >
-                <CheckCircle className="h-5 w-5" />
-                <span>To‘lovga O‘tish ({formatCurrency(cartTotal)})</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={cart.length === 0}
-                onClick={handleOpenDebtSale}
-                className="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-amber-400 bg-amber-50 py-3 text-sm font-extrabold text-amber-800 hover:bg-amber-100 active:scale-[0.98] transition-all disabled:opacity-50"
-              >
-                <CreditCard className="h-5 w-5 text-amber-600" />
-                <span>Qarzga Sotish ({formatCurrency(cartTotal)})</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <section className="terminal-products"><div className="terminal-section-head"><div><span>MAHSULOTLAR</span><h2>Tezkor tanlash <small>· {filteredProducts.length} ta</small></h2></div><button type="button" onClick={loadProducts} disabled={isLoading}><RotateCcw size={15} /> Yangilash</button></div><div className="terminal-search"><Search size={19} /><input ref={searchInputRef} value={search} onChange={event => setSearch(event.target.value)} placeholder="Nomi, SKU yoki shtrix-kod bo‘yicha qidiring..." aria-label="Mahsulotni qidirish" /><button type="button" onClick={() => setShowCameraScanner(true)} title="Kamera skaner"><Camera size={18} /></button></div><div className="terminal-table-scroll"><table className="terminal-table terminal-catalog"><thead><tr><th>SKU / shtrix-kod</th><th>Mahsulot</th><th>Narxi</th><th>Qoldiq</th><th /></tr></thead><tbody>{isLoading ? <tr><td colSpan={5} className="terminal-loading">Mahsulotlar yuklanmoqda...</td></tr> : filteredProducts.length ? filteredProducts.map(product => <tr key={product.id}><td className="terminal-sku">{product.barcode || product.qrCode || "—"}</td><td><strong>{product.name}</strong><small>{product.category?.name || "Kategoriyasiz"}</small></td><td><b>{formatCurrency(product.salePrice)}</b></td><td><span className={product.totalStock > 0 ? "terminal-stock" : "terminal-no-stock"}>{product.totalStock > 0 ? `${product.totalStock} ${product.unit}` : "Tugagan"}</span></td><td><button type="button" className="terminal-add" disabled={product.totalStock <= 0} onClick={() => addToCart(product)}><Plus size={16} /> Qo‘shish</button></td></tr>) : <tr><td colSpan={5} className="terminal-loading">Mos mahsulot topilmadi.</td></tr>}</tbody></table></div></section>
       </div>
+
+      {showPrecheck && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation"><div className="w-full max-w-md rounded-lg bg-white p-6 shadow-2xl" role="dialog" aria-modal="true" aria-label="Oldindan chek"><div className="flex items-start justify-between gap-3"><div><span className="text-xs font-bold text-blue-700">OLDINDAN CHEK</span><h2 className="mt-1 text-xl font-bold text-slate-900">Chek №{checkNumber}</h2><p className="mt-1 text-xs text-slate-500">To‘lov hali qabul qilinmagan.</p></div><button type="button" onClick={() => setShowPrecheck(false)} aria-label="Yopish"><X size={20} /></button></div><div className="mt-5 max-h-72 overflow-y-auto divide-y border-y">{cart.map((item, index) => <div key={index} className="flex justify-between gap-3 py-3 text-sm"><span>{item.productName} × {item.quantity}</span><b>{formatCurrency(item.totalPrice)}</b></div>)}</div><div className="mt-4 flex justify-between font-bold"><span>To‘lanadigan summa</span><span>{formatCurrency(payableTotal)}</span></div><button type="button" onClick={() => setShowPrecheck(false)} className="mt-6 w-full rounded-md bg-blue-700 px-4 py-3 font-bold text-white">Kassaga qaytish</button></div></div>}
 
       {/* CHECKOUT PAYMENT MODAL (Section 21) */}
       {showCheckoutModal && (
@@ -864,7 +706,7 @@ export default function CashierPosPage() {
                     onClick={() => setPaymentMethod("CASH")}
                     className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-bold transition-all ${
                       paymentMethod === "CASH"
-                        ? "border-[#4F46E5] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
+                        ? "border-[#1e50b3] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
                         : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
@@ -877,7 +719,7 @@ export default function CashierPosPage() {
                     onClick={() => setPaymentMethod("CARD")}
                     className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-bold transition-all ${
                       paymentMethod === "CARD"
-                        ? "border-[#4F46E5] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
+                        ? "border-[#1e50b3] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
                         : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
@@ -890,7 +732,7 @@ export default function CashierPosPage() {
                     onClick={() => setPaymentMethod("ELECTRONIC")}
                     className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-bold transition-all ${
                       paymentMethod === "ELECTRONIC"
-                        ? "border-[#4F46E5] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
+                        ? "border-[#1e50b3] bg-primary-50 text-primary-800 ring-2 ring-primary-500/20"
                         : "border-slate-200 text-slate-700 hover:bg-slate-50"
                     }`}
                   >
@@ -914,7 +756,7 @@ export default function CashierPosPage() {
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-slate-600 font-medium">To‘lanadigan summa:</span>
                   <span className="text-base font-extrabold text-primary-700">
-                    {formatCurrency(cartTotal)}
+                    {formatCurrency(payableTotal)}
                   </span>
                 </div>
 
@@ -924,19 +766,19 @@ export default function CashierPosPage() {
                   </label>
                   <input
                     type="number"
-                    min={cartTotal}
+                    min={payableTotal}
                     step="1000"
                     value={paidAmount}
                     onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-base font-extrabold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-base font-extrabold text-slate-900 focus:border-[#1e50b3] focus:outline-none"
                   />
                 </div>
 
-                {paidAmount > cartTotal && (
+                {paidAmount > payableTotal && (
                   <div className="flex justify-between items-center pt-2 border-t border-slate-200 text-xs">
                     <span className="font-bold text-slate-700">Xaridorga qaytim:</span>
                     <span className="font-extrabold text-blue-700 text-sm">
-                      {formatCurrency(paidAmount - cartTotal)}
+                      {formatCurrency(paidAmount - payableTotal)}
                     </span>
                   </div>
                 )}
@@ -954,9 +796,9 @@ export default function CashierPosPage() {
 
               <button
                 type="button"
-                disabled={isProcessing || paidAmount < cartTotal}
+                disabled={isProcessing || paidAmount < payableTotal || loyaltyPointsUsed > maxRedeemablePoints}
                 onClick={handleCompleteSale}
-                className="flex items-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#4338CA] disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-[#1e50b3] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#123d99] disabled:opacity-50"
               >
                 {isProcessing ? (
                   <span>Saqlanmoqda...</span>

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { AuthUser, UserRole } from "@/types";
 import { isMax } from "@/lib/plans";
+import { optionalMenuItems } from "@/lib/menu-visibility";
 
 interface SidebarProps {
   user: AuthUser;
@@ -60,38 +61,30 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
       case "SHOP_ADMIN":
         return [
-          { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-          { label: "POS · Savdo terminali", href: "/admin/pos", icon: BadgePercent },
-          { label: "Mahsulotlar katalogi", href: "/admin/mahsulotlar", icon: Package },
-          { label: "Kategoriyalar", href: "/admin/kategoriyalar", icon: Boxes },
-          { label: "Cheklar", href: "/admin/cheklar", icon: Receipt },
-          { label: "QR / Shtrix-kodlar", href: "/admin/shtrix-kodlar", icon: QrCode },
-          { label: "Ombor va partiyalar", href: "/admin/ombor", icon: Boxes },
-          { label: "Sotuvlar tarixi", href: "/admin/sotuvlar", icon: ShoppingCart },
-          { label: "Qaytarishlar", href: "/admin/qaytarishlar", icon: RotateCcw },
-          { label: "Mijozlar bazasi", href: "/admin/mijozlar", icon: Users },
-          { label: "Qarzlar", href: "/admin/qarzlar", icon: CreditCard },
-          { label: "Yetkazib beruvchilar", href: "/admin/yetkazib-beruvchilar", icon: Truck, requiresMax: true },
-          { label: "Xodimlar boshqaruvi", href: "/admin/xodimlar", icon: UserCog, requiresMax: true },
-          { label: "Amallar jurnali", href: "/admin/audit-log", icon: ScrollText, requiresMax: true },
-          { label: "Hisobotlar va Tahlil", href: "/admin/hisobotlar", icon: BarChart3 },
+          { label: "Bosh sahifa", href: "/admin", icon: LayoutDashboard },
+          { label: "Kassa", href: "/admin/pos", icon: BadgePercent },
+          { label: "Hisobotlar", href: "/admin/hisobotlar", icon: BarChart3 },
+          { label: "Tovarlar", href: "/admin/tovarlar", icon: Package },
+          { label: "Ombor", href: "/admin/ombor", icon: Boxes },
+          { label: "Moliya", href: "/admin/moliya", icon: CreditCard },
+          { label: "Xodimlar", href: "/admin/xodimlar", icon: UserCog, requiresMax: true },
+          { label: "Mijozlar", href: "/admin/mijozlar", icon: Users },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
 
       case "WAREHOUSEMAN":
         return [
           { label: "Bosh sahifa", href: "/omborchi", icon: LayoutDashboard },
-          { label: "Ombor qoldiqlari", href: "/admin/ombor", icon: Boxes },
+          { label: "Ombor", href: "/omborchi/ombor", icon: Boxes },
           { label: "Partiyalar va muddat", href: "/omborchi/partiyalar", icon: CalendarClock },
-          { label: "Mahsulot qo‘shish", href: "/admin/mahsulotlar", icon: Package },
+          { label: "Mahsulot qo‘shish", href: "/omborchi/mahsulotlar", icon: Package },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
 
       case "CASHIER":
         return [
           { label: "POS Savdo terminali", href: "/kassir", icon: BadgePercent },
-          { label: "Mening sotuvlarim", href: "/kassir/tarixim", icon: Receipt },
-          { label: "Cheklar", href: "/kassir/cheklar", icon: Receipt },
+          { label: "Savdo tarixi", href: "/kassir/cheklar", icon: Receipt },
           { label: "Tovarni qaytarish", href: "/kassir/qaytarish", icon: RotateCcw },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
         ];
@@ -101,7 +94,11 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
     }
   };
 
-  const navItems = getNavItems(user.role);
+  const navItems = getNavItems(user.role).filter((item) => {
+    if (user.role !== "SHOP_ADMIN") return true;
+    const optional = optionalMenuItems.find(({ href }) => href === item.href);
+    return !optional || user.menuVisibility?.[optional.key] !== false;
+  });
 
   return (
     <>
@@ -115,19 +112,19 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col bg-[#142D25] text-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col bg-[#08358d] text-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand header */}
         <div className="flex h-16 items-center justify-between border-b border-slate-800 px-6">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#24634F] text-white shadow-md">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white shadow-md">
               <Package className="h-5 w-5" />
             </div>
             <div>
               <span className="font-extrabold text-base tracking-wide text-white">
-                SAVDO<span className="text-[#24634F]">ZA</span>
+                SAVDO<span className="text-[#c7ddff]">ZA</span>
               </span>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider">
                 Boshqaruv Tizimi
@@ -151,13 +148,22 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive =
+              pathname === item.href ||
+              (item.href === "/admin/hisobotlar" && ["/admin/sotuv-hisoboti", "/admin/sotuvlar", "/admin/cheklar", "/admin/smena", "/admin/qaytarishlar"].some((path) => pathname.startsWith(path))) ||
+              (item.href === "/admin/tovarlar" && ["/admin/mahsulotlar", "/admin/kategoriyalar", "/admin/shtrix-kodlar", "/admin/partiyalar"].some((path) => pathname.startsWith(path))) ||
+              (item.href === "/admin/moliya" && ["/admin/qarzlar", "/admin/yetkazib-beruvchilar"].some((path) => pathname.startsWith(path))) ||
+              (item.href === "/admin/mahsulotlar" &&
+                (pathname === "/admin/kategoriyalar" ||
+                  pathname === "/admin/shtrix-kodlar" ||
+                  pathname.startsWith("/admin/shtrix-kodlar/"))) ||
+              (item.href === "/kassir/cheklar" && pathname === "/kassir/tarixim");
 
             if (item.requiresMax && !isMax(user.planCode)) {
-              return <button key={item.href} type="button" disabled title="Max tarifiga o‘ting"
+              return <button key={item.href} type="button" disabled title="Premium tarifiga o‘ting"
                 className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-400">
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1">{item.label}<small className="block text-[10px] text-amber-200/80">Max tarifiga o‘ting</small></span>
+                <span className="flex-1">{item.label}<small className="block text-[10px] text-amber-200/80">Premium tarifiga o‘ting</small></span>
                 <LockKeyhole className="h-3.5 w-3.5 shrink-0" />
               </button>;
             }
@@ -169,18 +175,18 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
                 onClick={() => onClose()}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-[#24634F] text-white shadow-sm"
+                    ? "bg-white text-[#08358d] shadow-sm"
                     : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
                 }`}
               >
-                <Icon className={`h-4 w-4 ${isActive ? "text-white" : "text-slate-400"}`} />
+                <Icon className={`h-4 w-4 ${isActive ? "text-[#08358d]" : "text-blue-100"}`} />
                 <span>{item.label}</span>
               </Link>
             );
           })}
           {user.role === "SHOP_ADMIN" && !isMax(user.planCode) && (
             <Link href="/sozlamalar/tarif?plan=MAX" onClick={onClose} className="mt-4 block rounded-xl border border-amber-200/30 px-3 py-3 text-sm font-semibold text-amber-100 hover:bg-white/5">
-              Max tarifiga o‘tish
+              Premium tarifiga o‘tish
             </Link>
           )}
         </div>
@@ -188,8 +194,8 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         {/* Security badge at bottom */}
         <div className="border-t border-slate-800 p-4">
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <ShieldCheck className="h-4 w-4 text-[#24634F]" />
-            <span>Multi-tenant Xavfsiz Tizim</span>
+            <ShieldCheck className="h-4 w-4 text-[#b9d2ff]" />
+            <span>Savdo va ombor bir joyda</span>
           </div>
         </div>
       </aside>

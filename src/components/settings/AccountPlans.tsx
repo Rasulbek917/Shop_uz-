@@ -4,7 +4,7 @@ import Link from "next/link";
 import OnlineCheckout from "@/components/marketing/OnlineCheckout";
 import { Check, RefreshCw, ArrowUpRight, Clock3 } from "lucide-react";
 import { clientApi } from "@/lib/client-api";
-import { PLAN_FEATURES } from "@/lib/plans";
+import { PLAN_FEATURES, PLAN_NAMES } from "@/lib/plans";
 import { PublicHeader, PublicFooter } from "@/components/marketing/PublicShell";
 export default function AccountPlans({
   embedded = false,
@@ -69,7 +69,7 @@ export default function AccountPlans({
       "Tarifni yangilang. Obuna muddati tugagan, ish bo‘limlari vaqtincha yopilgan.",
     ACTIVE: data?.user?.hasAccess
       ? "Do‘koningiz ishlashga tayyor."
-      : "Tarif muddati tugagan yoki rolingiz uchun Max tarifi kerak.",
+      : "Tarif muddati tugagan yoki rolingiz uchun Premium tarifi kerak.",
     TRIAL: "Sinov hisobingiz faol.",
   };
   return (
@@ -127,7 +127,7 @@ export default function AccountPlans({
                 {shop?.approvalNote && <p>{shop.approvalNote}</p>}
                 {shop?.subscriptionEndDate && (
                   <small>
-                    Tarif: {shop.planCode} ·{" "}
+                    Tarif: {PLAN_NAMES[shop.planCode as "PRO" | "MAX"] || shop.planCode} ·{" "}
                     {new Date(shop.subscriptionEndDate).toLocaleDateString(
                       "uz-UZ",
                     )}{" "}
@@ -171,7 +171,7 @@ export default function AccountPlans({
                         key={code}
                       >
                         <div className="price-title">
-                          <h3>{code}</h3>
+                          <h3>{PLAN_NAMES[code]}</h3>
                           <span>30 KUN</span>
                         </div>
                         <div className="price-value">

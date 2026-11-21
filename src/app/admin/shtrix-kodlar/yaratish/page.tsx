@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -205,7 +205,7 @@ export default function CreateBarcodePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-[#4F46E5]" />
+            <Sparkles className="w-6 h-6 text-[#1e50b3]" />
             {editId ? "Shtrix-kodni Tahrirlash" : "Yangi Shtrix-kod Yaratish"}
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -226,7 +226,7 @@ export default function CreateBarcodePage() {
       {savedProduct && (
         <div className="bg-primary-50 border-2 border-primary-400 rounded-3xl p-6 md:p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-2xl bg-[#4F46E5] text-white flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-[#1e50b3] text-white flex items-center justify-center">
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
@@ -267,7 +267,7 @@ export default function CreateBarcodePage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleReset}
-                  className="flex-1 py-2.5 px-4 bg-[#4F46E5] hover:bg-[#4338CA] text-white font-bold rounded-xl text-xs transition-colors shadow-sm"
+                  className="flex-1 py-2.5 px-4 bg-[#1e50b3] hover:bg-[#123d99] text-white font-bold rounded-xl text-xs transition-colors shadow-sm"
                 >
                   Yana boshqa kod yaratish
                 </button>
@@ -314,7 +314,7 @@ export default function CreateBarcodePage() {
                   placeholder="Masalan: Pepsi 1.5L yoki Qora Choy"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#4F46E5] text-xs outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#1e50b3] text-xs outline-none"
                 />
               </div>
             </div>
@@ -330,7 +330,7 @@ export default function CreateBarcodePage() {
                   <select
                     value={formData.shopId}
                     onChange={(e) => setFormData({ ...formData, shopId: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#4F46E5] text-xs outline-none bg-white font-medium"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#1e50b3] text-xs outline-none bg-white font-medium"
                   >
                     {shops.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -355,7 +355,7 @@ export default function CreateBarcodePage() {
                     placeholder="15000"
                     value={formData.salePrice}
                     onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#4F46E5] text-xs font-bold outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#1e50b3] text-xs font-bold outline-none"
                   />
                 </div>
               </div>
@@ -374,7 +374,7 @@ export default function CreateBarcodePage() {
                     placeholder="Coca-Cola, Nestle, Artel..."
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#4F46E5] text-xs outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#1e50b3] text-xs outline-none"
                   />
                 </div>
               </div>
@@ -390,7 +390,7 @@ export default function CreateBarcodePage() {
                     placeholder="Ichimliklar, Oziq-ovqat..."
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#4F46E5] text-xs outline-none"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#1e50b3] text-xs outline-none"
                   />
                 </div>
               </div>
@@ -407,11 +407,11 @@ export default function CreateBarcodePage() {
                   onClick={() => setFormData({ ...formData, codeType: "CODE128" })}
                   className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1 ${
                     formData.codeType === "CODE128"
-                      ? "border-[#4F46E5] bg-primary-50 text-[#4F46E5] ring-2 ring-primary-500 font-bold"
+                      ? "border-[#1e50b3] bg-primary-50 text-[#1e50b3] ring-2 ring-primary-500 font-bold"
                       : "border-slate-200 hover:border-slate-300 bg-white text-slate-700"
                   }`}
                 >
-                  <Barcode className="w-5 h-5 text-[#4F46E5]" />
+                  <Barcode className="w-5 h-5 text-[#1e50b3]" />
                   <span className="text-xs">Code 128</span>
                   <span className="text-[10px] text-slate-400">Standart USB skaner</span>
                 </button>
@@ -457,7 +457,7 @@ export default function CreateBarcodePage() {
                   placeholder="Bo'sh qolsa: SM-000001 avtomatik"
                   value={formData.sku}
                   onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#4F46E5] text-xs font-mono outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1e50b3] text-xs font-mono outline-none"
                 />
               </div>
 
@@ -470,7 +470,7 @@ export default function CreateBarcodePage() {
                   placeholder={isEan ? "13 ta raqam (EAN-13)" : "Zavod shtrix-kodi"}
                   value={formData.customBarcode}
                   onChange={(e) => setFormData({ ...formData, customBarcode: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#4F46E5] text-xs font-mono outline-none"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1e50b3] text-xs font-mono outline-none"
                 />
               </div>
             </div>
@@ -492,7 +492,7 @@ export default function CreateBarcodePage() {
                 placeholder="Mahsulot haqida eslatma..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#4F46E5] text-xs outline-none"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-[#1e50b3] text-xs outline-none"
               />
             </div>
 
@@ -509,7 +509,7 @@ export default function CreateBarcodePage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-8 py-3 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-extrabold text-sm shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+                className="px-8 py-3 rounded-xl bg-[#1e50b3] hover:bg-[#123d99] text-white font-extrabold text-sm shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4" />
                 {isSubmitting ? "Saqlanmoqda..." : "GENERATE VA SAQLASH"}

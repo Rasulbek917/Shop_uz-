@@ -37,9 +37,11 @@ export async function GET(req: NextRequest) {
       where: {
         shopId,
         createdAt: { gte: todayStart, lte: todayEnd },
+        ...(user.role === "CASHIER" ? { sale: { cashierId: user.id } } : {}),
       },
       include: {
         items: true,
+        sale: { select: { payableAmount: true, taxAmount: true, items: { select: { id: true, purchasePrice: true } } } },
       },
     });
 
@@ -52,18 +54,12 @@ export async function GET(req: NextRequest) {
 
     let todayProfit = 0;
     for (const sale of todaySales) {
-      for (const item of sale.items) {
-        todayProfit += (item.unitPrice - item.purchasePrice) * item.quantity;
-      }
-      todayProfit -= sale.discountAmount;
-      todayProfit -= sale.taxAmount || 0;
+      todayProfit += sale.payableAmount - sale.taxAmount - sale.items.reduce((cost, item) => cost + item.purchasePrice * item.quantity, 0);
     }
-    // Deduct profit lost from returns today
     for (const ret of todayReturns) {
-      for (const it of ret.items) {
-        // item unit refund price minus batch purchase price
-        todayProfit -= it.totalRefund;
-      }
+      const refundedTax = ret.sale.payableAmount > 0 ? ret.sale.taxAmount * ret.totalRefundAmount / ret.sale.payableAmount : 0;
+      const returnedCost = ret.items.reduce((cost, item) => cost + (ret.sale.items.find((original) => original.id === item.saleItemId)?.purchasePrice || 0) * item.quantity, 0);
+      todayProfit -= ret.totalRefundAmount - refundedTax - returnedCost;
     }
 
     // 2. Month sales & returns
@@ -80,8 +76,9 @@ export async function GET(req: NextRequest) {
       where: {
         shopId,
         createdAt: { gte: monthStart },
+        ...(user.role === "CASHIER" ? { sale: { cashierId: user.id } } : {}),
       },
-      include: { items: true },
+      include: { items: true, sale: { select: { payableAmount: true, taxAmount: true, items: { select: { id: true, purchasePrice: true } } } } },
     });
 
     const monthRefundTotal = monthReturns.reduce((acc, r) => acc + r.totalRefundAmount, 0);
@@ -92,16 +89,12 @@ export async function GET(req: NextRequest) {
 
     let monthProfit = 0;
     for (const sale of monthSales) {
-      for (const item of sale.items) {
-        monthProfit += (item.unitPrice - item.purchasePrice) * item.quantity;
-      }
-      monthProfit -= sale.discountAmount;
-      monthProfit -= sale.taxAmount || 0;
+      monthProfit += sale.payableAmount - sale.taxAmount - sale.items.reduce((cost, item) => cost + item.purchasePrice * item.quantity, 0);
     }
     for (const ret of monthReturns) {
-      for (const it of ret.items) {
-        monthProfit -= it.totalRefund;
-      }
+      const refundedTax = ret.sale.payableAmount > 0 ? ret.sale.taxAmount * ret.totalRefundAmount / ret.sale.payableAmount : 0;
+      const returnedCost = ret.items.reduce((cost, item) => cost + (ret.sale.items.find((original) => original.id === item.saleItemId)?.purchasePrice || 0) * item.quantity, 0);
+      monthProfit -= ret.totalRefundAmount - refundedTax - returnedCost;
     }
 
     // 3. Top selling products & Full Analytics Table
@@ -113,7 +106,8 @@ export async function GET(req: NextRequest) {
           status: "COMPLETED",
         },
       },
-      include: { 
+      include: {
+        sale: { select: { createdAt: true } },
         product: {
           include: {
             category: true,
@@ -138,6 +132,7 @@ export async function GET(req: NextRequest) {
         totalProfit: number;
         currentStock: number;
         salePrice: number;
+        dailyQuantity: Record<string, number>;
       }
     > = {};
 
@@ -155,18 +150,38 @@ export async function GET(req: NextRequest) {
           totalProfit: 0,
           currentStock,
           salePrice: si.product.salePrice,
+          dailyQuantity: {},
         };
       }
       productSalesMap[si.productId].totalQuantity += si.quantity;
       productSalesMap[si.productId].totalRevenue += si.totalPrice;
       productSalesMap[si.productId].totalProfit += (si.unitPrice - si.purchasePrice) * si.quantity;
+      const day = si.sale.createdAt.toISOString().slice(0, 10);
+      productSalesMap[si.productId].dailyQuantity[day] =
+        (productSalesMap[si.productId].dailyQuantity[day] || 0) + si.quantity;
     }
 
     const analyticsTable = Object.values(productSalesMap).sort(
       (a, b) => b.totalRevenue - a.totalRevenue
     );
+    const periodDays = Math.max(1, Math.ceil((now.getTime() - monthStart.getTime()) / 86400000));
+    const totalProductRevenue = analyticsTable.reduce((sum, item) => sum + item.totalRevenue, 0);
+    let cumulativeRevenue = 0;
+    const classifiedAnalytics = analyticsTable.map((item) => {
+      const shareBefore = totalProductRevenue > 0 ? cumulativeRevenue / totalProductRevenue : 1;
+      cumulativeRevenue += item.totalRevenue;
+      const abcClass = shareBefore < 0.8 ? "A" : shareBefore < 0.95 ? "B" : "C";
+      const mean = item.totalQuantity / periodDays;
+      const variance = Object.values(item.dailyQuantity).reduce(
+        (sum, quantity) => sum + (quantity - mean) ** 2, 0
+      ) + (periodDays - Object.keys(item.dailyQuantity).length) * mean ** 2;
+      const variation = mean > 0 ? Math.sqrt(variance / periodDays) / mean : Infinity;
+      const xyzClass = variation <= 0.5 ? "X" : variation <= 1 ? "Y" : "Z";
+      const { dailyQuantity, ...product } = item;
+      return { ...product, abcClass, xyzClass };
+    });
 
-    const topProducts = analyticsTable.slice(0, 10);
+    const topProducts = classifiedAnalytics.slice(0, 10);
 
     // 4. Cashier performance (if admin or superadmin)
     let cashiersStats: any[] = [];
@@ -344,7 +359,7 @@ export async function GET(req: NextRequest) {
           taxTotal: monthTaxTotal,
         },
         topProducts,
-        analyticsTable,
+        analyticsTable: classifiedAnalytics,
         cashiersStats,
         inventory: {
           totalProductsCount,

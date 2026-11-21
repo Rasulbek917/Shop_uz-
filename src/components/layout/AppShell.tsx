@@ -17,6 +17,17 @@ export default function AppShell({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser>(user);
 
+  useEffect(() => {
+    const updateMenu = (event: Event) => {
+      setCurrentUser((current) => ({
+        ...current,
+        menuVisibility: (event as CustomEvent<Record<string, boolean>>).detail,
+      }));
+    };
+    window.addEventListener("menu-visibility-changed", updateMenu);
+    return () => window.removeEventListener("menu-visibility-changed", updateMenu);
+  }, []);
+
   // Serverdan kelgan user ma'lumotini doim sinxronlab turamiz
   useEffect(() => {
     setCurrentUser(user);
@@ -63,7 +74,7 @@ export default function AppShell({
   }, [user.role]);
 
   return (
-    <div className="flex min-h-screen bg-[#F5F8F2]">
+    <div className="flex min-h-screen bg-[#edf1f6]">
       {/* Sidebar */}
       <Sidebar
         user={currentUser}

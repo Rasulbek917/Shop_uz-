@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { RotateCcw, Search, CheckCircle, AlertCircle, ShoppingBag } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/formatters";
 import { refundForQuantity } from "@/lib/refunds";
@@ -119,6 +120,7 @@ export default function ReturnsPage() {
         <p className="text-xs md:text-sm text-slate-500 mt-1">
           Chek raqami orqali mahsulotlarni ombor qoldig‘iga qaytarish va to‘lovni qaytarish
         </p>
+        <p className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">Qaytarish joriy kassa smenasiga yoziladi. <Link href="/kassir/smena" className="font-bold underline">Smena holatini tekshirish</Link></p>
       </div>
 
       {/* Success Notification */}
@@ -153,14 +155,14 @@ export default function ReturnsPage() {
             value={receiptNumber}
             onChange={(e) => setReceiptNumber(e.target.value)}
             placeholder="Chek raqamini kiriting (masalan: CHK-20260922-1001)..."
-            className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 text-xs md:text-sm text-slate-800 font-mono focus:border-[#4F46E5] focus:outline-none"
+            className="w-full rounded-xl border border-slate-300 pl-10 pr-4 py-2.5 text-xs md:text-sm text-slate-800 font-mono focus:border-[#1e50b3] focus:outline-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={isLoading || !!pendingReturn}
-          className="rounded-xl bg-[#4F46E5] px-6 py-2.5 text-xs md:text-sm font-bold text-white shadow-md hover:bg-[#4338CA] disabled:opacity-50"
+          className="rounded-xl bg-[#1e50b3] px-6 py-2.5 text-xs md:text-sm font-bold text-white shadow-md hover:bg-[#123d99] disabled:opacity-50"
         >
           {isLoading ? "Qidirilmoqda..." : "Chekni Topish"}
         </button>
@@ -224,7 +226,7 @@ export default function ReturnsPage() {
                             const val = Math.max(0, Math.min(item.returnableQuantity ?? item.quantity, Math.floor(Number(e.target.value) || 0)));
                             setSelectedItems((prev) => ({ ...prev, [item.id]: val }));
                           }}
-                          className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
+                          className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center font-bold text-slate-900 focus:border-[#1e50b3] focus:outline-none"
                         />
                         <span className="text-slate-400">/ {item.quantity} dona</span>
                       </div>
@@ -248,7 +250,7 @@ export default function ReturnsPage() {
               value={returnReason}
               onChange={(e) => setReturnReason(e.target.value)}
               placeholder="Masalan: Noto‘g‘ri o‘lcham yoki mijoz rad etdi"
-              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
+              className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none"
             />
           </div>
 

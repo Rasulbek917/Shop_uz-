@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -154,7 +154,7 @@ export default function SuppliersPage() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA]"
+            className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99]"
           >
             <Plus className="h-4 w-4" />
             <span>Ta'minotchi Qo‘shish</span>
@@ -307,7 +307,7 @@ export default function SuppliersPage() {
                   required
                   value={payAmount}
                   onChange={(e) => setPayAmount(Number(e.target.value) || 0)}
-                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-bold text-primary-700 focus:border-[#4F46E5] focus:outline-none"
+                  className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-bold text-primary-700 focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -358,7 +358,7 @@ export default function SuppliersPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Masalan: Oziq-Ovqat Trade MChJ"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -369,7 +369,7 @@ export default function SuppliersPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+998 71 123 45 67"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -380,7 +380,7 @@ export default function SuppliersPage() {
                   value={formData.contactPerson}
                   onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                   placeholder="Farhod aka"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -391,7 +391,7 @@ export default function SuppliersPage() {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Toshkent sh., Olmazor tumani"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -406,7 +406,7 @@ export default function SuppliersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white hover:bg-[#4338CA] disabled:opacity-50"
+                  className="rounded-xl bg-[#1e50b3] px-5 py-2 text-xs font-bold text-white hover:bg-[#123d99] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
                 </button>

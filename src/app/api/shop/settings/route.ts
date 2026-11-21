@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTenantContext } from "@/lib/tenant";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { menuVisibilityFrom, optionalMenuItems } from "@/lib/menu-visibility";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
         phone: true,
         taxRate: true,
         taxIncluded: true,
+        menuVisibility: true,
       },
     });
 
@@ -45,6 +47,9 @@ const settingsUpdateSchema = z.object({
   taxIncluded: z.boolean().optional(),
   address: z.string().max(255).optional(),
   phone: z.string().max(32).optional(),
+  menuVisibility: z.object(Object.fromEntries(
+    optionalMenuItems.map(({ key }) => [key, z.boolean().optional()])
+  ) as Record<(typeof optionalMenuItems)[number]["key"], z.ZodOptional<z.ZodBoolean>>).optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -67,17 +72,31 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const shop = await prisma.shop.update({
-      where: { id: context!.shopId },
-      data: parsed.data,
-      select: {
-        id: true,
-        name: true,
-        address: true,
-        phone: true,
-        taxRate: true,
-        taxIncluded: true,
-      },
+    const shop = await prisma.$transaction(async (tx) => {
+      const shopId = context!.shopId;
+      await tx.$queryRaw`SELECT "id" FROM "Shop" WHERE "id" = ${shopId} FOR UPDATE`;
+      const current = await tx.shop.findUniqueOrThrow({
+        where: { id: shopId },
+        select: { menuVisibility: true },
+      });
+      return tx.shop.update({
+        where: { id: shopId },
+        data: {
+          ...parsed.data,
+          menuVisibility: parsed.data.menuVisibility
+            ? { ...menuVisibilityFrom(current.menuVisibility), ...parsed.data.menuVisibility }
+            : undefined,
+        },
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          phone: true,
+          taxRate: true,
+          taxIncluded: true,
+          menuVisibility: true,
+        },
+      });
     });
 
     return NextResponse.json({ success: true, data: shop });

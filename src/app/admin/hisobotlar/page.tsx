@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   BarChart3,
   Calendar,
@@ -27,8 +28,10 @@ export default function ReportsPage() {
   >("ANALYTICS");
   const [searchFilter, setSearchFilter] = useState("");
   const [sortBy, setSortBy] = useState<"revenue" | "quantity" | "profit">("revenue");
+  const [printTimestamp, setPrintTimestamp] = useState<Date | null>(null);
 
   useEffect(() => {
+    setPrintTimestamp(new Date());
     loadReports();
   }, []);
 
@@ -94,7 +97,11 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="operator-page operator-reports space-y-6">
+      <div className="rounded-lg border border-slate-200 bg-white p-5 no-print"><p className="text-xs font-bold uppercase tracking-wider text-[#1e50b3]">Hisobotlar menyusi</p><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{[
+        ["Sotuvlar hisoboti", "/admin/sotuv-hisoboti"], ["Cheklar", "/admin/cheklar"], ["Smena", "/admin/smena"],
+        ["Inventarizatsiyani boshqarish", "/admin/ombor"], ["Sotuvlar tarixi", "/admin/sotuvlar"], ["Naqd tranzaksiyalar", "/admin/smena"], ["Qaytarishlar", "/admin/qaytarishlar"],
+      ].map(([label, href]) => <Link key={label} href={href} className="flex min-h-20 items-center rounded-md bg-[#1e50b3] px-5 text-base font-semibold text-white hover:bg-[#123d99]">{label}</Link>)}</div></div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 no-print">
         <div>
@@ -124,7 +131,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("ANALYTICS")}
           className={`flex-1 min-w-[130px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "ANALYTICS"
-              ? "bg-[#4F46E5] text-white shadow-sm"
+              ? "bg-[#1e50b3] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -135,7 +142,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("DAILY")}
           className={`flex-1 min-w-[120px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "DAILY"
-              ? "bg-[#4F46E5] text-white shadow-sm"
+              ? "bg-[#1e50b3] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -146,7 +153,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("MONTHLY")}
           className={`flex-1 min-w-[140px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "MONTHLY"
-              ? "bg-[#4F46E5] text-white shadow-sm"
+              ? "bg-[#1e50b3] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -157,7 +164,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("CASHIERS")}
           className={`flex-1 min-w-[130px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "CASHIERS"
-              ? "bg-[#4F46E5] text-white shadow-sm"
+              ? "bg-[#1e50b3] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -168,7 +175,7 @@ export default function ReportsPage() {
           onClick={() => setActiveTab("INVENTORY")}
           className={`flex-1 min-w-[150px] rounded-xl py-2.5 text-xs font-bold transition-all ${
             activeTab === "INVENTORY"
-              ? "bg-[#4F46E5] text-white shadow-sm"
+              ? "bg-[#1e50b3] text-white shadow-sm"
               : "text-slate-600 hover:bg-slate-100"
           }`}
         >
@@ -179,6 +186,7 @@ export default function ReportsPage() {
       {/* TAB 1: ANALYTICS TABLE (TAHLILLAR) */}
       {activeTab === "ANALYTICS" && (
         <div className="space-y-6 animate-in fade-in">
+          <p className="text-xs text-slate-500">ABC shu oydagi tushum ulushini ko‘rsatadi: A — birinchi 80%, B — keyingi 15%, C — qolganlar. XYZ kunlik sotuv barqarorligi: X — barqaror, Y — o‘rtacha, Z — o‘zgaruvchan.</p>
           {/* Top Summary Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 no-print">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -195,9 +203,9 @@ export default function ReportsPage() {
 
             <div className="rounded-2xl border border-primary-200 bg-primary-50/50 p-5 shadow-sm">
               <span className="text-xs font-bold text-primary-800 uppercase tracking-wider block">
-                Hisoblangan Sof Foyda
+                Savdodan foyda (marja)
               </span>
-              <p className="mt-2 text-2xl font-extrabold text-[#4F46E5]">
+              <p className="mt-2 text-2xl font-extrabold text-[#1664C0]">
                 {formatCurrency(totalAnalyticsProfit)}
               </p>
               <span className="text-[11px] text-primary-600 mt-1 block">
@@ -236,10 +244,10 @@ export default function ReportsPage() {
                 </div>
                 <div className="text-right">
                   <div className="text-xs font-semibold text-slate-700">
-                    Sana: {new Date().toLocaleDateString("uz-UZ")}
+                    Sana: {printTimestamp?.toLocaleDateString("uz-UZ") || "—"}
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    Vaqt: {new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" })}
+                    Vaqt: {printTimestamp?.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }) || "—"}
                   </div>
                 </div>
               </div>
@@ -260,7 +268,7 @@ export default function ReportsPage() {
                   <span className="font-bold text-slate-900">{formatCurrency(totalAnalyticsRevenue)}</span>
                 </div>
                 <div>
-                  <span className="font-semibold text-slate-600">Sof Foyda: </span>
+                  <span className="font-semibold text-slate-600">Savdodan foyda: </span>
                   <span className="font-bold text-slate-900">{formatCurrency(totalAnalyticsProfit)}</span>
                 </div>
                 <div>
@@ -290,7 +298,7 @@ export default function ReportsPage() {
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
                     placeholder="Qidirish (nomi, shtrix-kod)..."
-                    className="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-[#4F46E5] focus:outline-none"
+                    className="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-[#1e50b3] focus:outline-none"
                   />
                 </div>
 
@@ -298,7 +306,7 @@ export default function ReportsPage() {
                 <select
                   value={sortBy}
                   onChange={(e: any) => setSortBy(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-[#4F46E5] focus:outline-none"
+                  className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 focus:border-[#1e50b3] focus:outline-none"
                 >
                   <option value="revenue">Tushum bo‘yicha</option>
                   <option value="quantity">Miqdor bo‘yicha</option>
@@ -330,20 +338,22 @@ export default function ReportsPage() {
                     <th className="px-3 py-3 text-right">Sotuv Narxi</th>
                     <th className="px-3 py-3 text-center">Sotilgan</th>
                     <th className="px-3 py-3 text-right">Jami Tushum</th>
-                    <th className="px-3 py-3 text-right">Sof Foyda</th>
+                    <th className="px-3 py-3 text-right">Savdo foydasi</th>
+                    <th className="px-3 py-3 text-center">ABC</th>
+                    <th className="px-3 py-3 text-center">XYZ</th>
                     <th className="px-4 py-3 text-center">Ombor Qoldig‘i</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 print:divide-slate-300">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={9} className="py-12 text-center text-xs text-slate-400">
+                      <td colSpan={11} className="py-12 text-center text-xs text-slate-400">
                         Ma'lumotlar yuklanmoqda...
                       </td>
                     </tr>
                   ) : filteredAnalytics.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="py-12 text-center text-xs text-slate-400">
+                      <td colSpan={11} className="py-12 text-center text-xs text-slate-400">
                         Ushbu davrda realizatsiya qilingan mahsulotlar topilmadi.
                       </td>
                     </tr>
@@ -376,6 +386,8 @@ export default function ReportsPage() {
                           <td className="px-3 py-2.5 text-right font-bold text-primary-700 print:text-black">
                             {formatCurrency(item.totalProfit)}
                           </td>
+                          <td className="px-3 py-2.5 text-center font-bold">{item.abcClass}</td>
+                          <td className="px-3 py-2.5 text-center font-bold">{item.xyzClass}</td>
                           <td className="px-4 py-2.5 text-center">
                             <span
                               className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold border print:border-none print:p-0 ${
@@ -422,7 +434,7 @@ export default function ReportsPage() {
             <div className="hidden print:flex justify-between items-end p-6 pt-12 text-xs text-slate-800">
               <div>
                 <p>Hisobot tuzuvchi: _______________________ (imzo)</p>
-                <p className="text-[10px] text-slate-500 mt-1">Sana: {new Date().toLocaleDateString("uz-UZ")}</p>
+                <p className="text-[10px] text-slate-500 mt-1">Sana: {printTimestamp?.toLocaleDateString("uz-UZ") || "—"}</p>
               </div>
               <div className="text-right">
                 <p>Do‘kon mudiri / Administrator: _______________________ (imzo)</p>
@@ -441,7 +453,7 @@ export default function ReportsPage() {
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                 Bugungi Tushum
               </span>
-              <p className="mt-2 text-2xl font-extrabold text-[#4F46E5]">
+              <p className="mt-2 text-2xl font-extrabold text-[#1664C0]">
                 {formatCurrency(today.revenue)}
               </p>
               <span className="text-[11px] text-slate-400 mt-1 block">Xaridorlar to‘lagan summa</span>
@@ -459,7 +471,7 @@ export default function ReportsPage() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Sof Foyda
+                Savdodan foyda
               </span>
               <p className="mt-2 text-2xl font-extrabold text-primary-700">
                 {formatCurrency(today.profit)}
@@ -508,7 +520,7 @@ export default function ReportsPage() {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                Oylik Sof Foyda
+                Oylik savdo foydasi
               </span>
               <p className="mt-2 text-2xl font-extrabold text-primary-700">
                 {formatCurrency(month.profit)}

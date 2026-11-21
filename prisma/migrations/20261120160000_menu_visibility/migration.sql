@@ -1,0 +1,1 @@
+ALTER TABLE "Shop" ADD COLUMN "menuVisibility" JSONB NOT NULL DEFAULT '{}';

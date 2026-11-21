@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
@@ -90,7 +90,7 @@ export default function ProductCodesListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Package className="w-6 h-6 text-[#4F46E5]" />
+            <Package className="w-6 h-6 text-[#1e50b3]" />
             Mahsulot Kodlari Ro'yxati
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -108,7 +108,7 @@ export default function ProductCodesListPage() {
           </Link>
           <Link
             href="/admin/shtrix-kodlar/yaratish"
-            className="px-4 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
+            className="px-4 py-2.5 rounded-xl bg-[#1e50b3] hover:bg-[#123d99] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm"
           >
             <PlusCircle className="w-4 h-4" />
             Yangi kod yaratish
@@ -125,7 +125,7 @@ export default function ProductCodesListPage() {
             placeholder="Nomi, SKU yoki shtrix-kod bo'yicha qidirish..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#4F46E5]"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#1e50b3]"
           />
         </div>
 
@@ -216,7 +216,7 @@ export default function ProductCodesListPage() {
                           {codeType === "QR" ? (
                             <QrCode className="w-3 h-3 text-blue-600" />
                           ) : (
-                            <Barcode className="w-3 h-3 text-[#4F46E5]" />
+                            <Barcode className="w-3 h-3 text-[#1e50b3]" />
                           )}
                           {codeType}
                         </span>

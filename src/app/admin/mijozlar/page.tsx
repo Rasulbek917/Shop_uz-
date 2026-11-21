@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
-import { Users, Plus, Search, Phone, ShoppingBag, X, CheckCircle } from "lucide-react";
+import { Users, Plus, Search, X, CheckCircle, Edit, History } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { getErrorMessage } from "@/lib/errorMessage";
 
@@ -13,6 +13,11 @@ export default function CustomersPage() {
   const [formData, setFormData] = useState({ name: "", phone: "+998 ", notes: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [detailForm, setDetailForm] = useState({ name: "", phone: "", notes: "" });
+  const [detailError, setDetailError] = useState("");
 
   useEffect(() => {
     loadCustomers();
@@ -65,6 +70,31 @@ export default function CustomersPage() {
     );
   });
 
+  const openDetail = async (id: string) => {
+    setSelected(null); setEditing(false); setDetailError(""); setDetailLoading(true);
+    try {
+      const response = await fetch(`/api/customers/${id}`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(getErrorMessage(result.error, "Mijoz ma’lumotlari yuklanmadi"));
+      setSelected(result.data);
+      setDetailForm({ name: result.data.name, phone: result.data.phone || "", notes: result.data.notes || "" });
+    } catch (error) { setDetailError(error instanceof Error ? error.message : "Xatolik yuz berdi"); }
+    finally { setDetailLoading(false); }
+  };
+
+  const saveDetail = async (event: React.FormEvent) => {
+    event.preventDefault(); if (!selected) return;
+    setIsSubmitting(true); setDetailError("");
+    try {
+      const response = await fetch(`/api/customers/${selected.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(detailForm) });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(getErrorMessage(result.error, "Saqlab bo‘lmadi"));
+      setEditing(false); setSuccessMsg("Mijoz ma’lumotlari yangilandi");
+      await Promise.all([openDetail(selected.id), loadCustomers()]);
+    } catch (error) { setDetailError(error instanceof Error ? error.message : "Saqlab bo‘lmadi"); }
+    finally { setIsSubmitting(false); }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -79,7 +109,7 @@ export default function CustomersPage() {
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA]"
+          className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99]"
         >
           <Plus className="h-4 w-4" />
           <span>Yangi Mijoz Qo‘shish</span>
@@ -116,6 +146,7 @@ export default function CustomersPage() {
                 <th className="px-4 py-3.5">Telefon</th>
                 <th className="px-4 py-3.5">Xaridlar Soni</th>
                 <th className="px-4 py-3.5">Jami Sarflangan Summa</th>
+                <th className="px-4 py-3.5">Ballar</th>
                 <th className="px-4 py-3.5">A'zo Bo‘lgan Sana</th>
                 <th className="px-5 py-3.5 text-right">Izoh</th>
               </tr>
@@ -123,13 +154,13 @@ export default function CustomersPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400">
                     Yuklanmoqda...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400">
                     Mijozlar topilmadi.
                   </td>
                 </tr>
@@ -137,7 +168,7 @@ export default function CustomersPage() {
                 filtered.map((customer) => (
                   <tr key={customer.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3.5 font-bold text-slate-900 text-sm">
-                      {customer.name}
+                      <button type="button" onClick={() => openDetail(customer.id)} className="text-left text-[#1e50b3] hover:underline">{customer.name}</button>
                     </td>
 
                     <td className="px-4 py-3.5 font-semibold text-slate-700">
@@ -151,13 +182,14 @@ export default function CustomersPage() {
                     <td className="px-4 py-3.5 font-extrabold text-primary-700 text-sm">
                       {formatCurrency(customer.totalSpent)}
                     </td>
+                    <td className="px-4 py-3.5 font-semibold text-emerald-700">{Math.max(0, customer.loyaltyPoints)} ta</td>
 
                     <td className="px-4 py-3.5 text-slate-500">
                       {formatDate(customer.createdAt)}
                     </td>
 
                     <td className="px-5 py-3.5 text-right text-slate-500">
-                      {customer.notes || "-"}
+                      <button type="button" onClick={() => openDetail(customer.id)} className="rounded border border-blue-200 px-3 py-1.5 font-semibold text-blue-700">Tarix</button>
                     </td>
                   </tr>
                 ))
@@ -166,6 +198,8 @@ export default function CustomersPage() {
           </table>
         </div>
       </div>
+
+      {(selected || detailLoading || detailError) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3" onClick={() => { setSelected(null); setDetailError(""); }}><section className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between gap-3"><div><h3 className="text-xl font-bold text-slate-900">{selected?.name || "Mijoz kartasi"}</h3><p className="text-sm text-slate-500">Xaridlar, qaytarishlar va bonus ballari</p></div><button type="button" aria-label="Yopish" onClick={() => { setSelected(null); setDetailError(""); }}><X size={20} /></button></div>{detailError && <p role="alert" className="mt-4 rounded bg-red-50 p-3 text-sm text-red-700">{detailError}</p>}{detailLoading && <p className="py-8 text-sm text-slate-500">Yuklanmoqda...</p>}{selected && <><div className="mt-5 grid gap-3 sm:grid-cols-3">{[["Xaridlar", `${selected.purchasesCount} ta`], ["Jami sarflangan", formatCurrency(selected.totalSpent)], ["Mavjud ball", `${Math.max(0, selected.loyaltyPoints)} ball`]].map(([label, value]) => <div key={label} className="rounded-lg border border-blue-100 bg-blue-50 p-3"><p className="text-xs text-slate-600">{label}</p><strong className="text-lg text-[#1e50b3]">{value}</strong></div>)}</div><p className="mt-3 text-xs text-slate-500">Har 10 000 so‘m xaridga 1 ball. 1 ball = 1 000 so‘m chegirma.</p><div className="mt-5 flex items-center justify-between"><h4 className="font-bold">Aloqa ma’lumotlari</h4><button type="button" onClick={() => setEditing(!editing)} className="flex items-center gap-1 text-sm font-semibold text-[#1e50b3]"><Edit size={15} /> Tahrirlash</button></div>{editing ? <form onSubmit={saveDetail} className="mt-3 grid gap-3 sm:grid-cols-2"><input aria-label="Mijoz ismi" required value={detailForm.name} onChange={(event) => setDetailForm({ ...detailForm, name: event.target.value })} className="rounded border p-2" /><input aria-label="Telefon" value={detailForm.phone} onChange={(event) => setDetailForm({ ...detailForm, phone: event.target.value })} className="rounded border p-2" /><input aria-label="Izoh" value={detailForm.notes} onChange={(event) => setDetailForm({ ...detailForm, notes: event.target.value })} className="rounded border p-2 sm:col-span-2" /><button disabled={isSubmitting} className="rounded bg-[#1e50b3] px-4 py-2 text-sm font-bold text-white disabled:opacity-50 sm:col-span-2">Saqlash</button></form> : <p className="mt-2 text-sm text-slate-600">{selected.phone || "Telefon kiritilmagan"} · {selected.notes || "Izoh yo‘q"}</p>}<h4 className="mt-6 flex items-center gap-2 font-bold"><History size={18} /> Xaridlar tarixi</h4><div className="mt-3 space-y-3">{selected.sales?.length ? selected.sales.map((sale: any) => <article key={sale.id} className="rounded-lg border border-slate-200 p-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><strong>{sale.receiptNumber}</strong><span className="ml-2 text-xs text-slate-500">{formatDate(sale.createdAt)} · {sale.cashier?.fullName}</span></div><strong className="text-[#1e50b3]">{formatCurrency(sale.payableAmount)}</strong></div><p className="mt-1 text-xs text-slate-600">{sale.items.map((item: any) => `${item.product.name} × ${item.quantity}`).join(", ")}</p><p className="mt-2 text-xs text-emerald-700">+{sale.loyaltyPointsEarned} ball · ishlatilgan {sale.loyaltyPointsUsed} ball</p>{sale.returns?.map((item: any) => <p key={item.id} className="mt-1 text-xs text-red-700">Qaytarildi: {formatCurrency(item.totalRefundAmount)} · ball o‘zgarishi {item.loyaltyPointsRestored - item.loyaltyPointsReversed}</p>)}</article>) : <p className="text-sm text-slate-500">Hozircha xarid yo‘q.</p>}</div></>}</section></div>}
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
@@ -186,7 +220,7 @@ export default function CustomersPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Masalan: Sardor Rahimov"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -197,7 +231,7 @@ export default function CustomersPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+998 90 123 45 67"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -208,7 +242,7 @@ export default function CustomersPage() {
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Doimiy xaridor..."
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -223,7 +257,7 @@ export default function CustomersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white hover:bg-[#4338CA] disabled:opacity-50"
+                  className="rounded-xl bg-[#1e50b3] px-5 py-2 text-xs font-bold text-white hover:bg-[#123d99] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
                 </button>

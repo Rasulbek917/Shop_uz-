@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Package,
   Plus,
@@ -27,6 +28,9 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [productDetail, setProductDetail] = useState<any | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [scanningTarget, setScanningTarget] = useState<"search" | "form">("search");
 
@@ -62,6 +66,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     loadProducts();
+    if (new URLSearchParams(window.location.search).has("new")) setShowAddModal(true);
     loadCategoriesAndManufacturers();
   }, []);
 
@@ -192,10 +197,10 @@ export default function ProductsPage() {
     setErrorMessage(null);
 
     try {
-      const res = await fetch("/api/products", {
-        method: "POST",
+      const res = await fetch(editingProductId ? `/api/products/${editingProductId}` : "/api/products", {
+        method: editingProductId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, categoryId: formData.categoryId || null, manufacturerId: formData.manufacturerId || null }),
       });
 
       const data = await res.json();
@@ -208,6 +213,7 @@ export default function ProductsPage() {
       const newMed = data.data;
       setSuccessMessage(data.message);
       setShowAddModal(false);
+      setEditingProductId(null);
       setFormData({
         name: "",
         barcode: "",
@@ -222,13 +228,30 @@ export default function ProductsPage() {
       loadProducts();
 
       // Trigger post-creation workflow: Mahsulot yaratildi -> QR yaratish -> QRni ko'rish
-      setCreatedProduct(newMed);
-      setShowPostCreateModal(true);
+      if (!editingProductId) { setCreatedProduct(newMed); setShowPostCreateModal(true); }
     } catch (err) {
       setErrorMessage("Server xatosi");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const openEdit = (product: any) => {
+    setEditingProductId(product.id);
+    setErrorMessage(null);
+    setFormData({ name: product.name, barcode: product.barcode || "", qrCode: product.qrCode || "", categoryId: product.categoryId || "", manufacturerId: product.manufacturerId || "", salePrice: product.salePrice, minStock: product.minStock, unit: product.unit, description: product.description || "" });
+    setShowAddModal(true);
+  };
+
+  const openHistory = async (productId: string) => {
+    setDetailLoading(true);
+    try {
+      const response = await fetch(`/api/products/${productId}`, { cache: "no-store" });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(getErrorMessage(result.error, "Tovar tarixi yuklanmadi"));
+      setProductDetail(result.data);
+    } catch (cause) { alert(cause instanceof Error ? cause.message : "Tovar tarixi yuklanmadi"); }
+    finally { setDetailLoading(false); }
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -248,7 +271,7 @@ export default function ProductsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="operator-page space-y-6">
       {/* USB Barcode listener for laptop/desktop */}
       <UsbBarcodeDetector onScan={handleBarcodeScanned} enabled={!showAddModal} />
 
@@ -268,15 +291,24 @@ export default function ProductsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight">
-            Mahsulotlar Katalogi
+            Mahsulotlar
           </h2>
           <p className="text-xs md:text-sm text-slate-500 mt-1">
             Mahsulotlar ro‘yxati, shtrix-kodlar, sotuv narxlari va ombor qoldiqlari
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/admin/kategoriyalar" className="btn-secondary">
+              Kategoriyalar
+            </Link>
+            <Link href="/admin/shtrix-kodlar" className="btn-secondary">
+              Shtrix-kod va etiketka
+            </Link>
+          </div>
         </div>
 
         <button
           onClick={() => {
+            setEditingProductId(null);
             setFormData({
               name: "",
               barcode: "",
@@ -290,7 +322,7 @@ export default function ProductsPage() {
             });
             setShowAddModal(true);
           }}
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors"
+          className="operator-primary flex items-center justify-center gap-2 rounded-xl bg-[#1e50b3] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99] transition-colors"
         >
           <Plus className="h-4 w-4" />
           <span>Yangi Mahsulot Qo‘shish</span>
@@ -319,7 +351,7 @@ export default function ProductsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Mahsulot nomi, shtrix-kod yoki QR kod orqali qidirish (yoki USB skanerlang)..."
-            className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:border-[#4F46E5] focus:outline-none"
+            className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:border-[#1e50b3] focus:outline-none"
           />
         </div>
 
@@ -436,6 +468,8 @@ export default function ProductsPage() {
 
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button type="button" onClick={() => void openHistory(med.id)} disabled={detailLoading} className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Tarix</button>
+                          <button type="button" onClick={() => openEdit(med)} className="rounded-lg border border-blue-200 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"><Edit className="mr-1 inline h-3.5 w-3.5" />Tahrirlash</button>
                           {med.qrCode ? (
                             <button
                               onClick={() => setSelectedQrProduct(med)}
@@ -482,10 +516,10 @@ export default function ProductsPage() {
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary-600" />
-                <h3 className="text-base font-bold text-slate-900">Yangi Mahsulot Qo‘shish</h3>
+                <h3 className="text-base font-bold text-slate-900">{editingProductId ? "Mahsulotni tahrirlash" : "Yangi mahsulot qo‘shish"}</h3>
               </div>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => { setShowAddModal(false); setEditingProductId(null); }}
                 className="rounded-lg p-1 text-slate-400 hover:bg-slate-200"
               >
                 <X className="h-5 w-5" />
@@ -510,7 +544,7 @@ export default function ProductsPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Masalan: Guruch 1 kg"
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -537,7 +571,7 @@ export default function ProductsPage() {
                     value={formData.barcode}
                     onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
                     placeholder="478000..."
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-mono"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none font-mono"
                   />
                   {scannedNotice && (
                     <span className="mt-1 flex items-center gap-1 text-[11px] font-bold text-primary-700 animate-in fade-in">
@@ -556,7 +590,7 @@ export default function ProductsPage() {
                     value={formData.qrCode}
                     onChange={(e) => setFormData({ ...formData, qrCode: e.target.value })}
                     placeholder="PRD-001"
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-mono"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none font-mono"
                   />
                 </div>
               </div>
@@ -570,7 +604,7 @@ export default function ProductsPage() {
                   <select
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none"
                   >
                     <option value="">— Tanlang —</option>
                     {categories.map((c: any) => (
@@ -586,7 +620,7 @@ export default function ProductsPage() {
                   <select
                     value={formData.manufacturerId}
                     onChange={(e) => setFormData({ ...formData, manufacturerId: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none"
                   >
                     <option value="">— Tanlang —</option>
                     {manufacturers.map((m: any) => (
@@ -608,7 +642,7 @@ export default function ProductsPage() {
                     required
                     value={formData.salePrice}
                     onChange={(e) => setFormData({ ...formData, salePrice: Number(e.target.value) })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none font-bold text-primary-700"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none font-bold text-primary-700"
                   />
                 </div>
 
@@ -619,7 +653,7 @@ export default function ProductsPage() {
                   <select
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none"
                   >
                     <option value="dona">dona</option>
                     <option value="quti">quti</option>
@@ -639,7 +673,7 @@ export default function ProductsPage() {
                     min="1"
                     value={formData.minStock}
                     onChange={(e) => setFormData({ ...formData, minStock: Number(e.target.value) })}
-                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none"
                   />
                 </div>
               </div>
@@ -653,14 +687,14 @@ export default function ProductsPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Mahsulot haqida qo‘shimcha ma'lumot..."
-                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2 text-xs md:text-sm text-slate-800 focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => { setShowAddModal(false); setEditingProductId(null); }}
                   className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                 >
                   Bekor qilish
@@ -668,7 +702,7 @@ export default function ProductsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
                 </button>
@@ -738,7 +772,7 @@ export default function ProductsPage() {
                   await handleGenerateQrForProduct(targetMed);
                 }}
                 disabled={isGeneratingQr}
-                className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] transition-colors disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99] transition-colors disabled:opacity-50"
               >
                 <QrCode className="h-4 w-4" />
                 <span>{isGeneratingQr ? "Yaratilmoqda..." : "QR-kod Yaratish"}</span>
@@ -747,6 +781,8 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {productDetail && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-label="Tovar tarixi" className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-2xl"><div className="sticky top-0 flex items-start justify-between border-b border-slate-200 bg-white px-5 py-4"><div><p className="text-xs font-bold uppercase text-[#1e50b3]">Tovar kartasi</p><h2 className="mt-1 text-xl font-bold text-slate-900">{productDetail.name}</h2><p className="text-sm text-slate-500">{productDetail.barcode || "Shtrix-kodsiz"}</p></div><button type="button" onClick={() => setProductDetail(null)} aria-label="Yopish" className="rounded-md p-2 text-slate-500 hover:bg-slate-100"><X size={19} /></button></div><div className="grid gap-3 p-5 sm:grid-cols-3"><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">Qoldiq</small><strong className="block text-lg">{productDetail.totalStock} {productDetail.unit}</strong></div><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">Sotuv narxi</small><strong className="block text-lg">{formatCurrency(productDetail.salePrice)}</strong></div><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">O‘rtacha kelish narxi</small><strong className="block text-lg">{formatCurrency(productDetail.totalStock ? productDetail.batches.reduce((sum: number, batch: any) => sum + batch.currentQuantity * batch.purchasePrice, 0) / productDetail.totalStock : 0)}</strong></div></div><div className="px-5 pb-5"><h3 className="mb-2 font-bold text-slate-900">Partiyalar</h3><div className="overflow-x-auto rounded-md border border-slate-200"><table className="w-full min-w-[560px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Partiya</th><th className="px-3 py-2">Qoldiq</th><th className="px-3 py-2">Kelish narxi</th><th className="px-3 py-2">Muddat</th><th className="px-3 py-2">Yetkazib beruvchi</th></tr></thead><tbody>{productDetail.batches.map((batch: any) => <tr key={batch.id} className="border-t border-slate-100"><td className="px-3 py-2">{batch.batchNumber}</td><td className="px-3 py-2">{batch.currentQuantity}</td><td className="px-3 py-2">{formatCurrency(batch.purchasePrice)}</td><td className="px-3 py-2">{new Date(batch.expiryDate).toLocaleDateString("uz-UZ")}</td><td className="px-3 py-2">{batch.supplier?.name || "—"}</td></tr>)}</tbody></table></div><h3 className="mb-2 mt-5 font-bold text-slate-900">Harakat tarixi</h3><div className="space-y-2">{productDetail.transactions.length ? productDetail.transactions.map((item: any) => <div key={item.id} className="flex flex-wrap justify-between gap-2 rounded-md border border-slate-200 p-3 text-sm"><div><strong>{({ INFLOW: "Kirim", OUTFLOW_SALE: "Sotuv", OUTFLOW_RETURN: "Qaytarish", ADJUSTMENT: "Inventarizatsiya" } as Record<string, string>)[item.type] || item.type}</strong><p className="text-xs text-slate-500">{item.notes || item.createdBy?.fullName || "—"}</p></div><div className="text-right"><b>{item.quantity > 0 ? "+" : ""}{item.quantity} {productDetail.unit}</b><small className="block text-slate-500">{new Date(item.createdAt).toLocaleString("uz-UZ")}</small></div></div>) : <p className="text-sm text-slate-500">Hali harakat yozuvi yo‘q.</p>}</div></div></div></div>}
 
       {/* QR LABEL MODAL */}
       <QrLabelModal

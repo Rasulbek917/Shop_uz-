@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import {
@@ -85,7 +85,7 @@ export default function BatchPrintPage() {
       <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <Printer className="w-6 h-6 text-[#4F46E5]" />
+            <Printer className="w-6 h-6 text-[#1e50b3]" />
             Etiketkalar Chop Etish (Ommaviy)
           </h1>
           <p className="text-xs text-slate-500 mt-1">
@@ -96,7 +96,7 @@ export default function BatchPrintPage() {
         <button
           onClick={handlePrint}
           disabled={selectedProducts.length === 0}
-          className="px-5 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#4338CA] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all disabled:opacity-40"
+          className="px-5 py-2.5 rounded-xl bg-[#1e50b3] hover:bg-[#123d99] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all disabled:opacity-40"
         >
           <Printer className="w-4 h-4" />
           Chop etish ({selectedProducts.length * printCopies} ta etiketka)
@@ -114,7 +114,7 @@ export default function BatchPrintPage() {
               placeholder="Ro'yxatdan qidirish..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#4F46E5]"
+              className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#1e50b3]"
             />
           </div>
 
@@ -168,7 +168,7 @@ export default function BatchPrintPage() {
               >
                 <div className="flex items-center gap-3">
                   {isSelected ? (
-                    <CheckSquare className="w-4 h-4 text-[#4F46E5] shrink-0" />
+                    <CheckSquare className="w-4 h-4 text-[#1e50b3] shrink-0" />
                   ) : (
                     <Square className="w-4 h-4 text-slate-300 shrink-0" />
                   )}

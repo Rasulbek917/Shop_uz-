@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { UserCog, Plus, Search, CheckCircle, X, Shield, Lock, Trash2, RefreshCw, Edit, AlertCircle } from "lucide-react";
@@ -26,6 +26,8 @@ export default function StaffPage() {
     fullName: "",
     username: "",
     password: "",
+    phone: "",
+    role: "CASHIER",
   });
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -130,6 +132,8 @@ export default function StaffPage() {
       fullName: user.fullName || "",
       username: user.username || "",
       password: "",
+      phone: user.phone || "",
+      role: user.role || "CASHIER",
     });
     setEditingUser(user);
   };
@@ -144,6 +148,8 @@ export default function StaffPage() {
       const payload: any = {
         fullName: editForm.fullName,
         username: editForm.username.trim(),
+        phone: editForm.phone.trim() || null,
+        role: editForm.role,
       };
       if (editForm.password) payload.password = editForm.password;
 
@@ -162,7 +168,7 @@ export default function StaffPage() {
 
       setSuccessMsg("Xodim ma'lumotlari muvaffaqiyatli yangilandi");
       setEditingUser(null);
-      setEditForm({ fullName: "", username: "", password: "" });
+      setEditForm({ fullName: "", username: "", password: "", phone: "", role: "CASHIER" });
       loadStaff();
     } catch (e) {
       setEditError("Server bilan bog‘lanishda xatolik");
@@ -185,7 +191,7 @@ export default function StaffPage() {
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA]"
+          className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99]"
         >
           <Plus className="h-4 w-4" />
           <span>Yangi Xodim Qo‘shish</span>
@@ -329,7 +335,7 @@ export default function StaffPage() {
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   placeholder="Madina Karimova"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -338,7 +344,7 @@ export default function StaffPage() {
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 >
                   <option value="CASHIER">Kassir (Sotuv va chek chiqarish)</option>
                   <option value="WAREHOUSEMAN">Omborchi (Kirim va partiyalar hisobi)</option>
@@ -355,7 +361,7 @@ export default function StaffPage() {
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     placeholder="kassir_1"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none font-mono"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none font-mono"
                   />
                 </div>
 
@@ -367,7 +373,7 @@ export default function StaffPage() {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="••••••••"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                   />
                 </div>
               </div>
@@ -379,7 +385,7 @@ export default function StaffPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+998 90 123 45 67"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -394,7 +400,7 @@ export default function StaffPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white hover:bg-[#4338CA] disabled:opacity-50"
+                  className="rounded-xl bg-[#1e50b3] px-5 py-2 text-xs font-bold text-white hover:bg-[#123d99] disabled:opacity-50"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
                 </button>
@@ -438,7 +444,7 @@ export default function StaffPage() {
                   value={editForm.fullName}
                   onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
                   placeholder="Madina Karimova"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -450,7 +456,7 @@ export default function StaffPage() {
                   value={editForm.username}
                   onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
                   placeholder="kassir_1"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none font-mono"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none font-mono"
                 />
               </div>
 
@@ -462,12 +468,15 @@ export default function StaffPage() {
                   onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                   placeholder="O‘zgartirmasangiz bo‘sh qoldiring"
                   autoComplete="new-password"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
                 <p className="mt-1 text-[11px] text-slate-500">
                   Bo‘sh qoldirilsa parol o‘zgarmaydi. Yangi parol kamida 5 ta belgi bo‘lsin.
                 </p>
               </div>
+
+              <div><label className="block text-xs font-bold text-slate-700">Telefon</label><input type="tel" value={editForm.phone} onChange={(event) => setEditForm({ ...editForm, phone: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" /></div>
+              <div><label className="block text-xs font-bold text-slate-700">Xodim roli</label><select value={editForm.role} onChange={(event) => setEditForm({ ...editForm, role: event.target.value })} className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"><option value="CASHIER">Kassir</option><option value="WAREHOUSEMAN">Omborchi</option><option value="SHOP_ADMIN">Do‘kon administratori</option></select></div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
@@ -480,7 +489,7 @@ export default function StaffPage() {
                 <button
                   type="submit"
                   disabled={isEditSubmitting}
-                  className="rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white hover:bg-[#4338CA] disabled:opacity-50"
+                  className="rounded-xl bg-[#1e50b3] px-5 py-2 text-xs font-bold text-white hover:bg-[#123d99] disabled:opacity-50"
                 >
                   {isEditSubmitting ? "Saqlanmoqda..." : "O‘zgarishlarni Saqlash"}
                 </button>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import { CreditCard, PencilLine, Plus, Search, Trash2, X, Banknote, CheckCircle } from "lucide-react";
@@ -204,7 +204,7 @@ export default function DebtsPage() {
               setFormData(emptyForm);
               setShowAddModal(true);
             }}
-            className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA]"
+            className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-4 py-2.5 text-xs md:text-sm font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99]"
           >
             <Plus className="h-4 w-4" />
             <span>Qarz Qo‘shish</span>
@@ -381,7 +381,7 @@ export default function DebtsPage() {
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     placeholder="Masalan: Sardor"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                   />
                 </div>
 
@@ -393,7 +393,7 @@ export default function DebtsPage() {
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     placeholder="Masalan: Rahimov"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                   />
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function DebtsPage() {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+998 90 123 45 67"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                   />
                 </div>
 
@@ -419,7 +419,7 @@ export default function DebtsPage() {
                     value={formData.amount}
                     onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value || 0) })}
                     placeholder="500000"
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                    className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                   />
                 </div>
               </div>
@@ -431,7 +431,7 @@ export default function DebtsPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Qarzning sababi yoki izohi..."
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#4F46E5] focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs md:text-sm focus:border-[#1e50b3] focus:outline-none"
                 />
               </div>
 
@@ -450,7 +450,7 @@ export default function DebtsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-[#4F46E5] px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+                  className="rounded-xl bg-[#1e50b3] px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
                 >
                   {isSubmitting ? "Saqlanmoqda..." : editingDebtId ? "Yangilash" : "Saqlash"}
                 </button>
@@ -519,7 +519,7 @@ export default function DebtsPage() {
                     value={payAmount || ""}
                     onChange={(e) => setPayAmount(Number(e.target.value || 0))}
                     placeholder="Masalan: 250000"
-                    className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-[#4F46E5] focus:outline-none"
+                    className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-900 focus:border-[#1e50b3] focus:outline-none"
                   />
                   <button
                     type="button"
@@ -545,7 +545,7 @@ export default function DebtsPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || Number(payAmount) <= 0}
-                  className="flex items-center gap-1.5 rounded-xl bg-[#4F46E5] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99] disabled:opacity-50"
                 >
                   <CheckCircle className="h-4 w-4" />
                   <span>{isSubmitting ? "Saqlanmoqda..." : "To‘lovni tasdiqlash"}</span>

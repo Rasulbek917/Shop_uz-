@@ -71,6 +71,8 @@ export async function POST(req: NextRequest) {
           return existing;
         }
       }
+      const activeShift = await tx.shift.findFirst({ where: { shopId, cashierId: user.id, status: "OPEN" }, select: { id: true } });
+      if (!activeShift) throw new Error("Qaytarishdan oldin kassa smenasini oching");
       const original = await tx.sale.findFirstOrThrow({ where: { id: input.saleId, shopId }, include: { items: true, returns: { include: { items: true } } } });
       const sale = withRefundInfo(original);
       const quoted = input.items.map(item => {
@@ -85,6 +87,13 @@ export async function POST(req: NextRequest) {
       const totalRefundAmount = quoted.reduce((sum, item) => sum + item.totalRefund, 0);
       const priorRefundAmount = original.returns.reduce((sum, record) => sum + record.totalRefundAmount, 0);
       if (totalRefundAmount + priorRefundAmount > sale.payableAmount) throw new Error("Qaytarish summasi chek summasidan oshdi");
+      const refundShare = sale.payableAmount > 0
+        ? (totalRefundAmount + priorRefundAmount) / sale.payableAmount
+        : 0;
+      const loyaltyPointsReversed = Math.floor(sale.loyaltyPointsEarned * refundShare) -
+        original.returns.reduce((sum, item) => sum + item.loyaltyPointsReversed, 0);
+      const loyaltyPointsRestored = Math.floor(sale.loyaltyPointsUsed * refundShare) -
+        original.returns.reduce((sum, item) => sum + item.loyaltyPointsRestored, 0);
 
       let creditAdjustment = 0;
       let cashRefundAmount = totalRefundAmount;
@@ -101,8 +110,8 @@ export async function POST(req: NextRequest) {
         }
       }
       const record = await tx.return.create({ data: {
-        shopId, saleId: sale.id, receiptNumber: sale.receiptNumber, returnedById: user.id,
-        totalRefundAmount, cashRefundAmount, creditAdjustment, idempotencyKey: requestKey, requestHash,
+        shopId, saleId: sale.id, shiftId: activeShift.id, receiptNumber: sale.receiptNumber, returnedById: user.id,
+        totalRefundAmount, cashRefundAmount, creditAdjustment, loyaltyPointsReversed, loyaltyPointsRestored, idempotencyKey: requestKey, requestHash,
         reason: input.reason || "Mijoz xohishi bilan qaytarildi",
       } });
       for (const item of quoted) {
@@ -118,7 +127,10 @@ export async function POST(req: NextRequest) {
         await tx.$queryRaw`SELECT "id" FROM "Customer" WHERE "id" = ${sale.customerId} AND "shopId" = ${shopId} FOR UPDATE`;
         const customer = await tx.customer.findFirst({ where: { id: sale.customerId, shopId } });
         if (!customer) throw new Error("Mijoz ushbu do‘konga tegishli emas");
-        await tx.customer.update({ where: { id: customer.id }, data: { totalSpent: Math.max(0, customer.totalSpent - totalRefundAmount) } });
+        await tx.customer.update({ where: { id: customer.id }, data: {
+          totalSpent: Math.max(0, customer.totalSpent - totalRefundAmount),
+          loyaltyPoints: { increment: loyaltyPointsRestored - loyaltyPointsReversed },
+        } });
       }
       return record;
     }, { timeout: 15000 });

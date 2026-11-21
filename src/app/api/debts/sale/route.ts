@@ -228,9 +228,12 @@ export async function POST(req: NextRequest) {
       // 5.1 Statistika/hisobot uchun Sotuv (Sale) yozuvi.
       // Qarzga sotuv ham oddiy sotuv kabi statistikaga (tushum, foyda, top mahsulotlar,
       // kassir ko'rsatkichlari, 7 kunlik grafik) hisobga olinishi kerak.
+      const activeShift = await tx.shift.findFirst({ where: { shopId, cashierId: user.id, status: "OPEN" }, select: { id: true } });
+      if (!activeShift) throw new Error("Savdodan oldin kassa smenasini oching");
       const sale = await tx.sale.create({
         data: {
           shopId,
+          shiftId: activeShift.id,
           receiptNumber,
           idempotencyKey: validated.data.idempotencyKey || null,
           ...(validated.data.occurredAt
