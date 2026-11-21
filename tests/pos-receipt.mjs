@@ -16,9 +16,10 @@ mkdirSync(output, { recursive: true });
 let server;
 let browser;
 let page;
+let shop;
 
 try {
-  const shop = await prisma.shop.create({
+  shop = await prisma.shop.create({
     data: {
       name: "Chek sinovi",
       adminName: "Sinov foydalanuvchi",
@@ -30,7 +31,7 @@ try {
       subscriptionEndDate: new Date(Date.now() + 30 * 86400000),
     },
   });
-  const username = "receipt_test";
+  const username = `receipt_test_${Date.now()}`;
   await prisma.user.create({
     data: {
       shopId: shop.id,
@@ -70,7 +71,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
   assert.ok(ready, "Test server did not start");
-  browser = await chromium.launch();
+  browser = await chromium.launch(process.env.TEST_BROWSER_PATH ? { executablePath: process.env.TEST_BROWSER_PATH } : {});
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   await context.addInitScript(() => {
     window.printCalls = 0;
@@ -88,6 +89,8 @@ try {
     page.waitForURL("**/admin"),
     page.getByRole("button", { name: "Kirish", exact: true }).click(),
   ]);
+  const openedShift = await page.request.post("http://localhost:3000/api/shifts", { data: { openingCash: 0 } });
+  assert.equal(openedShift.status(), 201, await openedShift.text());
   await page.goto("http://localhost:3000/admin/pos");
 
   const cases = [
@@ -105,11 +108,12 @@ try {
         body: JSON.stringify({ success: false, error: { message: "QR vaqtincha mavjud emas" } }),
       }));
     }
-    await page.getByRole("button").filter({
-      has: page.getByText("Sinov mahsulot", { exact: true }),
-    }).click();
-    await page.getByRole("button", { name: /To‘lovga O‘tish/ }).click();
-    await page.getByRole("button", { name: test.label, exact: true }).click();
+    await page.locator(".terminal-add").first().click();
+    const method = page.locator(".terminal-payment-shortcuts button").nth(index);
+    await method.click();
+    assert.equal(await method.getAttribute("aria-pressed"), "true");
+    await page.getByRole("button", { name: "To‘lovni qabul qilish", exact: true }).click();
+    assert.equal(await page.getByRole("heading", { name: new RegExp(test.label) }).isVisible(), true);
     const response = page.waitForResponse(response =>
       response.url().endsWith("/api/sales") && response.request().method() === "POST"
     );
@@ -132,7 +136,7 @@ try {
     assert.equal(await page.evaluate(() => document.body.classList.contains("printing-receipt")), false);
     await next.click();
     await dialog.waitFor({ state: "detached" });
-    assert.equal(await page.getByText("Savatcha hozircha bo‘sh.", { exact: true }).isVisible(), true);
+    assert.equal(await page.getByText("Chek bo‘sh", { exact: true }).isVisible(), true);
     console.log(test.method + ": sale, receipt, print and new sale passed");
   }
   assert.equal(await prisma.sale.count({ where: { shopId: shop.id } }), 3);
@@ -143,5 +147,11 @@ try {
 } finally {
   await browser?.close();
   server?.kill("SIGTERM");
+  if (shop) {
+    await prisma.return.deleteMany({ where: { shopId: shop.id } });
+    await prisma.sale.deleteMany({ where: { shopId: shop.id } });
+    await prisma.payment.deleteMany({ where: { shopId: shop.id } });
+    await prisma.shop.delete({ where: { id: shop.id } });
+  }
   await prisma.$disconnect();
 }
