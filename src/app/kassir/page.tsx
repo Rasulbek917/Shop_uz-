@@ -630,7 +630,6 @@ export default function CashierPosPage() {
 
   return (
     <div className="pos-workspace space-y-4">
-      <div className="pos-terminal-header"><div><span className="pos-terminal-kicker"><span className="pos-live-dot" /> KASSA ISH JOYI</span><h1>Yangi savdo</h1><p>Mahsulotni qidiring, chekni tuzing va to‘lovni yakunlang.</p><small className="mt-2 block text-xs text-slate-500">F2 — qidirish · F4 — to‘lov · Esc — oynani yopish</small></div><div className="pos-terminal-total"><span>FAOL CHEK</span><strong>{formatCurrency(payableTotal)}</strong><small>{cart.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot</small></div></div>
       <div className="pos-terminal-toolbar"><div className="pos-category-tabs" role="group" aria-label="Mahsulot kategoriyasi"><button type="button" className={!categoryId ? "selected" : ""} onClick={() => setCategoryId("")}>Barchasi</button>{categories.map((c: any) => <button type="button" key={c.id} className={categoryId === c.id ? "selected" : ""} onClick={() => setCategoryId(c.id)}>{c.name}</button>)}</div><label className="pos-stock-filter"><input type="checkbox" checked={stockOnly} onChange={e => setStockOnly(e.target.checked)}/> Omborda bor</label><button className="pos-stock-refresh" onClick={loadProducts} disabled={isLoading}><RotateCcw size={14} /> Yangilash</button></div>
       {/* USB Hardware Barcode Detector */}
       <UsbBarcodeDetector onScan={handleBarcodeScanned} enabled={!showCheckoutModal && !showPrecheck && !showReceiptModal && !showCameraScanner && !showDebtModal && !showCentralImportModal} />
