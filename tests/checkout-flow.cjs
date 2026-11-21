@@ -215,7 +215,7 @@ test('unpaid account can authenticate but product and sale APIs return 403', asy
     const route = load(file, {
       '@/lib/tenant': tenant,
       '@/lib/prisma': { prisma: new Proxy({}, { get() { assert.fail('Unpaid shop must not perform business queries'); } }) },
-      '@/lib/refunds': {}, '@/lib/sale-replay': {}, '@/lib/validations': {}, '@/lib/audit': {}, '@/lib/logger': { logger: { error() {} } }, '@/lib/receipt': {},
+      '@/lib/refunds': {}, '@/lib/sale-replay': {}, '@/lib/validations': {}, '@/lib/audit': {}, '@/lib/logger': { logger: { error() {} } }, '@/lib/receipt': {}, '@/lib/formatters': { getExpiryStatus: () => ({ status: 'NORMAL' }) },
     });
     const response = await route.POST(request);
     assert.equal(response.status, 403);

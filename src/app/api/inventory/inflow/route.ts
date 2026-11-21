@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const expDate = new Date(expiryDate);
+    const expDate = expiryDate ? new Date(expiryDate) : new Date("2099-12-31T12:00:00.000Z");
     if (!Number.isFinite(expDate.getTime())) return NextResponse.json({ success: false, error: "Yaroqlilik sanasi noto‘g‘ri" }, { status: 400 });
     const { status: expiryStatus } = getExpiryStatus(expDate);
 

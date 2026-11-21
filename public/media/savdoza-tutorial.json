@@ -1,51 +1,67 @@
 {
-  "duration": 62.81,
+  "duration": 395.11,
   "chapters": [
     {
-      "title": "Hisobga kirish",
+      "title": "Kirish va bosh sahifa",
       "start": 0
     },
     {
-      "title": "Dashboard",
-      "start": 7.86
+      "title": "Smenani ochish",
+      "start": 30.24
     },
     {
-      "title": "Mahsulot qo‘shish",
-      "start": 13.51
+      "title": "Tovar katalogi",
+      "start": 54.31
     },
     {
-      "title": "Narxni belgilang",
-      "start": 19.91
+      "title": "Ombor va partiyalar",
+      "start": 79.13
     },
     {
-      "title": "Ombor qoldig‘i",
-      "start": 25.92
+      "title": "Oddiy sotuv",
+      "start": 106.66
     },
     {
-      "title": "POS terminal",
-      "start": 30.38
+      "title": "Skaner, mijoz va chegirma",
+      "start": 134.62
     },
     {
-      "title": "Savatni tekshiring",
-      "start": 36.42
+      "title": "To‘lov va chek",
+      "start": 162.65
     },
     {
-      "title": "To‘lovni qayd eting",
-      "start": 39.34
+      "title": "Bir nechta chek va prechek",
+      "start": 196.58
     },
     {
-      "title": "Chek tayyor",
-      "start": 42.57
+      "title": "Cheklar va qaytarish",
+      "start": 218.71
     },
     {
-      "title": "Cheklar tarixi",
-      "start": 48.36
+      "title": "Qarz va bonus ballari",
+      "start": 242.04
+    },
+    {
+      "title": "Smenani yopish va Z hisobot",
+      "start": 265.3
     },
     {
       "title": "Hisobotlar",
-      "start": 55.59
+      "start": 295.22
+    },
+    {
+      "title": "Moliya, ombor nazorati, xodimlar",
+      "start": 323.86
+    },
+    {
+      "title": "Sozlamalar, ilovalar, tarif",
+      "start": 349.15
+    },
+    {
+      "title": "Yakun",
+      "start": 375.31
     }
   ],
   "kind": "actual-interface-sample-data",
-  "narration": "uzbek-captions"
+  "narration": "uz-UZ-MadinaNeural"
 }

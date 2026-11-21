@@ -4,6 +4,8 @@ import { requireTenantContext } from "@/lib/tenant";
 import { productSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { getExpiryStatus } from "@/lib/formatters";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +78,11 @@ export async function POST(req: NextRequest) {
 
     const { user, shopId } = context!;
     const body = await req.json();
-    const validated = productSchema.safeParse(body);
+    const validated = productSchema.extend({
+      initialStock: z.number().int().min(0).default(0),
+      purchasePrice: z.number().min(0).default(0),
+      expiryDate: z.string().optional().nullable(),
+    }).safeParse(body);
 
     if (!validated.success) {
       return NextResponse.json(
@@ -113,8 +119,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Ishlab chiqaruvchi ushbu do‘konga tegishli emas" }, { status: 400 });
     }
 
-    const product = await prisma.product.create({
-      data: {
+    const { initialStock, purchasePrice, expiryDate } = validated.data;
+    const expiresAt = expiryDate ? new Date(expiryDate) : new Date("2099-12-31T12:00:00.000Z");
+    if (initialStock > 0 && !Number.isFinite(expiresAt.getTime())) {
+      return NextResponse.json({ success: false, error: { code: "VALIDATION_ERROR", message: "Yaroqlilik sanasi noto‘g‘ri" } }, { status: 400 });
+    }
+    const product = await prisma.$transaction(async (tx) => {
+      const created = await tx.product.create({
+        data: {
         shopId,
         name,
         barcode: barcode || null,
@@ -126,7 +138,18 @@ export async function POST(req: NextRequest) {
         unit,
         description: description || null,
         status: "ACTIVE",
-      },
+        },
+      });
+      if (initialStock > 0) {
+        const batchNumber = `KIRIM-${Date.now()}-${created.id.slice(0, 6)}`;
+        const batch = await tx.productBatch.create({
+          data: { shopId, productId: created.id, batchNumber, initialQuantity: initialStock, currentQuantity: initialStock, purchasePrice, salePrice, expiryDate: expiresAt, status: getExpiryStatus(expiresAt).status },
+        });
+        await tx.inventoryTransaction.create({
+          data: { shopId, productId: created.id, batchId: batch.id, type: "INFLOW", quantity: initialStock, unitPrice: purchasePrice, createdById: user.id, notes: `Yangi tovar bilan birga kirim: ${batchNumber}` },
+        });
+      }
+      return created;
     });
 
     await logAudit({
@@ -141,7 +164,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Mahsulot muvaffaqiyatli qo‘shildi",
+      message: initialStock > 0 ? "Mahsulot va ombor qoldig‘i saqlandi" : "Mahsulot saqlandi. Qoldiqni omborda kiritishingiz mumkin.",
       data: product,
     });
   } catch (error) {

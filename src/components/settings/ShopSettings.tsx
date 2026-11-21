@@ -74,7 +74,7 @@ export default function ShopSettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="operator-page mx-auto max-w-4xl space-y-6">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100">
           <Settings className="h-5 w-5 text-primary-700" />
@@ -173,7 +173,7 @@ export default function ShopSettingsPage() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-3.5 text-sm font-extrabold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1e50b3] py-3.5 text-sm font-bold text-white hover:bg-[#123d99] disabled:opacity-50"
       >
         <Save className="h-4 w-4" />
         <span>{saving ? "Saqlanmoqda..." : "Sozlamalarni saqlash"}</span>

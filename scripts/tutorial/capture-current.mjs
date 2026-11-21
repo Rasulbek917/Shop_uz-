@@ -60,6 +60,11 @@ try {
   await capture(1, 'Bosh sahifa');
 
   await visit('/admin/tovarlar'); await capture(3, 'Tovarlar katalogi');
+  await visit('/admin/mahsulotlar'); await capture(3, 'Mahsulotlar ro‘yxati');
+  await page.getByRole('button', { name: 'Yangi Mahsulot Qo‘shish' }).click();
+  await page.getByRole('heading', { name: 'Yangi tovar va kirim' }).waitFor();
+  await capture(3, 'Yangi tovar va boshlang‘ich qoldiq');
+  await page.getByRole('button', { name: 'Bekor qilish' }).click();
   await visit('/admin/ombor'); await capture(4, 'Ombor qoldiqlari');
   await visit('/kassir/smena'); await capture(2, 'Smena boshlanishi');
   if (await page.getByRole('button', { name: 'Smenani ochish' }).isVisible()) {

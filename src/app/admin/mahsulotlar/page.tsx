@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Package,
   Plus,
@@ -24,6 +25,7 @@ import CentralProductModal from "@/components/pos/CentralProductModal";
 import { getErrorMessage } from "@/lib/errorMessage";
 
 export default function ProductsPage() {
+  const pathname = usePathname();
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -60,6 +62,9 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [manufacturers, setManufacturers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [initialStock, setInitialStock] = useState(0);
+  const [purchasePrice, setPurchasePrice] = useState(0);
+  const [expiryDate, setExpiryDate] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [scannedNotice, setScannedNotice] = useState<string | null>(null);
@@ -200,7 +205,7 @@ export default function ProductsPage() {
       const res = await fetch(editingProductId ? `/api/products/${editingProductId}` : "/api/products", {
         method: editingProductId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, categoryId: formData.categoryId || null, manufacturerId: formData.manufacturerId || null }),
+        body: JSON.stringify({ ...formData, categoryId: formData.categoryId || null, manufacturerId: formData.manufacturerId || null, ...(!editingProductId ? { initialStock, purchasePrice, expiryDate: expiryDate || null } : {}) }),
       });
 
       const data = await res.json();
@@ -214,6 +219,9 @@ export default function ProductsPage() {
       setSuccessMessage(data.message);
       setShowAddModal(false);
       setEditingProductId(null);
+      setInitialStock(0);
+      setPurchasePrice(0);
+      setExpiryDate("");
       setFormData({
         name: "",
         barcode: "",
@@ -227,7 +235,7 @@ export default function ProductsPage() {
       });
       loadProducts();
 
-      // Trigger post-creation workflow: Mahsulot yaratildi -> QR yaratish -> QRni ko'rish
+      // Quick follow-up for adding the next catalog item.
       if (!editingProductId) { setCreatedProduct(newMed); setShowPostCreateModal(true); }
     } catch (err) {
       setErrorMessage("Server xatosi");
@@ -468,6 +476,7 @@ export default function ProductsPage() {
 
                       <td className="px-5 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <Link href={`${pathname.startsWith("/omborchi") ? "/omborchi/ombor" : "/admin/ombor"}?tab=inflow&productId=${encodeURIComponent(med.id)}`} className="rounded-lg border border-blue-200 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50">+ Kirim</Link>
                           <button type="button" onClick={() => void openHistory(med.id)} disabled={detailLoading} className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Tarix</button>
                           <button type="button" onClick={() => openEdit(med)} className="rounded-lg border border-blue-200 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"><Edit className="mr-1 inline h-3.5 w-3.5" />Tahrirlash</button>
                           {med.qrCode ? (
@@ -512,11 +521,11 @@ export default function ProductsPage() {
       {/* ADD PRODUCT MODAL */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
+          <div className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary-600" />
-                <h3 className="text-base font-bold text-slate-900">{editingProductId ? "Mahsulotni tahrirlash" : "Yangi mahsulot qo‘shish"}</h3>
+                <h3 className="text-base font-bold text-slate-900">{editingProductId ? "Mahsulotni tahrirlash" : "Yangi tovar va kirim"}</h3>
               </div>
               <button
                 onClick={() => { setShowAddModal(false); setEditingProductId(null); }}
@@ -678,6 +687,15 @@ export default function ProductsPage() {
                 </div>
               </div>
 
+              {!editingProductId && <section className="rounded-lg border border-blue-100 bg-blue-50/60 p-4 space-y-3">
+                <div><h4 className="text-sm font-bold text-slate-900">Boshlang‘ich ombor qoldig‘i</h4><p className="text-xs text-slate-600">Tovarni yaratish bilan birga kirim qiling. Hozircha qoldiq bo‘lmasa, 0 qoldiring.</p></div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <label className="text-xs font-semibold text-slate-700">Miqdor<input type="number" min="0" step="1" value={initialStock} onChange={(e) => setInitialStock(Number(e.target.value))} className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" /></label>
+                  <label className="text-xs font-semibold text-slate-700">Kelish narxi (so‘m)<input type="number" min="0" step="any" value={purchasePrice} onChange={(e) => setPurchasePrice(Number(e.target.value))} className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" /></label>
+                  <label className="text-xs font-semibold text-slate-700">Yaroqlilik sanasi<input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" /><span className="mt-1 block font-normal text-slate-500">Muddatsiz tovar uchun bo‘sh qoldiring.</span></label>
+                </div>
+              </section>}
+
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Tavsif yoki Izoh
@@ -704,7 +722,7 @@ export default function ProductsPage() {
                   disabled={isSubmitting}
                   className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-5 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99] disabled:opacity-50"
                 >
-                  {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
+                  {isSubmitting ? "Saqlanmoqda..." : editingProductId ? "O‘zgarishni saqlash" : "Tovarni saqlash"}
                 </button>
               </div>
             </form>
@@ -722,7 +740,7 @@ export default function ProductsPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900">
-                  Mahsulot Muvaffaqiyatli Qo‘shildi!
+                  Tovar saqlandi
                 </h3>
                 <p className="text-xs text-slate-500 font-medium">
                   {createdProduct.name}
@@ -748,7 +766,7 @@ export default function ProductsPage() {
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Mahsulot bazaga muvaffaqiyatli saqlandi. Qadoqqa yopishtirish uchun unikal QR-kod yaratishni xohlaysizmi?
+              Tovar katalogga qo‘shildi. Qoldiq kiritilgan bo‘lsa, u omborda ham ko‘rinadi.
             </p>
 
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
@@ -765,24 +783,22 @@ export default function ProductsPage() {
 
               <button
                 type="button"
-                onClick={async () => {
-                  const targetMed = createdProduct;
+                onClick={() => {
                   setShowPostCreateModal(false);
                   setCreatedProduct(null);
-                  await handleGenerateQrForProduct(targetMed);
+                  setShowAddModal(true);
                 }}
-                disabled={isGeneratingQr}
                 className="flex items-center gap-1.5 rounded-xl bg-[#1e50b3] px-4 py-2 text-xs font-bold text-white shadow-md shadow-primary-600/20 hover:bg-[#123d99] transition-colors disabled:opacity-50"
               >
-                <QrCode className="h-4 w-4" />
-                <span>{isGeneratingQr ? "Yaratilmoqda..." : "QR-kod Yaratish"}</span>
+                <Plus className="h-4 w-4" />
+                <span>Yana tovar qo‘shish</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {productDetail && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-label="Tovar tarixi" className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-2xl"><div className="sticky top-0 flex items-start justify-between border-b border-slate-200 bg-white px-5 py-4"><div><p className="text-xs font-bold uppercase text-[#1e50b3]">Tovar kartasi</p><h2 className="mt-1 text-xl font-bold text-slate-900">{productDetail.name}</h2><p className="text-sm text-slate-500">{productDetail.barcode || "Shtrix-kodsiz"}</p></div><button type="button" onClick={() => setProductDetail(null)} aria-label="Yopish" className="rounded-md p-2 text-slate-500 hover:bg-slate-100"><X size={19} /></button></div><div className="grid gap-3 p-5 sm:grid-cols-3"><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">Qoldiq</small><strong className="block text-lg">{productDetail.totalStock} {productDetail.unit}</strong></div><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">Sotuv narxi</small><strong className="block text-lg">{formatCurrency(productDetail.salePrice)}</strong></div><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">O‘rtacha kelish narxi</small><strong className="block text-lg">{formatCurrency(productDetail.totalStock ? productDetail.batches.reduce((sum: number, batch: any) => sum + batch.currentQuantity * batch.purchasePrice, 0) / productDetail.totalStock : 0)}</strong></div></div><div className="px-5 pb-5"><h3 className="mb-2 font-bold text-slate-900">Partiyalar</h3><div className="overflow-x-auto rounded-md border border-slate-200"><table className="w-full min-w-[560px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Partiya</th><th className="px-3 py-2">Qoldiq</th><th className="px-3 py-2">Kelish narxi</th><th className="px-3 py-2">Muddat</th><th className="px-3 py-2">Yetkazib beruvchi</th></tr></thead><tbody>{productDetail.batches.map((batch: any) => <tr key={batch.id} className="border-t border-slate-100"><td className="px-3 py-2">{batch.batchNumber}</td><td className="px-3 py-2">{batch.currentQuantity}</td><td className="px-3 py-2">{formatCurrency(batch.purchasePrice)}</td><td className="px-3 py-2">{new Date(batch.expiryDate).toLocaleDateString("uz-UZ")}</td><td className="px-3 py-2">{batch.supplier?.name || "—"}</td></tr>)}</tbody></table></div><h3 className="mb-2 mt-5 font-bold text-slate-900">Harakat tarixi</h3><div className="space-y-2">{productDetail.transactions.length ? productDetail.transactions.map((item: any) => <div key={item.id} className="flex flex-wrap justify-between gap-2 rounded-md border border-slate-200 p-3 text-sm"><div><strong>{({ INFLOW: "Kirim", OUTFLOW_SALE: "Sotuv", OUTFLOW_RETURN: "Qaytarish", ADJUSTMENT: "Inventarizatsiya" } as Record<string, string>)[item.type] || item.type}</strong><p className="text-xs text-slate-500">{item.notes || item.createdBy?.fullName || "—"}</p></div><div className="text-right"><b>{item.quantity > 0 ? "+" : ""}{item.quantity} {productDetail.unit}</b><small className="block text-slate-500">{new Date(item.createdAt).toLocaleString("uz-UZ")}</small></div></div>) : <p className="text-sm text-slate-500">Hali harakat yozuvi yo‘q.</p>}</div></div></div></div>}
+      {productDetail && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation"><div role="dialog" aria-modal="true" aria-label="Tovar tarixi" className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-2xl"><div className="sticky top-0 flex items-start justify-between border-b border-slate-200 bg-white px-5 py-4"><div><p className="text-xs font-bold uppercase text-[#1e50b3]">Tovar kartasi</p><h2 className="mt-1 text-xl font-bold text-slate-900">{productDetail.name}</h2><p className="text-sm text-slate-500">{productDetail.barcode || "Shtrix-kodsiz"}</p></div><button type="button" onClick={() => setProductDetail(null)} aria-label="Yopish" className="rounded-md p-2 text-slate-500 hover:bg-slate-100"><X size={19} /></button></div><div className="grid gap-3 p-5 sm:grid-cols-3"><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">Qoldiq</small><strong className="block text-lg">{productDetail.totalStock} {productDetail.unit}</strong></div><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">Sotuv narxi</small><strong className="block text-lg">{formatCurrency(productDetail.salePrice)}</strong></div><div className="rounded-md bg-slate-50 p-3"><small className="text-slate-500">O‘rtacha kelish narxi</small><strong className="block text-lg">{formatCurrency(productDetail.totalStock ? productDetail.batches.reduce((sum: number, batch: any) => sum + batch.currentQuantity * batch.purchasePrice, 0) / productDetail.totalStock : 0)}</strong></div></div><div className="px-5 pb-5"><h3 className="mb-2 font-bold text-slate-900">Partiyalar</h3><div className="overflow-x-auto rounded-md border border-slate-200"><table className="w-full min-w-[560px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-3 py-2">Partiya</th><th className="px-3 py-2">Qoldiq</th><th className="px-3 py-2">Kelish narxi</th><th className="px-3 py-2">Muddat</th><th className="px-3 py-2">Yetkazib beruvchi</th></tr></thead><tbody>{productDetail.batches.map((batch: any) => <tr key={batch.id} className="border-t border-slate-100"><td className="px-3 py-2">{batch.batchNumber}</td><td className="px-3 py-2">{batch.currentQuantity}</td><td className="px-3 py-2">{formatCurrency(batch.purchasePrice)}</td><td className="px-3 py-2">{new Date(batch.expiryDate).getUTCFullYear() >= 2099 ? "Muddatsiz" : new Date(batch.expiryDate).toLocaleDateString("uz-UZ")}</td><td className="px-3 py-2">{batch.supplier?.name || "—"}</td></tr>)}</tbody></table></div><h3 className="mb-2 mt-5 font-bold text-slate-900">Harakat tarixi</h3><div className="space-y-2">{productDetail.transactions.length ? productDetail.transactions.map((item: any) => <div key={item.id} className="flex flex-wrap justify-between gap-2 rounded-md border border-slate-200 p-3 text-sm"><div><strong>{({ INFLOW: "Kirim", OUTFLOW_SALE: "Sotuv", OUTFLOW_RETURN: "Qaytarish", ADJUSTMENT: "Inventarizatsiya" } as Record<string, string>)[item.type] || item.type}</strong><p className="text-xs text-slate-500">{item.notes || item.createdBy?.fullName || "—"}</p></div><div className="text-right"><b>{item.quantity > 0 ? "+" : ""}{item.quantity} {productDetail.unit}</b><small className="block text-slate-500">{new Date(item.createdAt).toLocaleString("uz-UZ")}</small></div></div>) : <p className="text-sm text-slate-500">Hali harakat yozuvi yo‘q.</p>}</div></div></div></div>}
 
       {/* QR LABEL MODAL */}
       <QrLabelModal

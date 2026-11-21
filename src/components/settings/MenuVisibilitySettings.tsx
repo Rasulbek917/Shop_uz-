@@ -33,17 +33,17 @@ export default function MenuVisibilitySettings({ initial }: { initial: MenuVisib
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6">
+    <section className="rounded-lg border border-slate-200 bg-white p-6">
       <h2 className="text-xl font-bold text-slate-900">Menyudagi bo‘limlar</h2>
       <p className="mt-2 text-sm text-slate-600">O‘chirilgan bo‘lim menyudan yo‘qoladi. Istalgan payt qayta yoqishingiz mumkin.</p>
       {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {optionalMenuItems.map(({ key, label }) => (
-          <label key={key} className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-4 text-sm font-medium text-slate-800">
+          <label key={key} className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 p-4 text-sm font-medium text-slate-800">
             <span>{label}</span>
             <input
               type="checkbox"
-              className="h-5 w-5 accent-emerald-700"
+              className="h-5 w-5 accent-[#1e50b3]"
               checked={visibility[key] !== false}
               disabled={saving !== null}
               onChange={() => toggle(key)}

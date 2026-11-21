@@ -171,10 +171,10 @@ export default function SettingsPage() {
     );
   }
 
-  const settingsTabs = <div className="flex flex-wrap gap-2 mb-6"><button className={!shopTab ? "btn-primary" : "btn-secondary"} onClick={() => setShopTab(false)}>Profil va xavfsizlik</button>{role === "SHOP_ADMIN" && <button className={shopTab ? "btn-primary" : "btn-secondary"} onClick={() => setShopTab(true)}>Do‘kon sozlamalari</button>}<Link href="/sozlamalar/tarif" className="btn-secondary">Tarif va obuna</Link><Link href="/sozlamalar/ilovalar" className="btn-secondary">Ilovalar</Link></div>;
+  const settingsTabs = <nav className="mb-6 flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-white p-2" aria-label="Sozlamalar bo‘limlari"><button className={`rounded-md px-4 py-2 text-sm font-semibold ${!shopTab ? "bg-[#1e50b3] text-white" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setShopTab(false)}>Profil va xavfsizlik</button>{role === "SHOP_ADMIN" && <button className={`rounded-md px-4 py-2 text-sm font-semibold ${shopTab ? "bg-[#1e50b3] text-white" : "text-slate-700 hover:bg-slate-100"}`} onClick={() => setShopTab(true)}>Do‘kon va soliq</button>}<Link href="/sozlamalar/ilovalar" className="rounded-md px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Ilovalar</Link><Link href="/sozlamalar/tarif" className="rounded-md px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Tarif va obuna</Link></nav>;
   if (shopTab && role === "SHOP_ADMIN") return <div>{settingsTabs}<ShopSettings/></div>;
   return (
-    <div className="mx-auto max-w-2xl space-y-6">{settingsTabs}
+    <div className="operator-page mx-auto max-w-4xl space-y-6">{settingsTabs}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100">
           <Settings className="h-5 w-5 text-primary-700" />
@@ -270,7 +270,7 @@ export default function SettingsPage() {
         <button
           type="submit"
           disabled={savingProfile}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] py-3 text-sm font-extrabold text-white shadow-md shadow-primary-600/20 hover:bg-[#4338CA] disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1e50b3] py-3 text-sm font-bold text-white hover:bg-[#123d99] disabled:opacity-50"
         >
           {savingProfile ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           <span>{savingProfile ? "Saqlanmoqda..." : "Profilni saqlash"}</span>

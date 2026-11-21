@@ -37,7 +37,7 @@ export function DemoPlayer() {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let mounted = true;
-    fetch("/media/savdoza-tutorial.json")
+    fetch("/media/savdoza-tutorial.json?v=20261121")
       .then(response => response.ok ? response.json() : null)
       .then(data => {
         if (mounted && Array.isArray(data?.chapters)) {
@@ -47,12 +47,12 @@ export function DemoPlayer() {
     return () => { mounted = false; };
   }, []);
   return <div className="usage-tutorial">
-    <video ref={video} controls playsInline preload="metadata" width="1280" height="888" poster="/media/savdoza-tutorial-poster.webp" aria-label="Savdoza ishlatish bo‘yicha amaliy video qo‘llanma" onError={() => setFailed(true)} onPlay={() => setFailed(false)} onTimeUpdate={() => {
+    <video ref={video} controls playsInline preload="metadata" width="1280" height="720" poster="/media/savdoza-tutorial-poster.webp?v=20261121" aria-label="Savdoza ishlatish bo‘yicha ovozli video qo‘llanma" onError={() => setFailed(true)} onPlay={() => setFailed(false)} onTimeUpdate={() => {
       const current = video.current?.currentTime || 0;
       setActive(chapters.reduce((selected, chapter, index) => chapter.start <= current ? index : selected, 0));
     }}>
-      <source src="/media/savdoza-tutorial.mp4" type="video/mp4"/>
-      <track kind="captions" src="/media/savdoza-tutorial.vtt" srcLang="uz" label="O‘zbekcha izohlar"/>
+      <source src="/media/savdoza-tutorial.mp4?v=20261121" type="video/mp4"/>
+      <track kind="captions" src="/media/savdoza-tutorial.vtt?v=20261121" srcLang="uz" label="O‘zbekcha izohlar"/>
       <a href="/media/savdoza-tutorial.mp4">Video qo‘llanmani ochish</a>
     </video>
     {failed && <p role="alert">Video yuklanmadi. <a href="/media/savdoza-tutorial.mp4">Videoni alohida oching</a>.</p>}

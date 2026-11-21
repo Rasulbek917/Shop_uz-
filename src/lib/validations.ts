@@ -93,7 +93,7 @@ export const inflowSchema = z.object({
   quantity: z.number().int().positive("Kirim miqdori 0 dan katta bo‘lishi kerak"),
   purchasePrice: z.number().min(0, "Kelish narxi manfiy bo‘lmasin"),
   salePrice: z.number().min(0, "Sotuv narxi manfiy bo‘lmasin"),
-  expiryDate: z.string().min(1, "Yaroqlilik muddatini kiriting"),
+  expiryDate: z.string().optional().nullable(),
   supplierId: z.string().optional().nullable(),
 });
 

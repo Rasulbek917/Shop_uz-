@@ -22,6 +22,7 @@ import {
   X,
   ShieldCheck,
   Settings,
+  CircleHelp,
   QrCode,
   LockKeyhole,
 } from "lucide-react";
@@ -57,6 +58,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Obuna va Sinov", href: "/super-admin/obunalar", icon: CreditCard },
           { label: "Tizim jurnali (Audit)", href: "/super-admin/audit-log", icon: ScrollText },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
+          { label: "Video qo‘llanma", href: "/qollanma", icon: CircleHelp },
         ];
 
       case "SHOP_ADMIN":
@@ -70,6 +72,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Xodimlar", href: "/admin/xodimlar", icon: UserCog, requiresMax: true },
           { label: "Mijozlar", href: "/admin/mijozlar", icon: Users },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
+          { label: "Video qo‘llanma", href: "/qollanma", icon: CircleHelp },
         ];
 
       case "WAREHOUSEMAN":
@@ -79,6 +82,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Partiyalar va muddat", href: "/omborchi/partiyalar", icon: CalendarClock },
           { label: "Mahsulot qo‘shish", href: "/omborchi/mahsulotlar", icon: Package },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
+          { label: "Video qo‘llanma", href: "/qollanma", icon: CircleHelp },
         ];
 
       case "CASHIER":
@@ -87,6 +91,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
           { label: "Savdo tarixi", href: "/kassir/cheklar", icon: Receipt },
           { label: "Tovarni qaytarish", href: "/kassir/qaytarish", icon: RotateCcw },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
+          { label: "Video qo‘llanma", href: "/qollanma", icon: CircleHelp },
         ];
 
       default:
