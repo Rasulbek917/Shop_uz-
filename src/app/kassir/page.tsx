@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 import {
   Search,
   Camera,
@@ -34,8 +33,6 @@ export default function CashierPosPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [shiftOpen, setShiftOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [stockOnly, setStockOnly] = useState(false);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
 
   // Cart
@@ -598,10 +595,7 @@ export default function CashierPosPage() {
     }
   };
 
-  const categories = Array.from(new Map(products.filter(p => p.category).map(p => [p.category.id, p.category])).values());
   const filteredProducts = products.filter((m) => {
-    if (categoryId && m.category?.id !== categoryId) return false;
-    if (stockOnly && !(m.batches || []).some((b: any) => b.currentQuantity > 0 && new Date(b.expiryDate) > new Date())) return false;
     return (
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       (m.barcode && m.barcode.includes(search)) ||
@@ -630,7 +624,6 @@ export default function CashierPosPage() {
 
   return (
     <div className="pos-workspace space-y-4">
-      <div className="pos-terminal-toolbar"><div className="pos-category-tabs" role="group" aria-label="Mahsulot kategoriyasi"><button type="button" className={!categoryId ? "selected" : ""} onClick={() => setCategoryId("")}>Barchasi</button>{categories.map((c: any) => <button type="button" key={c.id} className={categoryId === c.id ? "selected" : ""} onClick={() => setCategoryId(c.id)}>{c.name}</button>)}</div><label className="pos-stock-filter"><input type="checkbox" checked={stockOnly} onChange={e => setStockOnly(e.target.checked)}/> Omborda bor</label><button className="pos-stock-refresh" onClick={loadProducts} disabled={isLoading}><RotateCcw size={14} /> Yangilash</button></div>
       {/* USB Hardware Barcode Detector */}
       <UsbBarcodeDetector onScan={handleBarcodeScanned} enabled={!showCheckoutModal && !showPrecheck && !showReceiptModal && !showCameraScanner && !showDebtModal && !showCentralImportModal} />
 
@@ -677,7 +670,6 @@ export default function CashierPosPage() {
       )}
 
       {/* Terminal layout: active receipt, actions, and product lookup. */}
-      <div className="pos-steps" aria-label="Savdo tartibi"><span className={shiftOpen ? "done" : "current"}>1. <Link href="/kassir/smena">{shiftOpen ? "Smena ochiq" : "Smenani oching"}</Link></span><span className={shiftOpen && !cart.length ? "current" : ""}>2. Mahsulot tanlang</span><span className={cart.length ? "current" : ""}>3. To‘lovni oling</span><span>4. <Link href="/kassir/smena">Smenani yoping</Link></span><Link href="/kassir/cheklar">Cheklar</Link><Link href="/kassir/qaytarish">Qaytarish</Link></div>
       <div className="terminal-layout">
         <section className="terminal-receipt">
           <div className="terminal-section-head"><div><span>FAOL CHEK</span><h2>Chek №{checkNumber} <small>· {cart.length} xil mahsulot</small></h2></div><button type="button" disabled={cart.length === 0} onClick={clearCart}><Trash2 size={15} /> Tozalash</button></div>

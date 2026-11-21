@@ -51,7 +51,7 @@ export function DemoPlayer() {
       const current = video.current?.currentTime || 0;
       setActive(chapters.reduce((selected, chapter, index) => chapter.start <= current ? index : selected, 0));
     }}>
-      <source src="/media/savdoza-tutorial.mp4?v=20261121b" type="video/mp4"/>
+      <source src="/media/savdoza-tutorial.mp4?v=20261121c" type="video/mp4"/>
       <track kind="captions" src="/media/savdoza-tutorial.vtt?v=20261121" srcLang="uz" label="O‘zbekcha izohlar"/>
       <a href="/media/savdoza-tutorial.mp4">Video qo‘llanmani ochish</a>
     </video>

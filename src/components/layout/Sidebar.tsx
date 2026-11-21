@@ -65,6 +65,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         return [
           { label: "Bosh sahifa", href: "/admin", icon: LayoutDashboard },
           { label: "Kassa", href: "/admin/pos", icon: BadgePercent },
+          { label: "Smena", href: "/admin/smena", icon: CalendarClock },
           { label: "Hisobotlar", href: "/admin/hisobotlar", icon: BarChart3 },
           { label: "Tovarlar", href: "/admin/tovarlar", icon: Package },
           { label: "Ombor", href: "/admin/ombor", icon: Boxes },
@@ -88,6 +89,7 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
       case "CASHIER":
         return [
           { label: "POS Savdo terminali", href: "/kassir", icon: BadgePercent },
+          { label: "Smena", href: "/kassir/smena", icon: CalendarClock },
           { label: "Savdo tarixi", href: "/kassir/cheklar", icon: Receipt },
           { label: "Tovarni qaytarish", href: "/kassir/qaytarish", icon: RotateCcw },
           { label: "Sozlamalar", href: "/sozlamalar", icon: Settings },
