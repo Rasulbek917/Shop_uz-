@@ -8,6 +8,7 @@ export async function saleReplay(shopId: string, key: string) {
       shop: { select: { name: true, phone: true, address: true } },
       cashier: { select: { fullName: true } },
       items: { include: { product: { select: { name: true } } } },
+      payments: true,
     },
   });
   if (!sale) return null;
@@ -28,6 +29,8 @@ export function assertReplay(
   input: {
     paymentMethod: string;
     discountAmount: number;
+    loyaltyPointsUsed?: number;
+    payments?: { paymentMethod: string; amount: number }[];
     paidAmount?: number;
     customerId?: string | null;
     expectedTotal?: number;
@@ -57,7 +60,8 @@ export function assertReplay(
     (input.expectedTotal !== undefined &&
       Math.abs(sale.payableAmount - input.expectedTotal) > 0.5) ||
     sale.paymentMethod !== input.paymentMethod ||
-    sale.discountAmount !== Math.round(input.discountAmount) ||
+    sale.discountAmount !== Math.round(input.discountAmount + input.items.reduce((sum, item) => sum + item.discount, 0) + (input.loyaltyPointsUsed || 0) * 1000) ||
+    (input.payments && JSON.stringify(input.payments.map((payment) => `${payment.paymentMethod}:${Math.round(payment.amount)}`).sort()) !== JSON.stringify(sale.payments.map((payment) => `${payment.paymentMethod}:${Math.round(payment.amount)}`).sort())) ||
     (input.paidAmount !== undefined &&
       sale.paidAmount !== Math.round(input.paidAmount)) ||
     JSON.stringify(rows(sale.items)) !== JSON.stringify(rows(input.items))

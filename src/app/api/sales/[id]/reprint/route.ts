@@ -32,6 +32,7 @@ export async function POST(
           select: { id: true, fullName: true, username: true },
         },
         customer: true,
+        payments: true,
         items: {
           include: {
             product: true,

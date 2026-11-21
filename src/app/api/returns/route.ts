@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       }
       const activeShift = await tx.shift.findFirst({ where: { shopId, cashierId: user.id, status: "OPEN" }, select: { id: true } });
       if (!activeShift) throw new Error("Qaytarishdan oldin kassa smenasini oching");
-      const original = await tx.sale.findFirstOrThrow({ where: { id: input.saleId, shopId }, include: { items: true, returns: { include: { items: true } } } });
+      const original = await tx.sale.findFirstOrThrow({ where: { id: input.saleId, shopId }, include: { items: true, payments: true, returns: { include: { items: true } } } });
       const sale = withRefundInfo(original);
       const quoted = input.items.map(item => {
         const sold = sale.items.find(row => row.id === item.saleItemId);
@@ -96,7 +96,9 @@ export async function POST(req: NextRequest) {
         original.returns.reduce((sum, item) => sum + item.loyaltyPointsRestored, 0);
 
       let creditAdjustment = 0;
-      let cashRefundAmount = totalRefundAmount;
+      const cashPaid = original.payments.filter((payment) => payment.paymentMethod === "CASH").reduce((sum, payment) => sum + payment.amount, 0);
+      const priorCashRefund = original.returns.reduce((sum, record) => sum + (record.cashRefundAmount || 0), 0);
+      let cashRefundAmount = sale.payableAmount > 0 ? Math.max(0, Math.round((priorRefundAmount + totalRefundAmount) * cashPaid / sale.payableAmount) - priorCashRefund) : 0;
       if (sale.paymentMethod === "DEBT") {
         const debt = sale.idempotencyKey ? await tx.debt.findFirst({ where: { shopId, clientReference: sale.idempotencyKey } }) : null;
         if (!debt) throw new Error("Eski nasiya cheki qarz yozuviga bog‘lanmagan. Administrator avval qarzni tekshirishi kerak");
@@ -138,7 +140,7 @@ export async function POST(req: NextRequest) {
     await logAudit({ shopId, userId: user.id, userName: user.fullName, action: "QAYTARISH_QILINDI", entity: "Return", entityId: result.id, details: `Chek ${result.receiptNumber}: ${result.totalRefundAmount} so‘m, qarz kamayishi ${result.creditAdjustment} so‘m` });
     const message = result.creditAdjustment > 0
       ? `Qaytarish saqlandi. Qarz ${result.creditAdjustment.toLocaleString("uz-UZ")} so‘mga kamaydi. Qaytariladigan pul ${(result.cashRefundAmount || 0).toLocaleString("uz-UZ")} so‘m.`
-      : `Qaytarish saqlandi. Xaridorga qaytariladigan summa ${(result.cashRefundAmount ?? result.totalRefundAmount).toLocaleString("uz-UZ")} so‘m.`;
+      : `Qaytarish saqlandi. Naqd ${(result.cashRefundAmount || 0).toLocaleString("uz-UZ")} so‘m, karta/elektron ${Math.max(0, result.totalRefundAmount - (result.cashRefundAmount || 0)).toLocaleString("uz-UZ")} so‘m qaytarilishi kerak.`;
     return NextResponse.json({ success: true, message, data: result });
   } catch (error) {
     logger.error("Return error", { error });

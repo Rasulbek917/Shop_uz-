@@ -30,17 +30,17 @@ export async function GET(req: NextRequest) {
       shopId: context!.shopId,
       status: "COMPLETED",
       ...(cashierId ? { cashierId } : {}),
-      ...(paymentMethod ? { paymentMethod } : {}),
+      ...(paymentMethod ? { OR: [{ paymentMethod }, { payments: { some: { paymentMethod } } }] } : {}),
     };
     const [sales, returns, cashiers] = await Promise.all([
       prisma.sale.findMany({
         where: { ...saleFilter, createdAt: { gte: start, lte: end } },
-        include: { cashier: { select: { fullName: true } }, customer: { select: { name: true } }, items: { include: { product: { select: { name: true, unit: true } } } } },
+        include: { cashier: { select: { fullName: true } }, customer: { select: { name: true } }, payments: true, items: { include: { product: { select: { name: true, unit: true } } } } },
         orderBy: { createdAt: "desc" },
       }),
       prisma.return.findMany({
         where: { shopId: context!.shopId, createdAt: { gte: start, lte: end }, sale: saleFilter },
-        include: { items: { include: { product: { select: { name: true, unit: true } } } }, sale: { select: { cashierId: true, paymentMethod: true, payableAmount: true, taxAmount: true, items: { select: { id: true, purchasePrice: true } } } } },
+        include: { items: { include: { product: { select: { name: true, unit: true } } } }, sale: { select: { cashierId: true, paymentMethod: true, payableAmount: true, taxAmount: true, payments: true, items: { select: { id: true, purchasePrice: true } } } } },
       }),
       prisma.user.findMany({ where: { shopId: context!.shopId, role: { in: ["SHOP_ADMIN", "CASHIER"] }, status: "ACTIVE" }, select: { id: true, fullName: true }, orderBy: { fullName: "asc" } }),
     ]);
@@ -55,8 +55,10 @@ export async function GET(req: NextRequest) {
     for (const sale of sales) {
       gross += sale.payableAmount;
       tax += sale.taxAmount;
-      const method = methods.get(sale.paymentMethod);
-      if (method) { method.amount += sale.payableAmount; method.count += 1; }
+      for (const payment of sale.payments) {
+        const method = methods.get(payment.paymentMethod);
+        if (method) { method.amount += payment.amount; method.count += 1; }
+      }
       const day = dayInTashkent(sale.createdAt);
       const row = days.get(day) || { date: day, sales: 0, refunds: 0, count: 0 };
       row.sales += sale.payableAmount; row.count += 1; days.set(day, row);
@@ -74,8 +76,10 @@ export async function GET(req: NextRequest) {
     for (const item of returns) {
       refunds += item.totalRefundAmount;
       refundedTax += item.sale.payableAmount > 0 ? item.sale.taxAmount * item.totalRefundAmount / item.sale.payableAmount : 0;
-      const method = methods.get(item.sale.paymentMethod);
-      if (method) method.refunds += item.totalRefundAmount;
+      for (const payment of item.sale.payments) {
+        const method = methods.get(payment.paymentMethod);
+        if (method && item.sale.payableAmount > 0) method.refunds += item.totalRefundAmount * payment.amount / item.sale.payableAmount;
+      }
       const day = dayInTashkent(item.createdAt);
       const row = days.get(day) || { date: day, sales: 0, refunds: 0, count: 0 };
       row.refunds += item.totalRefundAmount; days.set(day, row);

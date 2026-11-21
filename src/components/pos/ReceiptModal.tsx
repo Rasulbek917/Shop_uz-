@@ -34,6 +34,7 @@ export interface ReceiptModalProps {
     paidAmount: number;
     changeAmount: number;
     paymentMethod: string;
+    payments?: { paymentMethod: string; amount: number }[];
     items: ReceiptItem[];
   } | null;
   isReprint?: boolean;
@@ -62,7 +63,17 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
   // Print the receipt at the selected thermal paper width.
   const handleStandardPrint = () => {
     const widthClass = paperWidth === "58mm" ? "receipt-58" : "receipt-80";
-    const cleanup = () => document.body.classList.remove("printing-receipt", "receipt-58", "receipt-80");
+    const printArea = document.querySelector<HTMLElement>(".receipt-print-area");
+    if (!printArea) return;
+    const clone = printArea.cloneNode(true) as HTMLElement;
+    Object.assign(clone.style, { display: "block", position: "fixed", left: "-10000px", top: "0", width: paperWidth, boxSizing: "border-box", padding: "2mm 2mm 10mm", color: "#000", background: "#fff", fontFamily: "monospace", fontSize: paperWidth === "58mm" ? "8.5pt" : "10pt", lineHeight: "1.25" });
+    document.body.appendChild(clone);
+    const heightMm = Math.min(800, Math.max(80, Math.ceil(clone.scrollHeight * 25.4 / 96) + 5));
+    clone.remove();
+    const pageStyle = document.createElement("style");
+    pageStyle.textContent = `@media print { @page receipt-58 { size: 58mm ${heightMm}mm; margin: 0; } @page receipt-80 { size: 80mm ${heightMm}mm; margin: 0; } }`;
+    document.head.appendChild(pageStyle);
+    const cleanup = () => { document.body.classList.remove("printing-receipt", "receipt-58", "receipt-80"); pageStyle.remove(); };
     document.body.classList.add("printing-receipt", widthClass);
     window.addEventListener("afterprint", cleanup, { once: true });
     window.print();
@@ -153,6 +164,7 @@ export default function ReceiptModal({ isOpen, onClose, receipt, isReprint = fal
                 {getPaymentMethodLabel(receipt.paymentMethod)}
               </span>
             </div>
+            {receipt.paymentMethod === "MIXED" && receipt.payments?.map((payment, index) => <div key={`${payment.paymentMethod}-${index}`} className="flex justify-between text-slate-600"><span>{getPaymentMethodLabel(payment.paymentMethod)}</span><span>{formatCurrency(payment.amount)}</span></div>)}
             {isReprint && (
               <div className="text-center font-bold text-amber-600 text-[10px] pt-1">
                 * NUSXA / QAYTA CHOP ETILGAN CHEK *
@@ -267,6 +279,7 @@ function PrintReceipt({ receipt, qrUrl, isReprint }: { receipt: NonNullable<Rece
       <div>{receiptDate(receipt.createdAt || new Date())}</div>
       <div>Kassir: {receipt.cashierName}</div>
       <div>To‘lov: {getPaymentMethodLabel(receipt.paymentMethod)}</div>
+      {receipt.paymentMethod === "MIXED" && receipt.payments?.map((payment, index) => <div key={`${payment.paymentMethod}-${index}`} className="rp-row"><span>{getPaymentMethodLabel(payment.paymentMethod)}</span><span>{f(payment.amount)}</span></div>)}
       {isReprint && <div className="rp-center rp-bold">* NUSXA *</div>}
       <hr className="rp-line" />
       {receipt.items.map((item, i) => (

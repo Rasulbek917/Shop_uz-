@@ -65,6 +65,7 @@ export async function GET(req: NextRequest) {
             batch: true,
           },
         },
+        payments: true,
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -118,6 +119,7 @@ export async function POST(req: NextRequest) {
       customerId,
       loyaltyPointsUsed,
       paymentMethod,
+      payments,
       discountAmount,
       paidAmount,
       items,
@@ -275,6 +277,13 @@ export async function POST(req: NextRequest) {
         throw new Error("Ball chegirmasi to‘lov summasidan oshdi");
       }
       payableAmount -= loyaltyDiscount;
+      if (paymentMethod === "MIXED") {
+        if (!payments || new Set(payments.map((payment) => payment.paymentMethod)).size !== payments.length || payments.reduce((sum, payment) => sum + payment.amount, 0) !== payableAmount || paidAmount !== payableAmount) {
+          throw new Error("Bo‘lib to‘lash summalari jami to‘lanadigan summaga teng bo‘lishi kerak");
+        }
+      } else if (payments?.length) {
+        throw new Error("To‘lov bo‘linmasi faqat bo‘lib to‘lashda yuboriladi");
+      }
       const loyaltyPointsEarned = customerId ? Math.floor(payableAmount / 10000) : 0;
 
       if (
@@ -408,14 +417,9 @@ export async function POST(req: NextRequest) {
       }
 
       // 6. Create Payment record
-      await tx.payment.create({
-        data: {
-          shopId,
-          saleId: sale.id,
-          amount: payableAmount,
-          paymentMethod,
-          status: "SUCCESS",
-        },
+      await tx.payment.createMany({ data: paymentMethod === "MIXED"
+        ? payments!.map((payment) => ({ shopId, saleId: sale.id, amount: payment.amount, paymentMethod: payment.paymentMethod, status: "SUCCESS" }))
+        : [{ shopId, saleId: sale.id, amount: payableAmount, paymentMethod, status: "SUCCESS" }],
       });
 
       // 7. Update customer statistics
@@ -458,6 +462,7 @@ export async function POST(req: NextRequest) {
         shopAddress: shop.address,
         cashierName: user.fullName,
         items: result.items,
+        payments: paymentMethod === "MIXED" ? payments : [{ paymentMethod, amount: result.sale.payableAmount }],
       },
     });
   } catch (error: any) {

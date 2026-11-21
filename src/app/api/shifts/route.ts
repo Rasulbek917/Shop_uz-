@@ -9,14 +9,16 @@ const openSchema = z.object({ openingCash: z.number().finite().nonnegative().max
 const closeSchema = z.object({ shiftId: z.string().uuid(), closingCash: z.number().finite().nonnegative().max(1_000_000_000), notes: z.string().max(500).optional() });
 
 async function summarize(shiftId: string, openingCash: number) {
-  const sales = await prisma.sale.findMany({ where: { shiftId, status: "COMPLETED" } });
+  const sales = await prisma.sale.findMany({ where: { shiftId, status: "COMPLETED" }, include: { payments: true } });
   const returned = await prisma.return.findMany({ where: { shiftId }, select: { cashRefundAmount: true, totalRefundAmount: true } });
   const movements = await prisma.cashMovement.findMany({ where: { shiftId }, select: { type: true, amount: true } });
   const amounts = { CASH: 0, CARD: 0, ELECTRONIC: 0, DEBT: 0 };
   const refunds = returned.reduce((sum, item) => sum + (item.cashRefundAmount ?? item.totalRefundAmount), 0);
   for (const sale of sales) {
-    const method = sale.paymentMethod as keyof typeof amounts;
-    if (method in amounts) amounts[method] += sale.payableAmount;
+    for (const payment of sale.payments) {
+      const method = payment.paymentMethod as keyof typeof amounts;
+      if (method in amounts) amounts[method] += payment.amount;
+    }
   }
   const cashIn = movements.filter((item) => item.type === "IN").reduce((sum, item) => sum + item.amount, 0);
   const cashOut = movements.filter((item) => item.type === "OUT").reduce((sum, item) => sum + item.amount, 0);
