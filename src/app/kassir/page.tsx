@@ -45,9 +45,8 @@ export default function CashierPosPage() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [loyaltyPointsUsed, setLoyaltyPointsUsed] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CARD" | "ELECTRONIC" | "MIXED">("CASH");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CARD" | "ELECTRONIC">("CASH");
   const [paidAmount, setPaidAmount] = useState<number>(0);
-  const [splitAmounts, setSplitAmounts] = useState({ CASH: 0, CARD: 0, ELECTRONIC: 0 });
 
   // Checkout modal & Receipt state
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -425,9 +424,6 @@ export default function CashierPosPage() {
   const availablePoints = Math.max(0, selectedCustomer?.loyaltyPoints || 0);
   const maxRedeemablePoints = Math.min(availablePoints, Math.max(0, Math.floor((cartTotal - 1) / 1000)));
   const payableTotal = cartTotal - loyaltyPointsUsed * 1000;
-  const splitPaid = splitAmounts.CASH + splitAmounts.CARD + splitAmounts.ELECTRONIC;
-  const actualPaid = paymentMethod === "MIXED" ? splitPaid : paidAmount;
-  const splitPayments = (["CASH", "CARD", "ELECTRONIC"] as const).map((method) => ({ paymentMethod: method, amount: splitAmounts[method] })).filter((payment) => payment.amount > 0);
 
   // Open Checkout Modal
   const handleOpenCheckout = () => {
@@ -445,9 +441,8 @@ export default function CashierPosPage() {
     setShowCheckoutModal(true);
   };
 
-  const openPayment = (method: "CASH" | "CARD" | "ELECTRONIC") => {
+  const selectPayment = (method: "CASH" | "CARD" | "ELECTRONIC") => {
     setPaymentMethod(method);
-    handleOpenCheckout();
   };
 
   // Submit Sale
@@ -458,9 +453,9 @@ export default function CashierPosPage() {
       alert("Mijoz ballari yoki savat summasi o‘zgargan. Ball miqdorini tekshiring.");
       return;
     }
-    if (Number(actualPaid) < payableTotal || (paymentMethod === "MIXED" && (actualPaid !== payableTotal || splitPayments.length < 2))) {
+    if (Number(paidAmount) < payableTotal) {
       alert(
-        `To‘langan summa (${formatCurrency(actualPaid)}) to‘lov summasidan (${formatCurrency(
+        `To‘langan summa (${formatCurrency(paidAmount)}) to‘lov summasidan (${formatCurrency(
           payableTotal
         )}) kam bo‘lishi mumkin emas!`
       );
@@ -478,9 +473,8 @@ export default function CashierPosPage() {
         customerId: selectedCustomerId || null,
         loyaltyPointsUsed,
         paymentMethod,
-        ...(paymentMethod === "MIXED" ? { payments: splitPayments } : {}),
         discountAmount: Number(discountAmount) || 0,
-        paidAmount: Number(actualPaid),
+        paidAmount: Number(paidAmount),
         idempotencyKey: checkoutKey,
         items: cart.map((item) => ({
           productId: item.productId,
@@ -512,7 +506,6 @@ export default function CashierPosPage() {
       setCart([]);
       setDiscountAmount(0);
       setPaidAmount(0);
-      setSplitAmounts({ CASH: 0, CARD: 0, ELECTRONIC: 0 });
       setSelectedCustomerId("");
       setLoyaltyPointsUsed(0);
       loadCustomers();
@@ -641,10 +634,10 @@ export default function CashierPosPage() {
         event.preventDefault();
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
-      } else if (["F4", "F6", "F7", "F8", "F9"].includes(event.key) && !showCheckoutModal && !showDebtModal && !showReceiptModal) {
+      } else if (["F4", "F6", "F7", "F9"].includes(event.key) && !showCheckoutModal && !showDebtModal && !showReceiptModal) {
         event.preventDefault();
-        if (event.key === "F8") { setPaymentMethod("MIXED"); handleOpenCheckout(); }
-        else openPayment(event.key === "F7" ? "CARD" : event.key === "F9" ? "ELECTRONIC" : "CASH");
+        if (event.key === "F4") handleOpenCheckout();
+        else selectPayment(event.key === "F7" ? "CARD" : event.key === "F9" ? "ELECTRONIC" : "CASH");
       } else if (event.key === "Escape") {
         setShowCheckoutModal(false);
         setShowDebtModal(false);
@@ -719,7 +712,8 @@ export default function CashierPosPage() {
           <label className="terminal-field">Chegirma (so‘m)<input type="number" min={0} max={Math.max(0, cartSubtotal - lineDiscountTotal - 1)} step={500} value={discountAmount} onChange={event => setDiscountAmount(Math.min(Math.max(0, cartSubtotal - lineDiscountTotal - 1), Math.max(0, Number(event.target.value) || 0)))} /></label>
           <div className="terminal-totals"><div><span>Mahsulotlar</span><b>{formatCurrency(cartSubtotal)}</b></div>{lineDiscountTotal > 0 && <div><span>Satr chegirmasi</span><b>−{formatCurrency(lineDiscountTotal)}</b></div>}{discountAmount > 0 && <div><span>Chegirma</span><b>−{formatCurrency(discountAmount)}</b></div>}{loyaltyPointsUsed > 0 && <div><span>Ball chegirmasi</span><b>−{formatCurrency(loyaltyPointsUsed * 1000)}</b></div>}{taxSettings.taxRate > 0 && <div><span>QQS {taxSettings.taxRate}%</span><b>{formatCurrency(taxAmount)}</b></div>}</div>
           <div className="terminal-due"><span>TO‘LANADI</span><strong>{formatCurrency(payableTotal)}</strong></div>
-          <div className="terminal-payment-shortcuts"><button type="button" disabled={!shiftOpen || cart.length === 0} onClick={() => openPayment("CASH")}><Banknote size={16} /> Naqd <small>F6</small></button><button type="button" disabled={!shiftOpen || cart.length === 0} onClick={() => openPayment("CARD")}><CreditCard size={16} /> Plastik <small>F7</small></button><button type="button" disabled={!shiftOpen || cart.length === 0} onClick={() => openPayment("ELECTRONIC")}><Smartphone size={16} /> Elektron <small>F9</small></button><button type="button" disabled={!shiftOpen || cart.length === 0} onClick={() => { setPaymentMethod("MIXED"); handleOpenCheckout(); }}><CreditCard size={16} /> Bo‘lish <small>F8</small></button></div>
+          <div className="terminal-payment-shortcuts" aria-label="To‘lov turini tanlash"><button type="button" aria-pressed={paymentMethod === "CASH"} onClick={() => selectPayment("CASH")}><Banknote size={16} /> Naqd <small>F6</small></button><button type="button" aria-pressed={paymentMethod === "CARD"} onClick={() => selectPayment("CARD")}><CreditCard size={16} /> Plastik <small>F7</small></button><button type="button" aria-pressed={paymentMethod === "ELECTRONIC"} onClick={() => selectPayment("ELECTRONIC")}><Smartphone size={16} /> Elektron <small>F9</small></button></div>
+          <button type="button" className="terminal-pay" disabled={!shiftOpen || cart.length === 0 || loyaltyPointsUsed > maxRedeemablePoints} onClick={handleOpenCheckout}><CheckCircle size={18} /> To‘lovni qabul qilish</button>
           <button type="button" className="terminal-debt" disabled={!shiftOpen || cart.length === 0} onClick={handleOpenDebtSale}><CreditCard size={17} /> Qarzga sotish</button>
           <button type="button" className="terminal-debt" disabled={cart.length === 0} onClick={() => setShowPrecheck(true)}><FileText size={17} /> Prechek</button>
         </aside>
@@ -757,7 +751,7 @@ export default function CashierPosPage() {
                   </span>
                 </div>
 
-                {paymentMethod === "MIXED" ? <div className="space-y-2"><p className="text-xs font-bold text-slate-700">Summani kamida ikki to‘lov turiga ajrating:</p>{(["CASH", "CARD", "ELECTRONIC"] as const).map((method) => <label key={method} className="flex items-center justify-between gap-2 text-sm text-slate-700"><span>{method === "CASH" ? "Naqd" : method === "CARD" ? "Plastik" : "Elektron"}</span><input type="number" min={0} max={payableTotal} step={1000} value={splitAmounts[method]} onChange={(event) => setSplitAmounts((current) => ({ ...current, [method]: Math.min(payableTotal, Math.max(0, Math.round(Number(event.target.value) || 0))) }))} className="w-32 border border-slate-300 px-2 py-1.5 text-right" /></label>)}<p className={`text-xs ${splitPaid === payableTotal && splitPayments.length >= 2 ? "text-green-700" : "text-red-700"}`}>Ajratildi: {formatCurrency(splitPaid)} / {formatCurrency(payableTotal)} · kamida 2 usul</p></div> : <div>
+                <div>
                   <label className="block text-xs font-bold text-slate-700 mt-2">
                     Qabul qilingan summa (so‘m):
                   </label>
@@ -769,9 +763,9 @@ export default function CashierPosPage() {
                     onChange={(e) => setPaidAmount(Number(e.target.value) || 0)}
                     className="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-base font-extrabold text-slate-900 focus:border-[#1e50b3] focus:outline-none"
                   />
-                </div>}
+                </div>
 
-                {paymentMethod !== "MIXED" && paidAmount > payableTotal && (
+                {paidAmount > payableTotal && (
                   <div className="flex justify-between items-center pt-2 border-t border-slate-200 text-xs">
                     <span className="font-bold text-slate-700">Xaridorga qaytim:</span>
                     <span className="font-extrabold text-blue-700 text-sm">
@@ -793,7 +787,7 @@ export default function CashierPosPage() {
 
               <button
                 type="button"
-                disabled={isProcessing || actualPaid < payableTotal || (paymentMethod === "MIXED" && (actualPaid !== payableTotal || splitPayments.length < 2)) || loyaltyPointsUsed > maxRedeemablePoints}
+                disabled={isProcessing || paidAmount < payableTotal || loyaltyPointsUsed > maxRedeemablePoints}
                 onClick={handleCompleteSale}
                 className="flex items-center gap-2 rounded-xl bg-[#1e50b3] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#123d99] disabled:opacity-50"
               >
