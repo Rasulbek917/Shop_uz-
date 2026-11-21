@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
@@ -15,7 +16,14 @@ export default function AppShell({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isPosMenuExpanded, setIsPosMenuExpanded] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser>(user);
+  const pathname = usePathname();
+  const isPosPage = pathname === "/admin/pos" || pathname === "/kassir";
+
+  useEffect(() => {
+    setIsPosMenuExpanded(false);
+  }, [pathname]);
 
   useEffect(() => {
     const updateMenu = (event: Event) => {
@@ -80,6 +88,8 @@ export default function AppShell({
         user={currentUser}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        compact={isPosPage && !isPosMenuExpanded}
+        onToggleCompact={isPosPage ? () => setIsPosMenuExpanded((expanded) => !expanded) : undefined}
       />
 
       {/* Main Content Area */}

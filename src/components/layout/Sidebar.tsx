@@ -25,6 +25,8 @@ import {
   CircleHelp,
   QrCode,
   LockKeyhole,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { AuthUser, UserRole } from "@/types";
 import { isMax } from "@/lib/plans";
@@ -34,6 +36,8 @@ interface SidebarProps {
   user: AuthUser;
   isOpen: boolean;
   onClose: () => void;
+  compact: boolean;
+  onToggleCompact?: () => void;
 }
 
 interface NavItem {
@@ -43,7 +47,7 @@ interface NavItem {
   requiresMax?: boolean;
 }
 
-export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ user, isOpen, onClose, compact, onToggleCompact }: SidebarProps) {
   const pathname = usePathname();
 
   const getNavItems = (role: UserRole): NavItem[] => {
@@ -119,17 +123,17 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col bg-[#08358d] text-white transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex w-64 flex-col bg-[#08358d] text-white transition-[transform,width] duration-300 ease-in-out md:static md:translate-x-0 ${compact ? "md:w-[72px]" : "md:w-64"} ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Brand header */}
-        <div className="flex h-16 items-center justify-between border-b border-slate-800 px-6">
+        <div className={`flex h-16 items-center justify-between border-b border-slate-800 px-6 ${compact ? "md:px-3" : ""}`}>
           <Link href="/" className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20 text-white shadow-md">
               <Package className="h-5 w-5" />
             </div>
-            <div>
+            <div className={compact ? "md:hidden" : ""}>
               <span className="font-extrabold text-base tracking-wide text-white">
                 SAVDO<span className="text-[#c7ddff]">ZA</span>
               </span>
@@ -138,6 +142,10 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
               </p>
             </div>
           </Link>
+
+          {onToggleCompact && <button type="button" onClick={onToggleCompact} className="hidden rounded-lg p-1.5 text-blue-100 hover:bg-white/10 md:flex" title={compact ? "Menyuni kengaytirish" : "Menyuni kichraytirish"} aria-label={compact ? "Menyuni kengaytirish" : "Menyuni kichraytirish"}>
+            {compact ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </button>}
 
           <button
             onClick={onClose}
@@ -148,8 +156,8 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
         </div>
 
         {/* Navigation list */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-          <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        <div className={`flex-1 overflow-y-auto px-4 py-4 space-y-1 ${compact ? "md:px-2" : ""}`}>
+          <div className={`px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 ${compact ? "md:hidden" : ""}`}>
             Asosiy menyu
           </div>
 
@@ -168,10 +176,10 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
 
             if (item.requiresMax && !isMax(user.planCode)) {
               return <button key={item.href} type="button" disabled title="Premium tarifiga o‘ting"
-                className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-400">
+                className={`flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-400 ${compact ? "md:justify-center md:px-2" : ""}`}>
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="flex-1">{item.label}<small className="block text-[10px] text-amber-200/80">Premium tarifiga o‘ting</small></span>
-                <LockKeyhole className="h-3.5 w-3.5 shrink-0" />
+                <span className={`flex-1 ${compact ? "md:hidden" : ""}`}>{item.label}<small className="block text-[10px] text-amber-200/80">Premium tarifiga o‘ting</small></span>
+                <LockKeyhole className={`h-3.5 w-3.5 shrink-0 ${compact ? "md:hidden" : ""}`} />
               </button>;
             }
 
@@ -180,29 +188,31 @@ export default function Sidebar({ user, isOpen, onClose }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 onClick={() => onClose()}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                aria-label={item.label}
+                title={compact ? item.label : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${compact ? "md:justify-center md:px-2" : ""} ${
                   isActive
                     ? "bg-white text-[#08358d] shadow-sm"
                     : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
                 }`}
               >
                 <Icon className={`h-4 w-4 ${isActive ? "text-[#08358d]" : "text-blue-100"}`} />
-                <span>{item.label}</span>
+                <span className={compact ? "md:hidden" : ""}>{item.label}</span>
               </Link>
             );
           })}
           {user.role === "SHOP_ADMIN" && !isMax(user.planCode) && (
-            <Link href="/sozlamalar/tarif?plan=MAX" onClick={onClose} className="mt-4 block rounded-xl border border-amber-200/30 px-3 py-3 text-sm font-semibold text-amber-100 hover:bg-white/5">
+            <Link href="/sozlamalar/tarif?plan=MAX" onClick={onClose} className={`mt-4 block rounded-xl border border-amber-200/30 px-3 py-3 text-sm font-semibold text-amber-100 hover:bg-white/5 ${compact ? "md:hidden" : ""}`}>
               Premium tarifiga o‘tish
             </Link>
           )}
         </div>
 
         {/* Security badge at bottom */}
-        <div className="border-t border-slate-800 p-4">
+        <div className={`border-t border-slate-800 p-4 ${compact ? "md:px-2" : ""}`}>
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <ShieldCheck className="h-4 w-4 text-[#b9d2ff]" />
-            <span>Savdo va ombor bir joyda</span>
+            <span className={compact ? "md:hidden" : ""}>Savdo va ombor bir joyda</span>
           </div>
         </div>
       </aside>
