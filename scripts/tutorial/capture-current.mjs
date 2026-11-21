@@ -40,13 +40,18 @@ async function visit(path) {
 }
 async function capture(chapter, title) {
   const file = `${String(++count).padStart(2, '0')}-${chapter}.png`;
-  await page.screenshot({ path: join(framesDir, file), animations: 'disabled' });
+  await page.screenshot({ path: join(framesDir, file), timeout: 60000 });
   chapters.push({ chapter, title, file: join(framesDir, file), seconds: 12 });
   console.log(`${count}. ${title}`);
 }
 try {
   await page.goto(base + '/login', { waitUntil: 'domcontentloaded' });
   await page.getByPlaceholder('Loginingiz').waitFor();
+  await page.getByRole('button', { name: 'Kirish', exact: true }).waitFor({ state: 'visible' });
+  await page.waitForFunction(() => {
+    const button = [...document.querySelectorAll('button')].find((item) => item.textContent?.includes('Kirish'));
+    return button && !button.disabled;
+  });
   await capture(1, 'Kirish');
   await page.getByPlaceholder('Loginingiz').fill(process.env.DEMO_USERNAME || 'demo_shop_local');
   await page.getByPlaceholder('Parolingiz').fill(process.env.DEMO_PASSWORD || 'DemoShop2026!');

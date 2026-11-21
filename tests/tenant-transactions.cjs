@@ -50,6 +50,7 @@ const key = () => `CI-${randomBytes(24).toString('hex')}`;
       shop.customer = await prisma.customer.create({ data: { shopId: shop.id, name: 'CI customer' } });
     }
     const [shop, foreign] = shops;
+    const shift = await prisma.shift.create({ data: { shopId: shop.id, cashierId: shop.user.id, openingCash: 0 } });
     const request = (method, body, route = 'sales') => new NextRequest(`https://shop.example.uz/api/${route}`, { method, headers: { cookie: `${getAuthCookieName()}=${shop.token}`, 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
     const category = await prisma.category.create({ data: { shopId: foreign.id, name: key() } });
     const manufacturer = await prisma.manufacturer.create({ data: { shopId: foreign.id, name: key() } });
@@ -70,6 +71,7 @@ const key = () => `CI-${randomBytes(24).toString('hex')}`;
     const sold = await sales.POST(request('POST', base));
     assert.equal(sold.status, 200, JSON.stringify(await sold.clone().json()));
     const sale = (await sold.json()).data;
+    assert.equal((await prisma.sale.findUniqueOrThrow({ where: { id: sale.id } })).shiftId, shift.id);
     const line = await prisma.saleItem.findFirstOrThrow({ where: { saleId: sale.id } });
     const refund = { saleId: sale.id, idempotencyKey: key(), items: [{ saleItemId: line.id, productId: shop.product.id, batchId: shop.batch.id, quantity: 1, refundUnitPrice: 5000 }] };
     assert.equal((await returns.POST(request('POST', { ...refund, items: [{ ...refund.items[0], batchId: foreign.batch.id }] }))).status, 400);

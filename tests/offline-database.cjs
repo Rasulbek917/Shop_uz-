@@ -54,6 +54,7 @@ const { randomBytes } = require('node:crypto');
     console.log('Superadmin inbox verified: unpaid registrations are visible and tenant users are denied.');
     const product = await prisma.product.create({ data: { shopId: shop.id, name: 'Test sut', salePrice: 5000 } });
     const batch = await prisma.productBatch.create({ data: { shopId: shop.id, productId: product.id, batchNumber: 'CI', initialQuantity: 100, currentQuantity: 100, salePrice: 5000, purchasePrice: 3000, expiryDate: new Date(Date.now() + 86400000) } });
+    await prisma.shift.create({ data: { shopId: shop.id, cashierId: user.id, openingCash: 0 } });
     const token = signJwtToken({ id: user.id, username: user.username, fullName: user.fullName, role: 'SHOP_ADMIN', shopId: shop.id, tokenVersion: user.tokenVersion });
     const request = (route, body) => new NextRequest(`https://shop.example.uz/api/${route}`, { method: 'POST', headers: { cookie: `${getAuthCookieName()}=${token}`, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const base = { paymentMethod: 'CASH', paidAmount: 10000, discountAmount: 0, expectedTotal: 10000, occurredAt: new Date(Date.now() - 10000).toISOString(), items: [{ productId: product.id, batchId: batch.id, quantity: 2, unitPrice: 5000, discount: 0 }] };

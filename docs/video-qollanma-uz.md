@@ -84,7 +84,7 @@ Maqsad: do‘kon egasi va kassir uchun sodda, ketma-ket ko‘rsatma. Namuna ma�
 
 **Kadr:** Sozlamalar → Ilovalar; bo‘limni yashirish/yoqish; Tarif.
 
-**Ovoz:** “Sozlamalarda do‘kon ma’lumotlari va ilova imkoniyatlari boshqariladi. Ilovalar bo‘limida kerak bo‘lmagan bo‘limni menyudan yashirib, keyin yana yoqishingiz mumkin. Bu bo‘lim ma’lumotlarini o‘chirmaydi. Tarif sahifasida joriy reja va muddati ko‘rinadi. Hozirgi narx: Standard oyiga yuz ming, Premium oyiga ikki yuz ming so‘m.”
+**Ovoz:** “Sozlamalarda do‘kon ma’lumotlari va ilova imkoniyatlari boshqariladi. Ilovalar bo‘limida kerak bo‘lmagan bo‘limni menyudan yashirib, keyin yana yoqishingiz mumkin. Bu bo‘lim ma’lumotlarini o‘chirmaydi. Tarif sahifasida joriy reja va muddati ko‘rinadi. Hozirgi narx: Standard oyiga ikki yuz to‘qson to‘qqiz ming, Premium oyiga to‘rt yuz to‘qson to‘qqiz ming so‘m.”
 
 ## 15. Yakun · 1 daqiqa
 

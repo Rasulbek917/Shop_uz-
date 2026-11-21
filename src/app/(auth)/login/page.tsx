@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
@@ -11,6 +11,9 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => setReady(true), []);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,7 +54,7 @@ export default function LoginPage() {
       <span className="eyebrow">XUSH KELIBSIZ</span>
       <h1>Hisobingizga kiring</h1>
       <p>Yangi foydalanuvchimisiz? <Link href="/register">Ro‘yxatdan o‘tish</Link></p>
-      <form onSubmit={submit} className="public-form">
+      <form onSubmit={submit} method="post" className="public-form">
         <label>Login<input name="username" autoComplete="username" placeholder="Loginingiz" required maxLength={50}/></label>
         <label>Parol
           <div className="login-password">
@@ -60,7 +63,7 @@ export default function LoginPage() {
           </div>
         </label>
         {error && <p role="alert" className="form-error">{error}</p>}
-        <button disabled={busy} className="public-button large">{busy ? "Kirilmoqda…" : "Kirish"}<ArrowUpRight size={18}/></button>
+        <button disabled={busy || !ready} className="public-button large">{busy ? "Kirilmoqda…" : "Kirish"}<ArrowUpRight size={18}/></button>
         <small>Hisobingizda tarif va arizangiz holatini ko‘rishingiz mumkin.</small>
       </form>
     </main>

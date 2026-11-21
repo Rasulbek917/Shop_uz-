@@ -2,8 +2,10 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
+const { tmpdir } = require('node:os');
 const { createRequire } = require('node:module');
 const ts = require('typescript');
+const receiptPngPath = path.join(tmpdir(), 'savdoza-receipt-test.png');
 
 // Execute the application modules with isolated provider/database doubles.
 function load(file, mocks = {}) {
@@ -252,6 +254,7 @@ test('public header restores the account and keeps it during a temporary server 
   const { PublicHeader } = load('src/components/marketing/PublicShell.tsx', {
     react: { useState: () => [state, value => { state = value; }], useEffect: callback => { effect = callback; } },
     'next/link': { __esModule: true, default: props => require('react').createElement('a', props, props.children) },
+    '@/lib/plans': load('src/lib/plans.ts'),
   });
   const render = () => require('react-dom/server').renderToStaticMarkup(PublicHeader({}));
   assert.match(render(), /Hisobim/);
@@ -271,24 +274,23 @@ test('public header restores the account and keeps it during a temporary server 
   cleanup();
 });
 
-test('Pro menu shows disabled Max sections and Max menu enables them', () => {
+test('Standard menu locks Premium staff while Premium enables it', () => {
   const { default: Sidebar } = load('src/components/layout/Sidebar.tsx', {
     'next/navigation': { usePathname: () => '/admin' },
     '@/lib/plans': { isMax },
+    '@/lib/menu-visibility': load('src/lib/menu-visibility.ts'),
   });
   const React = require('react');
   const render = planCode => require('react-dom/server').renderToStaticMarkup(React.createElement(Sidebar, {
     user: { role: 'SHOP_ADMIN', planCode }, isOpen: true, onClose() {},
   }));
   const pro = render('PRO');
-  assert.equal((pro.match(/<button[^>]*\sdisabled=""/g) || []).length, 3);
-  for (const label of ['Xodimlar boshqaruvi', 'Yetkazib beruvchilar', 'Amallar jurnali']) assert.ok(pro.includes(label));
-  assert.ok(pro.includes('Max tarifiga o‘ting'));
+  assert.equal((pro.match(/<button[^>]*\sdisabled=""/g) || []).length, 1);
+  assert.ok(pro.includes('Xodimlar'));
+  assert.ok(pro.includes('Premium tarifiga o‘ting'));
   assert.doesNotMatch(pro, /href="\/admin\/xodimlar"/);
   const max = render('MAX');
   assert.match(max, /href="\/admin\/xodimlar"/);
-  assert.match(max, /href="\/admin\/yetkazib-beruvchilar"/);
-  assert.match(max, /href="\/admin\/audit-log"/);
 });
 
 test('profile edits preserve session version and password change renews the current session', async t => {
@@ -303,7 +305,7 @@ test('profile edits preserve session version and password change renews the curr
       return user;
     },
   } };
-  const auth = load('src/lib/auth.ts', { './prisma': { prisma: db }, './plans': { hasShopAccess, isMax } });
+  const auth = load('src/lib/auth.ts', { './prisma': { prisma: db }, './plans': { hasShopAccess, isMax }, './menu-visibility': load('src/lib/menu-visibility.ts') });
   const initialToken = auth.signJwtToken({ ...user });
   const routeMocks = {
     '@/lib/prisma': { prisma: db },
@@ -420,7 +422,7 @@ test('public receipt renders a real PNG and keeps buyer data private', async t =
   assert.equal(png.readUInt32BE(16), 640);
   assert.ok(png.readUInt32BE(20) > 400);
   assert.match(formatting.receiptDate(receipt.createdAt), /13.11.2026.*01:00:00/);
-  fs.writeFileSync('/tmp/savdoza-receipt-test.png', png);
+  fs.writeFileSync(receiptPngPath, png);
   return api.publicReceipt(signing.receiptToken('sale-1')).then(result => {
     assert.equal(result.receiptNumber, 'CHK-001');
     assert.equal(selected.customer, undefined);
@@ -526,8 +528,8 @@ test('settings tariff view embeds both plans without the public header', () => {
     '@/components/marketing/PublicShell': { PublicHeader: () => 'Public header', PublicFooter: () => 'Public footer' },
   });
   const html = require('react-dom/server').renderToStaticMarkup(AccountPlans({ embedded: true }));
-  assert.ok(html.includes('PRO'));
-  assert.ok(html.includes('MAX'));
+  assert.ok(html.includes('Standard'));
+  assert.ok(html.includes('Premium'));
   assert.ok(!html.includes('Public header'));
   assert.ok(!html.includes('Public footer'));
 });
@@ -564,7 +566,7 @@ test('Max CSV and analysis use the same tenant and date filters', async () => {
 
 test('receipt image endpoint sends PNG with a PNG download filename', async () => {
   const { NextRequest } = require('next/server');
-  const png = fs.readFileSync('/tmp/savdoza-receipt-test.png');
+  const png = fs.readFileSync(receiptPngPath);
   const route = load('src/app/api/receipts/[token]/image/route.ts', {
     '@/lib/public-receipt': { publicReceipt: async token => token === 'valid-token' ? { receiptNumber: 'CHK-001' } : null },
     '@/lib/receipt-image': { receiptImage: async () => png },
@@ -601,7 +603,7 @@ test('image download saves genuine PNG and refuses error pages or invalid images
   await download();
   assert.equal(downloads, 0);
   assert.ok(errors.some(error => error.includes('to‘liq olinmadi')));
-  global.fetch = async () => new Response(fs.readFileSync('/tmp/savdoza-receipt-test.png'), { headers: { 'content-type': 'image/png' } });
+  global.fetch = async () => new Response(fs.readFileSync(receiptPngPath), { headers: { 'content-type': 'image/png' } });
   await download();
   assert.equal(downloads, 1);
   assert.equal(filename, 'chek-001.png');
