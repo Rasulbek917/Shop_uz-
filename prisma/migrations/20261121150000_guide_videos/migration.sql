@@ -1,0 +1,1 @@
+ALTER TABLE "Shop" ADD COLUMN "guideVideos" JSONB NOT NULL DEFAULT '[]';

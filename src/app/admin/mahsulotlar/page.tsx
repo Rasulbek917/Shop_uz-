@@ -70,9 +70,18 @@ export default function ProductsPage() {
   const [scannedNotice, setScannedNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProducts();
+    const initialSearch = new URLSearchParams(window.location.search).get("search") || "";
+    setSearch(initialSearch);
+    loadProducts(initialSearch);
     if (new URLSearchParams(window.location.search).has("new")) setShowAddModal(true);
     loadCategoriesAndManufacturers();
+    const onHeaderSearch = (event: Event) => {
+      const term = (event as CustomEvent<string>).detail;
+      setSearch(term);
+      loadProducts(term);
+    };
+    window.addEventListener("savdoza-header-search", onHeaderSearch);
+    return () => window.removeEventListener("savdoza-header-search", onHeaderSearch);
   }, []);
 
   const loadCategoriesAndManufacturers = async () => {

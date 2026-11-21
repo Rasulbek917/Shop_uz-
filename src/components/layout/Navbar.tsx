@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Bell, 
   LogOut, 
@@ -17,7 +17,8 @@ import {
   RefreshCw,
   AlertCircle,
   KeyRound,
-  Lock
+  Lock,
+  Search
 } from "lucide-react";
 import { AuthUser } from "@/types";
 import { getRoleLabel } from "@/lib/formatters";
@@ -30,6 +31,9 @@ interface NavbarProps {
 
 export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [headerSearch, setHeaderSearch] = useState("");
+  const [language, setLanguage] = useState<"uz" | "en">("uz");
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -43,6 +47,25 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
   const [pwdError, setPwdError] = useState<string | null>(null);
   const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
   const [isChangingPwd, setIsChangingPwd] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("savdoza-language") === "en") setLanguage("en");
+  }, []);
+
+  const changeLanguage = (value: "uz" | "en") => {
+    setLanguage(value);
+    localStorage.setItem("savdoza-language", value);
+    window.dispatchEvent(new CustomEvent("savdoza-language-changed", { detail: value }));
+  };
+
+  const searchProducts = (event: React.FormEvent) => {
+    event.preventDefault();
+    const term = headerSearch.trim();
+    if (!term) return;
+    const target = user.role === "CASHIER" ? "/kassir" : "/admin/mahsulotlar";
+    if (pathname === target) window.dispatchEvent(new CustomEvent("savdoza-header-search", { detail: term }));
+    else router.push(`${target}?search=${encodeURIComponent(term)}`);
+  };
 
   useEffect(() => {
     if (user.role !== "SUPER_ADMIN" && user.shopId) {
@@ -220,10 +243,12 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
             </p>
           </div>
         </div>
+        {(user.role === "SHOP_ADMIN" || user.role === "CASHIER") && <form onSubmit={searchProducts} role="search" className="ml-3 hidden items-center gap-2 border border-slate-200 bg-white px-2 lg:flex"><Search className="h-4 w-4 text-slate-400" /><input value={headerSearch} onChange={(event) => setHeaderSearch(event.target.value)} aria-label={language === "uz" ? "Mahsulot qidirish" : "Search products"} placeholder={language === "uz" ? "Mahsulot qidirish" : "Search products"} className="h-9 w-40 bg-transparent text-sm outline-none xl:w-56" /></form>}
       </div>
 
       {/* Right side: Subscription Badge, Notifications, User Profile & Logout */}
       <div className="flex items-center gap-2 md:gap-4">
+        <select aria-label="Til / Language" value={language} onChange={(event) => changeLanguage(event.target.value as "uz" | "en")} className="h-9 border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"><option value="uz">UZ</option><option value="en">EN</option></select>
         {user.role !== "SUPER_ADMIN" && <Link href="/sozlamalar/tarif" className={`flex flex-col rounded-xl border px-3 py-1 text-xs font-semibold ${user.hasAccess ? "border-primary-200 bg-primary-50 text-primary-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}><span>{["PRO", "MAX"].includes(user.planCode || "") ? `${user.planCode === "PRO" ? "Standard" : "Premium"}${user.planPrice != null ? " · " + String(user.planPrice).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " so‘m / oy" : ""}` : "Mening tarifim"}</span><small>{!user.hasAccess ? "Tarifni yangilang" : user.subscriptionEndDate ? new Date(user.subscriptionEndDate).toISOString().slice(0, 10) + " gacha" : "Tarifni ko‘rish"}</small></Link>}
         {/* Trial or Subscription Status Badge */}
         {user.trialDaysLeft !== null && user.trialDaysLeft !== undefined && (
@@ -380,7 +405,7 @@ export default function Navbar({ user, onToggleSidebar }: NavbarProps) {
 
         {/* User Full Name */}
         <div className="hidden lg:flex items-center gap-2 border-l border-slate-200 pl-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-bold text-sm">
+          <div data-avatar className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700 font-bold text-sm">
             <UserIcon className="h-4 w-4" />
           </div>
           <span className="text-sm font-semibold text-slate-800">

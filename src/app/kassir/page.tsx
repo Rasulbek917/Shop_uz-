@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   Search,
   Camera,
@@ -74,13 +75,17 @@ export default function CashierPosPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const initialSearch = new URLSearchParams(window.location.search).get("search") || "";
+    if (initialSearch) setSearch(initialSearch);
+    const onHeaderSearch = (event: Event) => { setSearch((event as CustomEvent<string>).detail); searchInputRef.current?.focus(); };
+    window.addEventListener("savdoza-header-search", onHeaderSearch);
     loadProducts();
     loadCustomers();
     loadTaxSettings();
     const refreshShift = () => { fetch("/api/shifts", { cache: "no-store" }).then((r) => r.json()).then((result) => { if (result.success) setShiftOpen(result.data.some((shift: { mine: boolean; status: string }) => shift.mine && shift.status === "OPEN")); }).catch(() => {}); };
     refreshShift();
     window.addEventListener("focus", refreshShift);
-    return () => window.removeEventListener("focus", refreshShift);
+    return () => { window.removeEventListener("focus", refreshShift); window.removeEventListener("savdoza-header-search", onHeaderSearch); };
   }, []);
 
   useEffect(() => {
@@ -110,6 +115,13 @@ export default function CashierPosPage() {
     if (!draftKey) return;
     sessionStorage.setItem(draftKey, JSON.stringify({ cart, heldChecks, discountAmount, selectedCustomerId, loyaltyPointsUsed, checkNumber, nextCheckNumber, checkoutKey }));
   }, [draftKey, cart, heldChecks, discountAmount, selectedCustomerId, loyaltyPointsUsed, checkNumber, nextCheckNumber, checkoutKey]);
+
+  useEffect(() => {
+    const gross = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+    const lineDiscounts = cart.reduce((sum, item) => sum + (item.discount || 0), 0);
+    const maximum = Math.max(0, gross - lineDiscounts - 1);
+    if (discountAmount > maximum) setDiscountAmount(maximum);
+  }, [cart, discountAmount]);
 
   const loadTaxSettings = async () => {
     try {
@@ -348,6 +360,14 @@ export default function CashierPosPage() {
     });
   };
 
+  const updateLineDiscount = (index: number, amount: number) => {
+    setCart((previous) => previous.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      const discount = Math.min(Math.max(0, Math.round(amount) || 0), Math.max(0, item.unitPrice * item.quantity - 1));
+      return { ...item, discount, totalPrice: item.unitPrice * item.quantity - discount };
+    }));
+  };
+
   const removeFromCart = (index: number) => {
     setCart((prev) => prev.filter((_, i) => i !== index));
   };
@@ -388,7 +408,8 @@ export default function CashierPosPage() {
 
   // Calculations (must mirror server-side logic in /api/sales)
   const cartSubtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
-  const afterDiscount = Math.max(0, cartSubtotal - discountAmount);
+  const lineDiscountTotal = cart.reduce((sum, item) => sum + (item.discount || 0), 0);
+  const afterDiscount = Math.max(0, cartSubtotal - lineDiscountTotal - discountAmount);
   let taxAmount = 0;
   let cartTotal = afterDiscount;
   if (taxSettings.taxRate > 0) {
@@ -411,13 +432,18 @@ export default function CashierPosPage() {
       alert("Savatcha bo‘sh!");
       return;
     }
-    if (!Number.isFinite(discountAmount) || discountAmount < 0 || discountAmount >= cartSubtotal) {
+    if (!Number.isFinite(discountAmount) || discountAmount < 0 || discountAmount + lineDiscountTotal >= cartSubtotal) {
       setStatusMessage({ text: "Chegirma mahsulotlar jami summasidan kam bo‘lishi kerak.", type: "error" });
       return;
     }
     if (!checkoutKey) setCheckoutKey(`CHK_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
     setPaidAmount(payableTotal);
     setShowCheckoutModal(true);
+  };
+
+  const openPayment = (method: "CASH" | "CARD" | "ELECTRONIC") => {
+    setPaymentMethod(method);
+    handleOpenCheckout();
   };
 
   // Submit Sale
@@ -437,7 +463,7 @@ export default function CashierPosPage() {
       return;
     }
 
-    if (Number(discountAmount) > cartSubtotal) {
+    if (Number(discountAmount) + lineDiscountTotal >= cartSubtotal) {
       alert("Chegirma savat umumiy qiymatidan oshishi mumkin emas!");
       return;
     }
@@ -532,7 +558,7 @@ export default function CashierPosPage() {
       return;
     }
 
-    if (Number(discountAmount) > cartSubtotal) {
+    if (Number(discountAmount) + lineDiscountTotal >= cartSubtotal) {
       setDebtError("Chegirma savat umumiy qiymatidan oshishi mumkin emas!");
       return;
     }
@@ -609,9 +635,9 @@ export default function CashierPosPage() {
         event.preventDefault();
         searchInputRef.current?.focus();
         searchInputRef.current?.select();
-      } else if (event.key === "F4" && !showCheckoutModal && !showDebtModal && !showReceiptModal) {
+      } else if (["F4", "F6", "F7", "F9"].includes(event.key) && !showCheckoutModal && !showDebtModal && !showReceiptModal) {
         event.preventDefault();
-        handleOpenCheckout();
+        openPayment(event.key === "F7" ? "CARD" : event.key === "F9" ? "ELECTRONIC" : "CASH");
       } else if (event.key === "Escape") {
         setShowCheckoutModal(false);
         setShowDebtModal(false);
@@ -673,21 +699,23 @@ export default function CashierPosPage() {
       <div className="terminal-layout">
         <section className="terminal-receipt">
           <div className="terminal-section-head"><div><span>FAOL CHEK</span><h2>Chek №{checkNumber} <small>· {cart.length} xil mahsulot</small></h2></div><button type="button" disabled={cart.length === 0} onClick={clearCart}><Trash2 size={15} /> Tozalash</button></div>
-          <div className="terminal-table-scroll"><table className="terminal-table"><thead><tr><th>№</th><th>Mahsulot / kod</th><th>Narxi</th><th>Miqdor</th><th>Summa</th><th aria-label="O‘chirish" /></tr></thead><tbody>{cart.length ? cart.map((item, index) => <tr key={`${item.productId}-${index}`}><td>{index + 1}</td><td><strong>{item.productName}</strong><small>{item.batchNumber ? `#${item.batchNumber}` : ""}</small></td><td>{formatCurrency(item.unitPrice)}</td><td><div className="terminal-qty"><button type="button" onClick={() => item.quantity === 1 ? removeFromCart(index) : updateQuantity(index, item.quantity - 1)} aria-label="Kamaytirish"><Minus size={14} /></button><input type="number" min={1} max={item.availableQuantity} value={item.quantity} onChange={(event) => updateQuantity(index, Number(event.target.value))} aria-label={`${item.productName} miqdori`} /><button type="button" onClick={() => updateQuantity(index, item.quantity + 1)} aria-label="Ko‘paytirish"><Plus size={14} /></button></div></td><td><b>{formatCurrency(item.totalPrice)}</b></td><td><button type="button" className="terminal-row-remove" onClick={() => removeFromCart(index)} aria-label={`${item.productName} ni o‘chirish`}><X size={15} /></button></td></tr>) : <tr><td colSpan={6} className="terminal-empty"><ShoppingCart size={30} /><strong>Chek bo‘sh</strong><span>Mahsulotni tanlang yoki shtrix-kodni skanerlang.</span></td></tr>}</tbody></table></div>
+          <div className="terminal-table-scroll"><table className="terminal-table"><thead><tr><th>№</th><th>Mahsulot / kod</th><th>Narxi</th><th>Miqdor</th><th>Chegirma</th><th>Summa</th><th aria-label="O‘chirish" /></tr></thead><tbody>{cart.length ? cart.map((item, index) => <tr key={`${item.productId}-${index}`}><td>{index + 1}</td><td><strong>{item.productName}</strong><small>{item.batchNumber ? `#${item.batchNumber}` : ""}</small></td><td>{formatCurrency(item.unitPrice)}</td><td><div className="terminal-qty"><button type="button" onClick={() => item.quantity === 1 ? removeFromCart(index) : updateQuantity(index, item.quantity - 1)} aria-label="Kamaytirish"><Minus size={14} /></button><input type="number" min={1} max={item.availableQuantity} value={item.quantity} onChange={(event) => updateQuantity(index, Number(event.target.value))} aria-label={`${item.productName} miqdori`} /><button type="button" onClick={() => updateQuantity(index, item.quantity + 1)} aria-label="Ko‘paytirish"><Plus size={14} /></button></div></td><td><input className="terminal-line-discount" type="number" min={0} max={Math.max(0, item.unitPrice * item.quantity - 1)} step={1000} value={item.discount} onChange={(event) => updateLineDiscount(index, Number(event.target.value))} aria-label={`${item.productName} chegirmasi`} /></td><td><b>{formatCurrency(item.totalPrice)}</b></td><td><button type="button" className="terminal-row-remove" onClick={() => removeFromCart(index)} aria-label={`${item.productName} ni o‘chirish`}><X size={15} /></button></td></tr>) : <tr><td colSpan={7} className="terminal-empty"><ShoppingCart size={30} /><strong>Chek bo‘sh</strong><span>Mahsulotni tanlang yoki shtrix-kodni skanerlang.</span></td></tr>}</tbody></table></div>
           <div className="terminal-check-tabs"><span>Cheklar:</span><strong>№{checkNumber}</strong>{heldChecks.map((check) => <button key={check.number} type="button" onClick={() => restoreCheck(check.number)}>№{check.number} · {check.cart.length} ta</button>)}<button type="button" onClick={newCheck}><Plus size={13} /> Yangi chek</button></div>
           <div className="terminal-receipt-foot"><span>{cart.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot</span><strong>Jami: {formatCurrency(payableTotal)}</strong></div>
         </section>
 
         <aside className="terminal-actions" aria-label="Kassa amallari">
           <div className="terminal-action-head"><span className="pos-live-dot" /><strong>{shiftOpen ? "Kassa faol" : "Smena yopiq"}</strong><small>{shiftOpen ? "Yangi savdo" : "Smenani oching"}</small></div>
-          <div className="terminal-action-buttons"><button type="button" onClick={newCheck}><RotateCcw size={17} /> Yangi chek</button><button type="button" disabled={cart.length === 0} onClick={() => setShowPrecheck(true)}><FileText size={17} /> Prechek</button><button type="button" onClick={() => setShowCameraScanner(true)}><Camera size={17} /> Skaner</button></div>
+          <div className="terminal-action-buttons"><button type="button" disabled={cart.length === 0} onClick={clearCart}><Trash2 size={17} /> O‘chirish</button><Link href="/kassir/cheklar"><FileText size={17} /> Cheklar</Link><button type="button" onClick={newCheck}><RotateCcw size={17} /> Bloklash</button></div>
           <label className="terminal-field">Mijoz<select value={selectedCustomerId} onChange={event => { setSelectedCustomerId(event.target.value); setLoyaltyPointsUsed(0); }}><option value="">Oddiy xaridor</option>{customers.map(customer => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</option>)}</select></label>
           {selectedCustomer && <label className="terminal-field">Bonus ballari <small>{availablePoints} ball mavjud · 1 ball = 1 000 so‘m</small><input type="number" min={0} max={maxRedeemablePoints} value={loyaltyPointsUsed} onChange={event => setLoyaltyPointsUsed(Math.min(maxRedeemablePoints, Math.max(0, Number(event.target.value) || 0)))} /></label>}
-          <label className="terminal-field">Chegirma (so‘m)<input type="number" min={0} max={Math.max(0, cartSubtotal - 1)} step={500} value={discountAmount} onChange={event => setDiscountAmount(Math.min(Math.max(0, cartSubtotal - 1), Math.max(0, Number(event.target.value) || 0)))} /></label>
-          <div className="terminal-totals"><div><span>Mahsulotlar</span><b>{formatCurrency(cartSubtotal)}</b></div>{discountAmount > 0 && <div><span>Chegirma</span><b>−{formatCurrency(discountAmount)}</b></div>}{loyaltyPointsUsed > 0 && <div><span>Ball chegirmasi</span><b>−{formatCurrency(loyaltyPointsUsed * 1000)}</b></div>}{taxSettings.taxRate > 0 && <div><span>QQS {taxSettings.taxRate}%</span><b>{formatCurrency(taxAmount)}</b></div>}</div>
+          <label className="terminal-field">Chegirma (so‘m)<input type="number" min={0} max={Math.max(0, cartSubtotal - lineDiscountTotal - 1)} step={500} value={discountAmount} onChange={event => setDiscountAmount(Math.min(Math.max(0, cartSubtotal - lineDiscountTotal - 1), Math.max(0, Number(event.target.value) || 0)))} /></label>
+          <div className="terminal-totals"><div><span>Mahsulotlar</span><b>{formatCurrency(cartSubtotal)}</b></div>{lineDiscountTotal > 0 && <div><span>Satr chegirmasi</span><b>−{formatCurrency(lineDiscountTotal)}</b></div>}{discountAmount > 0 && <div><span>Chegirma</span><b>−{formatCurrency(discountAmount)}</b></div>}{loyaltyPointsUsed > 0 && <div><span>Ball chegirmasi</span><b>−{formatCurrency(loyaltyPointsUsed * 1000)}</b></div>}{taxSettings.taxRate > 0 && <div><span>QQS {taxSettings.taxRate}%</span><b>{formatCurrency(taxAmount)}</b></div>}</div>
           <div className="terminal-due"><span>TO‘LANADI</span><strong>{formatCurrency(payableTotal)}</strong></div>
+          <div className="terminal-payment-shortcuts"><button type="button" disabled={!shiftOpen || cart.length === 0} onClick={() => openPayment("CASH")}><Banknote size={16} /> Naqd <small>F6</small></button><button type="button" disabled={!shiftOpen || cart.length === 0} onClick={() => openPayment("CARD")}><CreditCard size={16} /> Plastik <small>F7</small></button><button type="button" disabled={!shiftOpen || cart.length === 0} onClick={() => openPayment("ELECTRONIC")}><Smartphone size={16} /> Elektron <small>F9</small></button></div>
           <button type="button" className="terminal-pay" disabled={!shiftOpen || cart.length === 0 || loyaltyPointsUsed > maxRedeemablePoints} onClick={handleOpenCheckout}><CheckCircle size={20} /> To‘lovni qabul qilish</button>
           <button type="button" className="terminal-debt" disabled={!shiftOpen || cart.length === 0} onClick={handleOpenDebtSale}><CreditCard size={17} /> Qarzga sotish</button>
+          <button type="button" className="terminal-debt" disabled={cart.length === 0} onClick={() => setShowPrecheck(true)}><FileText size={17} /> Prechek</button>
         </aside>
 
         <section className="terminal-products"><div className="terminal-section-head"><div><span>MAHSULOTLAR</span><h2>Tezkor tanlash <small>· {filteredProducts.length} ta</small></h2></div><button type="button" onClick={loadProducts} disabled={isLoading}><RotateCcw size={15} /> Yangilash</button></div><div className="terminal-search"><Search size={19} /><input ref={searchInputRef} value={search} onChange={event => setSearch(event.target.value)} placeholder="Nomi, SKU yoki shtrix-kod bo‘yicha qidiring..." aria-label="Mahsulotni qidirish" /><button type="button" onClick={() => setShowCameraScanner(true)} title="Kamera skaner"><Camera size={18} /></button></div><div className="terminal-table-scroll"><table className="terminal-table terminal-catalog"><thead><tr><th>SKU / shtrix-kod</th><th>Mahsulot</th><th>Narxi</th><th>Qoldiq</th><th /></tr></thead><tbody>{isLoading ? <tr><td colSpan={5} className="terminal-loading">Mahsulotlar yuklanmoqda...</td></tr> : filteredProducts.length ? filteredProducts.map(product => <tr key={product.id}><td className="terminal-sku">{product.barcode || product.qrCode || "—"}</td><td><strong>{product.name}</strong><small>{product.category?.name || "Kategoriyasiz"}</small></td><td><b>{formatCurrency(product.salePrice)}</b></td><td><span className={product.totalStock > 0 ? "terminal-stock" : "terminal-no-stock"}>{product.totalStock > 0 ? `${product.totalStock} ${product.unit}` : "Tugagan"}</span></td><td><button type="button" className="terminal-add" disabled={product.totalStock <= 0} onClick={() => addToCart(product)}><Plus size={16} /> Qo‘shish</button></td></tr>) : <tr><td colSpan={5} className="terminal-loading">Mos mahsulot topilmadi.</td></tr>}</tbody></table></div></section>

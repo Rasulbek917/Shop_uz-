@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
       }
       // 1. Partiyalarni tekshirish, muddat va qoldiqni nazorat qilish
       let totalAmount = 0;
+      let lineDiscountTotal = 0;
       const validatedItems: Array<{
         productId: string;
         batchId: string;
@@ -129,7 +130,9 @@ export async function POST(req: NextRequest) {
         const itemTotal = Math.round(
           item.unitPrice * item.quantity - item.discount,
         );
+        if (itemTotal < 0) throw new Error("Mahsulot chegirmasi uning qiymatidan oshmasligi kerak");
         totalAmount += Math.round(item.unitPrice * item.quantity);
+        lineDiscountTotal += Math.round(item.discount);
 
         validatedItems.push({
           productId: batch.productId,
@@ -146,14 +149,15 @@ export async function POST(req: NextRequest) {
       }
 
       // 2. Chegirmani tekshirish
-      if (discountAmount > totalAmount) {
+      const combinedDiscount = discountAmount + lineDiscountTotal;
+      if (combinedDiscount >= totalAmount) {
         throw new Error(
           "Chegirma summasi savatdagi umumiy qiymatdan oshishi mumkin emas!",
         );
       }
 
       if (user.role === "CASHIER" && totalAmount > 0) {
-        const discountPct = (discountAmount / totalAmount) * 100;
+        const discountPct = (combinedDiscount / totalAmount) * 100;
         if (discountPct > 15) {
           throw new Error(
             `Kassir uchun ruxsat etilgan maksimal chegirma 15%. Kiritilgan: ${discountPct.toFixed(1)}%.`,
@@ -169,17 +173,17 @@ export async function POST(req: NextRequest) {
 
       if (shopTaxRate > 0) {
         if (taxIncluded) {
-          payableAmount = Math.max(0, Math.round(totalAmount - discountAmount));
+          payableAmount = Math.max(0, Math.round(totalAmount - combinedDiscount));
           taxAmount = Math.round(
             payableAmount - payableAmount / (1 + shopTaxRate / 100),
           );
         } else {
-          const afterDiscount = Math.max(0, totalAmount - discountAmount);
+          const afterDiscount = Math.max(0, totalAmount - combinedDiscount);
           taxAmount = Math.round(afterDiscount * (shopTaxRate / 100));
           payableAmount = Math.round(afterDiscount + taxAmount);
         }
       } else {
-        payableAmount = Math.max(0, Math.round(totalAmount - discountAmount));
+        payableAmount = Math.max(0, Math.round(totalAmount - combinedDiscount));
       }
 
       // 4. Tavsifga sotib olingan mahsulot nomlarini yozamiz
@@ -193,8 +197,8 @@ export async function POST(req: NextRequest) {
         .join("; ");
 
       let description = `Qarzga sotuv: ${itemLines}`;
-      if (discountAmount > 0) {
-        description += ` | Chegirma: ${Math.round(discountAmount).toLocaleString("uz-UZ")} so‘m`;
+      if (combinedDiscount > 0) {
+        description += ` | Chegirma: ${Math.round(combinedDiscount).toLocaleString("uz-UZ")} so‘m`;
       }
       if (notes && notes.trim()) {
         description += ` | Izoh: ${notes.trim()}`;
@@ -242,7 +246,7 @@ export async function POST(req: NextRequest) {
           cashierId: user.id,
           customerId: validated.data.customerId || null,
           totalAmount,
-          discountAmount: Math.round(discountAmount),
+          discountAmount: Math.round(combinedDiscount),
           taxRate: shopTaxRate,
           taxAmount,
           payableAmount,

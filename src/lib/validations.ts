@@ -102,8 +102,8 @@ export const saleItemSchema = z.object({
   batchId: z.string().min(1),
   quantity: z.number().int().positive(),
   unitPrice: z.number().min(0),
-  discount: z.number().finite().min(0).max(0, "Chegirmani savatning umumiy chegirma maydoniga kiriting").default(0),
-});
+  discount: z.number().finite().min(0).default(0),
+}).refine((item) => item.discount <= item.unitPrice * item.quantity, "Mahsulot chegirmasi uning qiymatidan oshmasligi kerak");
 
 const offlineSaleFields = {
   occurredAt: z.string().datetime().refine(value => new Date(value).getTime() <= Date.now() + 300000, "Telefon sanasi kelajakda. Vaqtni tekshiring.").optional(),

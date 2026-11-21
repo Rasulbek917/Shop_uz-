@@ -34,6 +34,7 @@ import { optionalMenuItems } from "@/lib/menu-visibility";
 
 interface SidebarProps {
   user: AuthUser;
+  language: "uz" | "en";
   isOpen: boolean;
   onClose: () => void;
   compact: boolean;
@@ -47,7 +48,11 @@ interface NavItem {
   requiresMax?: boolean;
 }
 
-export default function Sidebar({ user, isOpen, onClose, compact, onToggleCompact }: SidebarProps) {
+const englishLabels: Record<string, string> = {
+  "/admin": "Dashboard", "/admin/pos": "Checkout", "/admin/smena": "Shifts", "/admin/hisobotlar": "Reports", "/admin/tovarlar": "Products", "/admin/ombor": "Inventory", "/admin/moliya": "Finance", "/admin/xodimlar": "Staff", "/admin/mijozlar": "Customers", "/sozlamalar": "Settings", "/qollanma": "Video guide", "/kassir": "POS terminal", "/kassir/smena": "Shifts", "/kassir/cheklar": "Sales history", "/kassir/qaytarish": "Returns", "/omborchi": "Dashboard", "/omborchi/ombor": "Inventory", "/omborchi/partiyalar": "Batches", "/omborchi/mahsulotlar": "Add product", "/super-admin": "Dashboard", "/super-admin/xabarlar": "Messages", "/super-admin/tariflar": "Plans", "/super-admin/dokonlar": "Stores", "/admin/shtrix-kodlar": "Barcodes", "/super-admin/obunalar": "Subscriptions", "/super-admin/audit-log": "Audit log",
+};
+
+export default function Sidebar({ user, language, isOpen, onClose, compact, onToggleCompact }: SidebarProps) {
   const pathname = usePathname();
 
   const getNavItems = (role: UserRole): NavItem[] => {
@@ -138,7 +143,7 @@ export default function Sidebar({ user, isOpen, onClose, compact, onToggleCompac
                 SAVDO<span className="text-[#c7ddff]">ZA</span>
               </span>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider">
-                Boshqaruv Tizimi
+                {language === "uz" ? "Boshqaruv Tizimi" : "Management System"}
               </p>
             </div>
           </Link>
@@ -158,11 +163,12 @@ export default function Sidebar({ user, isOpen, onClose, compact, onToggleCompac
         {/* Navigation list */}
         <div className={`flex-1 overflow-y-auto px-4 py-4 space-y-1 ${compact ? "md:px-2" : ""}`}>
           <div className={`px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400 ${compact ? "md:hidden" : ""}`}>
-            Asosiy menyu
+            {language === "uz" ? "Asosiy menyu" : "Main menu"}
           </div>
 
           {navItems.map((item) => {
             const Icon = item.icon;
+            const label = language === "en" ? englishLabels[item.href] || item.label : item.label;
             const isActive =
               pathname === item.href ||
               (item.href === "/admin/hisobotlar" && ["/admin/sotuv-hisoboti", "/admin/sotuvlar", "/admin/cheklar", "/admin/smena", "/admin/qaytarishlar"].some((path) => pathname.startsWith(path))) ||
@@ -178,7 +184,7 @@ export default function Sidebar({ user, isOpen, onClose, compact, onToggleCompac
               return <button key={item.href} type="button" disabled title="Premium tarifiga o‘ting"
                 className={`flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-400 ${compact ? "md:justify-center md:px-2" : ""}`}>
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className={`flex-1 ${compact ? "md:hidden" : ""}`}>{item.label}<small className="block text-[10px] text-amber-200/80">Premium tarifiga o‘ting</small></span>
+                <span className={`flex-1 ${compact ? "md:hidden" : ""}`}>{label}<small className="block text-[10px] text-amber-200/80">{language === "uz" ? "Premium tarifiga o‘ting" : "Upgrade to Premium"}</small></span>
                 <LockKeyhole className={`h-3.5 w-3.5 shrink-0 ${compact ? "md:hidden" : ""}`} />
               </button>;
             }
@@ -188,8 +194,8 @@ export default function Sidebar({ user, isOpen, onClose, compact, onToggleCompac
                 key={item.href}
                 href={item.href}
                 onClick={() => onClose()}
-                aria-label={item.label}
-                title={compact ? item.label : undefined}
+                aria-label={label}
+                title={compact ? label : undefined}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${compact ? "md:justify-center md:px-2" : ""} ${
                   isActive
                     ? "bg-white text-[#08358d] shadow-sm"
@@ -197,13 +203,13 @@ export default function Sidebar({ user, isOpen, onClose, compact, onToggleCompac
                 }`}
               >
                 <Icon className={`h-4 w-4 ${isActive ? "text-[#08358d]" : "text-blue-100"}`} />
-                <span className={compact ? "md:hidden" : ""}>{item.label}</span>
+                <span className={compact ? "md:hidden" : ""}>{label}</span>
               </Link>
             );
           })}
           {user.role === "SHOP_ADMIN" && !isMax(user.planCode) && (
             <Link href="/sozlamalar/tarif?plan=MAX" onClick={onClose} className={`mt-4 block rounded-xl border border-amber-200/30 px-3 py-3 text-sm font-semibold text-amber-100 hover:bg-white/5 ${compact ? "md:hidden" : ""}`}>
-              Premium tarifiga o‘tish
+              {language === "uz" ? "Premium tarifiga o‘tish" : "Upgrade to Premium"}
             </Link>
           )}
         </div>
@@ -212,7 +218,7 @@ export default function Sidebar({ user, isOpen, onClose, compact, onToggleCompac
         <div className={`border-t border-slate-800 p-4 ${compact ? "md:px-2" : ""}`}>
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <ShieldCheck className="h-4 w-4 text-[#b9d2ff]" />
-            <span className={compact ? "md:hidden" : ""}>Savdo va ombor bir joyda</span>
+            <span className={compact ? "md:hidden" : ""}>{language === "uz" ? "Savdo va ombor bir joyda" : "Sales and inventory together"}</span>
           </div>
         </div>
       </aside>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, BarChart3, Boxes, CreditCard, Settings, ShoppingBasket, UserCog, Users, Warehouse } from "lucide-react";
+import { BarChart3, Boxes, CreditCard, Settings, ShoppingBasket, UserCog, Users, Warehouse } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 
 const modules = [
@@ -23,18 +23,18 @@ export default function AdminDashboardPage() {
   const [visibility, setVisibility] = useState<Record<string, boolean>>({});
   useEffect(() => { fetch("/api/reports", { cache: "no-store" }).then((r) => r.json()).then((r) => { if (r.success) setSummary(r.data); }).catch(() => {}); }, []);
   useEffect(() => { fetch("/api/auth/me", { cache: "no-store" }).then((r) => r.json()).then((r) => { if (r.success) setVisibility(r.user.menuVisibility || {}); }).catch(() => {}); const onChange = (event: Event) => setVisibility((event as CustomEvent<Record<string, boolean>>).detail); window.addEventListener("menu-visibility-changed", onChange); return () => window.removeEventListener("menu-visibility-changed", onChange); }, []);
-  return <main className="min-h-full bg-[#f3f5f9] pb-10">
-    <div className="border-b border-slate-200 bg-white px-5 py-5 md:px-8"><p className="text-xs font-bold uppercase tracking-[.17em] text-[#1e50b3]">Savdoza POS</p><h1 className="mt-1 text-2xl font-bold text-slate-900">Boshqaruv menyusi</h1><p className="mt-1 text-sm text-slate-500">Do‘koningizni kerakli bo‘limdan boshqaring</p></div>
-    <section className="grid gap-3 px-5 pt-6 sm:grid-cols-2 lg:grid-cols-4 md:px-8">
+  return <main className="min-h-full pb-8">
+    <div className="border-b border-slate-200 bg-white px-4 py-4 md:px-6"><h1 className="text-xl font-semibold text-slate-900">Boshqaruv paneli</h1><p className="mt-1 text-sm text-slate-500">Do‘konning bugungi holati va bo‘limlari</p></div>
+    <section className="grid gap-3 px-4 pt-5 sm:grid-cols-2 lg:grid-cols-4 md:px-6">
       {[
         ["Bugungi tushum", formatCurrency(summary.today?.revenue || 0)],
         ["Cheklar", `${summary.today?.salesCount || 0} ta`],
         ["Sof foyda", formatCurrency(summary.today?.profit || 0)],
         ["Kam qolgan tovar", `${summary.inventory?.lowStockCount || 0} ta`],
-      ].map(([label, value]) => <div key={label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><p className="text-xs font-medium text-slate-500">{label}</p><strong className="mt-2 block text-xl text-slate-900">{value}</strong></div>)}
+      ].map(([label, value]) => <div key={label} className="rounded-md border border-slate-200 bg-white p-4"><p className="text-sm text-slate-500">{label}</p><strong className="mt-2 block text-xl font-semibold text-slate-900">{value}</strong></div>)}
     </section>
-    <section className="px-5 pt-8 md:px-8"><h2 className="mb-4 text-lg font-bold text-slate-900">Asosiy bo‘limlar</h2><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {modules.filter((module) => !("key" in module) || visibility[module.key!] !== false).map(({ label, href, icon: Icon, detail }) => <Link key={href} href={href} className="group flex min-h-40 flex-col justify-between rounded-lg border border-[#1848aa] bg-[#1e50b3] p-5 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#123d99] hover:shadow-lg"><div className="flex justify-between"><Icon size={31} strokeWidth={1.7} /><ArrowUpRight size={18} className="opacity-70" /></div><div><h3 className="text-lg font-semibold">{label}</h3><p className="mt-1 text-xs text-blue-100">{detail}</p></div></Link>)}
+    <section className="px-4 pt-6 md:px-6"><h2 className="mb-3 text-lg font-semibold text-slate-900">Asosiy bo‘limlar</h2><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {modules.filter((module) => !("key" in module) || visibility[module.key!] !== false).map(({ label, href, icon: Icon, detail }) => <Link key={href} href={href} className="flex items-center gap-3 rounded-md border border-slate-200 bg-white p-4 text-slate-800 transition-colors duration-150 hover:border-blue-400 hover:bg-blue-50"><Icon size={20} className="shrink-0 text-blue-600" /><div><h3 className="text-sm font-semibold">{label}</h3><p className="mt-0.5 text-xs text-slate-500">{detail}</p></div></Link>)}
     </div></section>
   </main>;
 }

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { CircleHelp } from "lucide-react";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import BottomNav from "./BottomNav";
@@ -17,13 +19,27 @@ export default function AppShell({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPosMenuExpanded, setIsPosMenuExpanded] = useState(false);
+  const [language, setLanguage] = useState<"uz" | "en">("uz");
   const [currentUser, setCurrentUser] = useState<AuthUser>(user);
   const pathname = usePathname();
   const isPosPage = pathname === "/admin/pos" || pathname === "/kassir";
+  const helpLesson = pathname.includes("mahsulot") || pathname.includes("tovar") || pathname.includes("kategoriya") ? "products"
+    : pathname.includes("ombor") || pathname.includes("partiya") ? "inventory"
+    : isPosPage || pathname.includes("qaytarish") || pathname.includes("chek") ? "pos"
+    : pathname.includes("qarz") || pathname.includes("mijoz") || pathname.includes("moliya") ? "debts"
+    : pathname.includes("hisobot") || pathname.includes("smena") ? "reports"
+    : pathname.includes("xodim") ? "staff" : "setup";
 
   useEffect(() => {
     setIsPosMenuExpanded(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (localStorage.getItem("savdoza-language") === "en") setLanguage("en");
+    const onLanguage = (event: Event) => setLanguage((event as CustomEvent<"uz" | "en">).detail);
+    window.addEventListener("savdoza-language-changed", onLanguage);
+    return () => window.removeEventListener("savdoza-language-changed", onLanguage);
+  }, []);
 
   useEffect(() => {
     const updateMenu = (event: Event) => {
@@ -82,10 +98,11 @@ export default function AppShell({
   }, [user.role]);
 
   return (
-    <div className="flex min-h-screen bg-[#edf1f6]">
+    <div className="admin-shell flex min-h-screen bg-[#f8fafc]">
       {/* Sidebar */}
       <Sidebar
         user={currentUser}
+        language={language}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         compact={isPosPage && !isPosMenuExpanded}
@@ -102,7 +119,8 @@ export default function AppShell({
         {/* Dynamic warning banner if trial or subscription is expiring */}
         <TrialWarningBanner user={currentUser} />
 
-        <main className="flex-1 px-4 py-5 md:px-6 md:py-6">
+        <main className="min-w-0 flex-1 px-3 py-4 md:px-4 md:py-4">
+          {pathname !== "/qollanma" && <div className="mb-3 flex justify-end"><Link href={`/qollanma?lesson=${helpLesson}`} className="inline-flex items-center gap-1.5 rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-blue-400 hover:text-blue-700"><CircleHelp size={14} />{language === "uz" ? "Qanday ishlaydi?" : "How does it work?"}</Link></div>}
           {children}
         </main>
 

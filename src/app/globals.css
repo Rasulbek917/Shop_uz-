@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Operational screens use compact controls and quiet surfaces. The public site is unchanged. */
+.admin-shell { --radius: 4px; --primary: #2563eb; background: #f8fafc; color: #334155; font-size: 14px; }
+.admin-shell :is(.rounded-lg,.rounded-xl,.rounded-2xl,.rounded-3xl) { border-radius: 6px !important; }
+.admin-shell :is(button,input,select,textarea,.rounded-full:not([data-avatar]):not([data-status-dot])) { border-radius: 4px !important; }
+.admin-shell [class*="shadow-"] { box-shadow: none !important; }
+.admin-shell [class*="bg-gradient"], .admin-shell [class*="from-"][class*="to-"] { background-image: none !important; }
+.admin-shell [class*="blur-"]:not([class*="backdrop-blur"]) { filter: none !important; }
+.admin-shell [class*="backdrop-blur"] { backdrop-filter: none !important; }
+.admin-shell [class*="animate-"]:not(.animate-spin) { animation: none !important; }
+.admin-shell :is(button,a,input,select,textarea) { transition-duration: 150ms !important; }
+.admin-shell table { font-size: 13px; }
+.admin-shell table :is(th,td) { padding-top: 8px; padding-bottom: 8px; }
+.admin-shell .terminal-action-buttons :is(button,a) { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-height:62px; padding:5px 2px; border:1px solid #ced8e5; border-radius:4px; background:#fff; color:#2d536f; font-size:10px; font-weight:800; text-decoration:none; }
+.admin-shell .terminal-action-buttons button:first-child { background:#ef5b4c; border-color:#e55344; color:#fff; }
+.admin-shell .terminal-line-discount { width:92px; height:29px; padding:3px 5px; border:1px solid #d7e0ea; border-radius:4px; background:#fff; font-size:12px; }
+.admin-shell .terminal-payment-shortcuts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
+.admin-shell .terminal-payment-shortcuts button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:48px; border:1px solid #aabdd5; background:#fff; color:#24558c; font-size:11px; font-weight:700; }
+.admin-shell .terminal-payment-shortcuts small { font-size:9px; color:#64748b; }
+.admin-shell .terminal-payment-shortcuts button:disabled { opacity:.5; cursor:not-allowed; }
+
 :root {
   --primary: #1664C0;
   --navy: #0F172A;
