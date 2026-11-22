@@ -176,6 +176,7 @@ class _DesktopShellState extends State<DesktopShell> {
                                     ]),
                                     menu('Savdo', [
                                       'pos',
+                                      'shifts',
                                       'receipts',
                                       'returns',
                                       'debts',
@@ -190,10 +191,12 @@ class _DesktopShellState extends State<DesktopShell> {
                                     ]),
                                     menu('Boshqaruv', [
                                       'reports',
+                                      'finance',
                                       'staff',
                                       'audit',
                                       'notifications',
                                       'settings',
+                                      'guide',
                                     ]),
                                     SubmenuButton(
                                       menuChildren: [
@@ -369,8 +372,9 @@ class _DesktopShellState extends State<DesktopShell> {
                                                     ),
                                                     selectedTileColor:
                                                         Colors.white,
-                                                    selectedColor:
-                                                        const Color(0xff08358d),
+                                                    selectedColor: const Color(
+                                                      0xff08358d,
+                                                    ),
                                                     textColor: Colors.white70,
                                                     iconColor: Colors.white70,
                                                     contentPadding:

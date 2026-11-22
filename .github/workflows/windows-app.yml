@@ -44,7 +44,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Tekshiruv bajarilmadi" }
           flutter test --no-pub
           if ($LASTEXITCODE -ne 0) { throw "Testlar bajarilmadi" }
-          flutter build windows --release --no-pub --dart-define=API_URL=https://shop.aminboyevrasulbek.uz --build-name=2.1.0 --build-number=${{ github.run_number }}
+          flutter build windows --release --no-pub --dart-define=API_URL=https://shop.aminboyevrasulbek.uz --build-name=2.2.0 --build-number=${{ github.run_number }}
           if ($LASTEXITCODE -ne 0) { throw "Windows yig‘ilmadi" }
       - name: Build installer
         working-directory: apps/savdoza_client
@@ -80,6 +80,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) { gh release create windows-latest --target $env:GITHUB_SHA --title 'Savdoza Windows' --notes 'Windows uchun Savdoza.' }
           gh release upload windows-latest apps/savdoza_client/build/installer/savdoza-windows-setup.exe --clobber
           if ($LASTEXITCODE -ne 0) { throw "Fayl e’lon qilinmadi" }
-          gh release edit windows-latest --title 'Savdoza Windows 2.1 - native POS' --notes 'Flutter Windows ilovasi: ixcham menyu, bir bosqichli tolov, naqd qaytim va 58 mm termal chek. Ichki chek fiskal chek emas.'
+          gh release edit windows-latest --title 'Savdoza Windows 2.2 - native POS' --notes 'Flutter Windows ilovasi: kassa, smena, moliya va video qollanma. Bir bosqichli tolov va 58 mm termal chek. Ichki chek fiskal chek emas.'
           node scripts/publish-app-release.mjs windows apps/savdoza_client/build/installer/savdoza-windows-setup.exe
           if ($LASTEXITCODE -ne 0) { throw "Yuklab olish ma’lumoti yangilanmadi" }

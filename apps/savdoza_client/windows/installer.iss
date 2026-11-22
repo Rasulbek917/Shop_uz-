@@ -4,7 +4,7 @@
 [Setup]
 AppId={{09D858F3-4FA7-4B72-84AE-9373BBF89576}
 AppName=Savdoza
-AppVersion=2.0.0.{#BuildNumber}
+AppVersion=2.2.0.{#BuildNumber}
 AppPublisher=Savdoza
 DefaultDirName={localappdata}\Programs\Savdoza
 DefaultGroupName=Savdoza

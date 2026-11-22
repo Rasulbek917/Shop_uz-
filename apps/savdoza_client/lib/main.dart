@@ -13,6 +13,8 @@ import 'dashboard.dart';
 import 'management.dart';
 import 'pos.dart';
 import 'screens.dart';
+import 'operations.dart';
+import 'guide.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -139,6 +141,7 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
         ),
         Destination('audit', 'Tizim jurnali', Icons.history),
         Destination('settings', 'Sozlamalar', Icons.settings_outlined),
+        Destination('guide', 'Video qo‘llanma', Icons.help_outline),
       ];
     }
     if (data.user['role'] == 'WAREHOUSEMAN') {
@@ -148,23 +151,33 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
         Destination('categories', 'Kategoriyalar', Icons.category_outlined),
         Destination('batches', 'Ombor va partiyalar', Icons.warehouse_outlined),
         Destination('settings', 'Sozlamalar', Icons.settings_outlined),
+        Destination('guide', 'Video qo‘llanma', Icons.help_outline),
       ];
     }
     if (data.user['role'] == 'CASHIER') {
       return const [
         Destination('pos', 'POS · Savdo terminali', Icons.point_of_sale),
+        Destination('shifts', 'Smena', Icons.calendar_month_outlined),
         Destination('receipts', 'Savdo tarixi', Icons.receipt_long),
         Destination('returns', 'Tovarni qaytarish', Icons.keyboard_return),
         Destination('queue', 'Sinxronlash', Icons.sync),
         Destination('settings', 'Sozlamalar', Icons.settings_outlined),
+        Destination('guide', 'Video qo‘llanma', Icons.help_outline),
       ];
     }
     return const [
       Destination('dashboard', 'Bosh sahifa', Icons.dashboard_outlined),
-      Destination('pos', 'POS · Savdo terminali', Icons.point_of_sale),
+      Destination('pos', 'Kassa', Icons.point_of_sale),
+      Destination('shifts', 'Smena', Icons.calendar_month_outlined),
+      Destination('reports', 'Hisobotlar', Icons.bar_chart),
       Destination('products', 'Mahsulotlar', Icons.inventory_2_outlined),
-      Destination('receipts', 'Cheklar va sotuvlar', Icons.receipt_long),
       Destination('batches', 'Ombor va partiyalar', Icons.warehouse_outlined),
+      Destination('finance', 'Moliya', Icons.account_balance_wallet_outlined),
+      Destination('staff', 'Xodimlar', Icons.badge_outlined, max: true),
+      Destination('customers', 'Mijozlar', Icons.people_outline),
+      Destination('settings', 'Sozlamalar', Icons.settings_outlined),
+      Destination('guide', 'Video qo‘llanma', Icons.help_outline),
+      Destination('receipts', 'Cheklar va sotuvlar', Icons.receipt_long),
       Destination('categories', 'Kategoriyalar', Icons.category_outlined),
       Destination(
         'manufacturers',
@@ -172,7 +185,6 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
         Icons.factory_outlined,
       ),
       Destination('returns', 'Qaytarishlar', Icons.keyboard_return),
-      Destination('customers', 'Mijozlar', Icons.people_outline),
       Destination('debts', 'Qarzlar', Icons.credit_card),
       Destination(
         'suppliers',
@@ -180,8 +192,6 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
         Icons.local_shipping_outlined,
         max: true,
       ),
-      Destination('staff', 'Xodimlar', Icons.badge_outlined, max: true),
-      Destination('reports', 'Hisobotlar', Icons.bar_chart),
       Destination('audit', 'Amallar jurnali', Icons.history, max: true),
       Destination(
         'notifications',
@@ -189,7 +199,6 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
         Icons.notifications_outlined,
       ),
       Destination('queue', 'Sinxronlash', Icons.sync),
-      Destination('settings', 'Sozlamalar', Icons.settings_outlined),
     ];
   }
 
@@ -201,6 +210,12 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
         return dashboard();
       case 'pos':
         return PosPage(data: data);
+      case 'shifts':
+        return ShiftPage(data: data);
+      case 'finance':
+        return FinancePage(data: data);
+      case 'guide':
+        return GuidePage(data: data);
       case 'settings':
         return SettingsPage(data: data);
       case 'queue':
