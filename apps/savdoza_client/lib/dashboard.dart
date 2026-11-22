@@ -6,8 +6,8 @@ import 'data.dart';
 
 double _amount(dynamic value) => (value as num?)?.toDouble() ?? 0;
 
-const _ink = Color(0xff142d25);
-const _green = Color(0xff24634f);
+const _ink = Color(0xff08358d);
+const _green = Color(0xff1664c0);
 const _muted = Color(0xff64748b);
 
 class DashboardPage extends StatelessWidget {

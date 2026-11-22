@@ -86,7 +86,7 @@ jobs:
           retention-days: 7
       - name: Build optimized installation APK
         working-directory: apps/savdoza_client
-        run: flutter build apk --release --no-pub --dart-define=API_URL=https://shop.aminboyevrasulbek.uz --build-name=2.0.0 --build-number=${{ github.run_number }}
+        run: flutter build apk --release --no-pub --dart-define=API_URL=https://shop.aminboyevrasulbek.uz --build-name=2.1.0 --build-number=${{ github.run_number }}
       - uses: actions/upload-artifact@v4
         with:
           name: savdoza-android-apk
@@ -101,6 +101,6 @@ jobs:
           cp apps/savdoza_client/build/app/outputs/flutter-apk/app-release.apk "$RUNNER_TEMP/savdoza-android.apk"
           gh release view android-latest >/dev/null 2>&1 || gh release create android-latest --target "$GITHUB_SHA" --title "Savdoza Android" --notes "Android uchun Savdoza."
           gh release upload android-latest "$RUNNER_TEMP/savdoza-android.apk" --clobber
-          gh release edit android-latest --title "Savdoza Android 2.0 — native va offline POS" --notes "Alohida Flutter Android ilova. POS smenani ochish va yopish, Prechek hamda 58 mm chekni qo‘llaydi. Dashboard, kategoriyalar, mahsulotlar, ombor, mijozlar, nasiya, cheklar, sozlamalar, Pro/Max va superadmin bo‘limlari bor. Offline katalog va savdolar shifrlangan telefonda saqlanadi, internet qaytganda Android WorkManager avtomatik yuboradi. Optimallashtirilgan sinov build, preview signing. Birinchi offline ishlatishdan oldin online login, smenani ochish va katalogni yuklash kerak."
+          gh release edit android-latest --title "Savdoza Android 2.0 — native va offline POS" --notes "Alohida Flutter Android ilova. Dashboard, POS, kategoriyalar, mahsulotlar, ombor, mijozlar, nasiya, cheklar, sozlamalar, Pro/Max va superadmin bo‘limlari. Offline katalog va savdolar shifrlangan telefonda saqlanadi, internet qaytganda Android WorkManager avtomatik yuboradi. Optimallashtirilgan sinov build, preview signing. Birinchi offline ishlatishdan oldin online login va katalogni yuklash kerak."
           keytool -exportcert -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android -file "$RUNNER_TEMP/apk-signing.der"
           node scripts/publish-app-release.mjs android "$RUNNER_TEMP/savdoza-android.apk" "$RUNNER_TEMP/apk-signing.der"

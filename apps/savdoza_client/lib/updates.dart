@@ -234,7 +234,7 @@ class _UpdatesPageState extends State<UpdatesPage> {
       builder: (context, _) => ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Icon(Icons.system_update, size: 52, color: Color(0xff24634f)),
+          const Icon(Icons.system_update, size: 52, color: Color(0xff1664c0)),
           const SizedBox(height: 20),
           Text(
             'O‘rnatilgan versiya ${appUpdates.version}',

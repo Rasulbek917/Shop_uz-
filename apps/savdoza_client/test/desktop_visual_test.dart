@@ -87,7 +87,7 @@ void main() {
           theme: ThemeData(
             useMaterial3: true,
             fontFamily: 'SavdozaPreview',
-            colorSchemeSeed: const Color(0xff24634f),
+            colorSchemeSeed: const Color(0xff1664c0),
             inputDecorationTheme: const InputDecorationTheme(
               border: OutlineInputBorder(),
             ),
@@ -128,7 +128,10 @@ void main() {
         expect(basket.dy, lessThan(220));
         await tester.tap(find.text('Sut'));
         await tester.pumpAndSettle();
-        final checkout = find.widgetWithText(FilledButton, 'Savdoni yakunlash');
+        final checkout = find.widgetWithText(
+          FilledButton,
+          'To‘lovni qabul qilish',
+        );
         expect(tester.getBottomRight(checkout).dy, greaterThan(720));
         expect(tester.widget<FilledButton>(checkout).onPressed, isNotNull);
       }

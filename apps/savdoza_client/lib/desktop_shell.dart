@@ -34,7 +34,8 @@ class _DesktopShellState extends State<DesktopShell> {
   bool? collapsed;
   bool focusMode = false;
   bool get navigationCollapsed =>
-      collapsed ?? MediaQuery.sizeOf(context).width < 1050;
+      collapsed ??
+      (widget.section == 'pos' || MediaQuery.sizeOf(context).width < 1050);
   String search = '';
 
   @override
@@ -112,7 +113,7 @@ class _DesktopShellState extends State<DesktopShell> {
               elevation: 0,
               margin: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(6),
                 side: const BorderSide(color: Color(0xffdbe3e7)),
               ),
             ),
@@ -120,7 +121,7 @@ class _DesktopShellState extends State<DesktopShell> {
               style: FilledButton.styleFrom(
                 minimumSize: const Size(100, 44),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
@@ -128,13 +129,14 @@ class _DesktopShellState extends State<DesktopShell> {
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(100, 44),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
-            scaffoldBackgroundColor: const Color(0xffedf1f4),
-            inputDecorationTheme: Theme.of(context).inputDecorationTheme
-                .copyWith(isDense: true),
+            scaffoldBackgroundColor: const Color(0xfff8fafc),
+            inputDecorationTheme: Theme.of(
+              context,
+            ).inputDecorationTheme.copyWith(isDense: true),
           ),
           child: Scaffold(
             body: LayoutBuilder(
@@ -151,7 +153,7 @@ class _DesktopShellState extends State<DesktopShell> {
                               padding: EdgeInsets.symmetric(horizontal: 16),
                               child: Icon(
                                 Icons.desktop_windows_outlined,
-                                color: Color(0xff24634f),
+                                color: Color(0xff1664c0),
                                 size: 22,
                               ),
                             ),
@@ -226,7 +228,7 @@ class _DesktopShellState extends State<DesktopShell> {
                               icon: Icon(
                                 Icons.system_update_alt,
                                 color: appUpdates.available
-                                    ? const Color(0xff24634f)
+                                    ? const Color(0xff1664c0)
                                     : null,
                               ),
                             ),
@@ -252,9 +254,9 @@ class _DesktopShellState extends State<DesktopShell> {
                         children: [
                           if (!focusMode)
                             AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
+                              duration: const Duration(milliseconds: 150),
                               width: compact ? 76 : 244,
-                              color: const Color(0xff142d25),
+                              color: const Color(0xff08358d),
                               child: Column(
                                 children: [
                                   Padding(
@@ -313,7 +315,7 @@ class _DesktopShellState extends State<DesktopShell> {
                                             size: 18,
                                           ),
                                           filled: true,
-                                          fillColor: Color(0xff244238),
+                                          fillColor: Color(0xff1e293b),
                                         ),
                                         onChanged: (value) =>
                                             setState(() => search = value),
@@ -362,12 +364,13 @@ class _DesktopShellState extends State<DesktopShell> {
                                                     shape: RoundedRectangleBorder(
                                                       borderRadius:
                                                           BorderRadius.circular(
-                                                            8,
+                                                            4,
                                                           ),
                                                     ),
                                                     selectedTileColor:
-                                                        const Color(0xff31664f),
-                                                    selectedColor: Colors.white,
+                                                        Colors.white,
+                                                    selectedColor:
+                                                        const Color(0xff08358d),
                                                     textColor: Colors.white70,
                                                     iconColor: Colors.white70,
                                                     contentPadding:
@@ -490,7 +493,7 @@ class _DesktopShellState extends State<DesktopShell> {
                                       border: Border.all(
                                         color: const Color(0xffdbe3e7),
                                       ),
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Material(
                                       color: Colors.white,
@@ -518,7 +521,7 @@ class _DesktopShellState extends State<DesktopShell> {
                                   ? Icons.cloud_done_outlined
                                   : Icons.cloud_off_outlined,
                               size: 15,
-                              color: const Color(0xff24634f),
+                              color: const Color(0xff1664c0),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -566,7 +569,7 @@ class DesktopAuthFrame extends StatelessWidget {
         children: [
           Expanded(
             child: ColoredBox(
-              color: const Color(0xff142d25),
+              color: const Color(0xff08358d),
               child: Padding(
                 padding: const EdgeInsets.all(56),
                 child: Column(

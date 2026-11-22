@@ -44,9 +44,9 @@ class SaleTotals {
 }
 
 String dateText(dynamic value) {
-  final date = DateTime.tryParse('$value')
-      ?.toUtc()
-      .add(const Duration(hours: 5));
+  final date = DateTime.tryParse(
+    '$value',
+  )?.toUtc().add(const Duration(hours: 5));
   if (date == null) return '—';
   String two(int n) => '$n'.padLeft(2, '0');
   return '${two(date.day)}.${two(date.month)}.${date.year} ${two(date.hour)}:${two(date.minute)}';
@@ -537,6 +537,7 @@ class AppData extends ChangeNotifier {
     await store.mutate('enqueue', {'order': entry});
     await reload();
     await store.sync();
+    await reload();
   }
 
   Future<void> logout() async {

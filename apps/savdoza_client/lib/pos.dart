@@ -51,8 +51,18 @@ class _PosPageState extends State<PosPage> {
   Future<void> loadShift() async {
     if (mounted) setState(() => shiftLoading = true);
     try {
-      final shifts = records(await widget.data.get('/api/shifts?mine=active', cacheKey: 'activeShift'));
-      if (mounted) setState(() => activeShift = shifts.where((row) => row['mine'] == true && row['status'] == 'OPEN').firstOrNull);
+      final shifts = records(
+        await widget.data.get(
+          '/api/shifts?mine=active',
+          cacheKey: 'activeShift',
+        ),
+      );
+      if (mounted)
+        setState(
+          () => activeShift = shifts
+              .where((row) => row['mine'] == true && row['status'] == 'OPEN')
+              .firstOrNull,
+        );
     } catch (error) {
       if (mounted) await message(context, error);
     } finally {
@@ -65,9 +75,14 @@ class _PosPageState extends State<PosPage> {
       await message(context, 'Smenani ochish uchun internet kerak');
       return;
     }
-    final input = await editForm(context, 'Smenani ochish', const [
-      Field('openingCash', 'Boshlang‘ich naqd', number: true, required: true),
-    ], values: {'openingCash': 0});
+    final input = await editForm(
+      context,
+      'Smenani ochish',
+      const [
+        Field('openingCash', 'Boshlang‘ich naqd', number: true, required: true),
+      ],
+      values: {'openingCash': 0},
+    );
     if (input == null) return;
     try {
       await widget.data.api.call('/api/shifts', method: 'POST', body: input);
@@ -85,16 +100,38 @@ class _PosPageState extends State<PosPage> {
       return;
     }
     if (widget.data.pending.isNotEmpty) {
-      await message(context, 'Avval sinxronlash kutilayotgan savdolarni yuboring');
+      await message(
+        context,
+        'Avval sinxronlash kutilayotgan savdolarni yuboring',
+      );
       return;
     }
-    final input = await editForm(context, 'Smenani yopish', const [
-      Field('closingCash', 'Kassadagi haqiqiy naqd', number: true, required: true),
-      Field('notes', 'Izoh'),
-    ], values: {'closingCash': object(shift['summary'])['expectedCash'] ?? shift['openingCash'] ?? 0});
+    final input = await editForm(
+      context,
+      'Smenani yopish',
+      const [
+        Field(
+          'closingCash',
+          'Kassadagi haqiqiy naqd',
+          number: true,
+          required: true,
+        ),
+        Field('notes', 'Izoh'),
+      ],
+      values: {
+        'closingCash':
+            object(shift['summary'])['expectedCash'] ??
+            shift['openingCash'] ??
+            0,
+      },
+    );
     if (input == null) return;
     try {
-      await widget.data.api.call('/api/shifts', method: 'PATCH', body: {...input, 'shiftId': shift['id']});
+      await widget.data.api.call(
+        '/api/shifts',
+        method: 'PATCH',
+        body: {...input, 'shiftId': shift['id']},
+      );
       await loadShift();
     } catch (error) {
       if (mounted) await message(context, error);
@@ -103,25 +140,45 @@ class _PosPageState extends State<PosPage> {
 
   Future<void> showPrecheck() async {
     if (cart.isEmpty) return;
-    await showDialog<void>(context: context, builder: (dialog) => AlertDialog(
-      title: const Text('Oldindan chek'),
-      content: SizedBox(width: 360, child: SingleChildScrollView(child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('To‘lov hali qabul qilinmagan.'),
-          const Divider(),
-          for (final line in cart) Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text('${line.product['name']} × ${line.quantity} · ${money(line.price * line.quantity)}'),
+    await showDialog<void>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Oldindan chek'),
+        content: SizedBox(
+          width: 360,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('To‘lov hali qabul qilinmagan.'),
+                const Divider(),
+                for (final line in cart)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      '${line.product['name']} × ${line.quantity} · ${money(line.price * line.quantity)}',
+                    ),
+                  ),
+                const Divider(),
+                Text(
+                  'To‘lanadigan summa: ${money(total)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
           ),
-          const Divider(),
-          Text('To‘lanadigan summa: ${money(total)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialog),
+            child: const Text('Kassaga qaytish'),
+          ),
         ],
-      ))),
-      actions: [TextButton(onPressed: () => Navigator.pop(dialog), child: const Text('Kassaga qaytish'))],
-    ));
+      ),
+    );
   }
+
   num get reduction => num.tryParse(discount.text) ?? 0;
   Json get settings => object(widget.data.cache['shopSettings']);
   num get taxRate => settings['taxRate'] as num? ?? 0;
@@ -134,6 +191,11 @@ class _PosPageState extends State<PosPage> {
   num get subtotal => totals.subtotal;
   num get tax => totals.tax;
   num get total => totals.total;
+  num get received {
+    final input = paid.text.trim().replaceAll(' ', '');
+    return input.isEmpty ? total : num.tryParse(input) ?? -1;
+  }
+
   @override
   void dispose() {
     search.dispose();
@@ -147,8 +209,9 @@ class _PosPageState extends State<PosPage> {
         .where(
           (batch) =>
               (batch['currentQuantity'] as num) > 0 &&
-              (DateTime.tryParse('${batch['expiryDate']}')
-                      ?.isAfter(DateTime.now()) ??
+              (DateTime.tryParse(
+                    '${batch['expiryDate']}',
+                  )?.isAfter(DateTime.now()) ??
                   false),
         )
         .toList();
@@ -267,9 +330,9 @@ class _PosPageState extends State<PosPage> {
       final product = widget.data.products
           .where((p) => p['id'] == line.product['id'])
           .firstOrNull;
-      final batch = records(product?['batches'])
-          .where((b) => b['id'] == line.batch['id'])
-          .firstOrNull;
+      final batch = records(
+        product?['batches'],
+      ).where((b) => b['id'] == line.batch['id']).firstOrNull;
       if (batch == null ||
           (batch['currentQuantity'] as num) < line.quantity ||
           !DateTime.parse('${batch['expiryDate']}').isAfter(DateTime.now())) {
@@ -292,28 +355,19 @@ class _PosPageState extends State<PosPage> {
         if (form == null) return;
         extra = form;
       } else {
-        paid.text = '$total';
-        final form = await editForm(
-          context,
-          'To‘lovni qayd etish',
-          const [
-            Field(
-              'paidAmount',
-              'Qabul qilingan summa',
-              number: true,
-              required: true,
-            ),
-          ],
-          values: {'paidAmount': total},
-        );
-        if (form == null) return;
-        extra = form;
-        if ((extra['paidAmount'] as num) < total) {
+        final amount = payment == 'CASH' ? received : total;
+        if (amount < total) {
           if (mounted) {
-            await message(context, 'To‘langan summa jami summadan kam');
+            await message(
+              context,
+              amount < 0
+                  ? 'Qabul qilingan summani raqam bilan kiriting'
+                  : 'To‘langan summa jami summadan kam',
+            );
           }
           return;
         }
+        extra = {'paidAmount': amount};
       }
       final occurredAt = DateTime.now().toUtc().toIso8601String();
       final amountPaid = debt ? 0 : extra['paidAmount'] as num;
@@ -341,9 +395,11 @@ class _PosPageState extends State<PosPage> {
       };
       await widget.data.enqueue(payload, receipt, debt: debt);
       final saved = widget.data.orders.last;
+      final synced = saved['status'] == 'synced';
       setState(() {
         cart.clear();
         discount.text = '0';
+        paid.clear();
         customer = '';
       });
       if (mounted) {
@@ -351,7 +407,7 @@ class _PosPageState extends State<PosPage> {
           context,
           widget.data,
           object(saved['receipt']),
-          pending: true,
+          pending: !synced,
         );
       }
     } catch (error) {
@@ -436,7 +492,7 @@ class _PosPageState extends State<PosPage> {
               return Card(
                 child: InkWell(
                   onTap: saving ? null : () => add(product),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(6),
                   child: Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -452,7 +508,7 @@ class _PosPageState extends State<PosPage> {
                         Text(
                           money(product['salePrice'] as num),
                           style: const TextStyle(
-                            color: Color(0xff24634f),
+                            color: Color(0xff1664c0),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -569,21 +625,46 @@ class _PosPageState extends State<PosPage> {
             ],
           ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: payment,
-            decoration: const InputDecoration(labelText: 'To‘lov turi'),
-            items: const [
-              DropdownMenuItem(value: 'CASH', child: Text('Naqd')),
-              DropdownMenuItem(value: 'CARD', child: Text('Karta')),
-              DropdownMenuItem(
+          SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(
+                value: 'CASH',
+                icon: Icon(Icons.payments_outlined),
+                label: Text('Naqd'),
+              ),
+              ButtonSegment(
+                value: 'CARD',
+                icon: Icon(Icons.credit_card),
+                label: Text('Karta'),
+              ),
+              ButtonSegment(
                 value: 'ELECTRONIC',
-                child: Text('Elektron to‘lov'),
+                icon: Icon(Icons.phone_android),
+                label: Text('Elektron'),
               ),
             ],
-            onChanged: saving
+            selected: {payment},
+            onSelectionChanged: saving
                 ? null
-                : (value) => setState(() => payment = value!),
+                : (values) => setState(() => payment = values.first),
           ),
+          if (payment == 'CASH') ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: paid,
+              enabled: !saving,
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                labelText: 'Qabul qilingan summa',
+                hintText: total.round().toString(),
+                helperText: received > total
+                    ? 'Qaytim: ${money(received - total)}'
+                    : null,
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             children: [
@@ -592,7 +673,9 @@ class _PosPageState extends State<PosPage> {
                   onPressed: saving || cart.isEmpty
                       ? null
                       : () => checkout(false),
-                  child: Text(saving ? 'Saqlanmoqda…' : 'Savdoni yakunlash'),
+                  child: Text(
+                    saving ? 'Saqlanmoqda…' : 'To‘lovni qabul qilish',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -685,16 +768,38 @@ class _PosPageState extends State<PosPage> {
               ],
             ),
     );
-    return Column(children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Row(children: [
-          Expanded(child: Text(shiftLoading ? 'Smena tekshirilmoqda…' : activeShift == null ? 'Smena yopiq' : 'Smena ochiq · Naqd ${money(activeShift!['openingCash'] as num)}')),
-          IconButton(onPressed: shiftLoading ? null : loadShift, tooltip: 'Smenani yangilash', icon: const Icon(Icons.refresh)),
-          if (!shiftLoading) OutlinedButton(onPressed: activeShift == null ? openShift : closeShift, child: Text(activeShift == null ? 'Smenani ochish' : 'Smenani yopish')),
-        ]),
-      ),
-      Expanded(child: terminal),
-    ]);
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  shiftLoading
+                      ? 'Smena tekshirilmoqda…'
+                      : activeShift == null
+                      ? 'Smena yopiq'
+                      : 'Smena ochiq · Naqd ${money(activeShift!['openingCash'] as num)}',
+                ),
+              ),
+              IconButton(
+                onPressed: shiftLoading ? null : loadShift,
+                tooltip: 'Smenani yangilash',
+                icon: const Icon(Icons.refresh),
+              ),
+              if (!shiftLoading)
+                OutlinedButton(
+                  onPressed: activeShift == null ? openShift : closeShift,
+                  child: Text(
+                    activeShift == null ? 'Smenani ochish' : 'Smenani yopish',
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(child: terminal),
+      ],
+    );
   }
 }

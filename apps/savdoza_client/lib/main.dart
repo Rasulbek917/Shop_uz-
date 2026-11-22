@@ -22,25 +22,42 @@ void main() {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: const Color(0xff24634f),
-        scaffoldBackgroundColor: const Color(0xfff5f8f2),
+        colorSchemeSeed: const Color(0xff1664c0),
+        scaffoldBackgroundColor: const Color(0xfff8fafc),
+        visualDensity: VisualDensity.compact,
+        textTheme: const TextTheme(bodyMedium: TextStyle(fontSize: 14)),
         inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 14,
+            horizontal: 12,
+            vertical: 10,
           ),
         ),
         cardTheme: CardThemeData(
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color(0xffdce6dd)),
+            borderRadius: BorderRadius.circular(6),
+            side: const BorderSide(color: Color(0xffdbe3e7)),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xfff5f8f2),
-          foregroundColor: Color(0xff142d25),
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xff08358d),
+          elevation: 0,
         ),
       ),
       home: const Savdoza(),
@@ -135,27 +152,25 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
     }
     if (data.user['role'] == 'CASHIER') {
       return const [
-        Destination('dashboard', 'Dashboard', Icons.dashboard_outlined),
-        Destination('pos', 'POS terminal', Icons.point_of_sale),
-        Destination('receipts', 'Cheklar', Icons.receipt_long),
-        Destination('returns', 'Qaytarishlar', Icons.keyboard_return),
-        Destination('customers', 'Mijozlar', Icons.people_outline),
+        Destination('pos', 'POS · Savdo terminali', Icons.point_of_sale),
+        Destination('receipts', 'Savdo tarixi', Icons.receipt_long),
+        Destination('returns', 'Tovarni qaytarish', Icons.keyboard_return),
         Destination('queue', 'Sinxronlash', Icons.sync),
         Destination('settings', 'Sozlamalar', Icons.settings_outlined),
       ];
     }
     return const [
-      Destination('dashboard', 'Dashboard', Icons.dashboard_outlined),
-      Destination('pos', 'POS terminal', Icons.point_of_sale),
+      Destination('dashboard', 'Bosh sahifa', Icons.dashboard_outlined),
+      Destination('pos', 'POS · Savdo terminali', Icons.point_of_sale),
       Destination('products', 'Mahsulotlar', Icons.inventory_2_outlined),
-      Destination('categories', 'Kategoriyalar', Icons.category_outlined),
+      Destination('receipts', 'Cheklar va sotuvlar', Icons.receipt_long),
       Destination('batches', 'Ombor va partiyalar', Icons.warehouse_outlined),
+      Destination('categories', 'Kategoriyalar', Icons.category_outlined),
       Destination(
         'manufacturers',
         'Ishlab chiqaruvchilar',
         Icons.factory_outlined,
       ),
-      Destination('receipts', 'Cheklar va sotuvlar', Icons.receipt_long),
       Destination('returns', 'Qaytarishlar', Icons.keyboard_return),
       Destination('customers', 'Mijozlar', Icons.people_outline),
       Destination('debts', 'Qarzlar', Icons.credit_card),
@@ -339,12 +354,12 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
       drawer: Theme(
         data: ThemeData.dark(useMaterial3: true).copyWith(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xff24634f),
+            seedColor: const Color(0xff1664c0),
             brightness: Brightness.dark,
           ),
         ),
         child: Drawer(
-          backgroundColor: const Color(0xff142d25),
+          backgroundColor: const Color(0xff08358d),
           child: SafeArea(
             child: Column(
               children: [
@@ -447,7 +462,7 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
               child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  border: Border(top: BorderSide(color: Color(0xffdce6dd))),
+                  border: Border(top: BorderSide(color: Color(0xffdbe3e7))),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                 child: Row(
@@ -457,7 +472,7 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
                         child: Tooltip(
                           message: destination.title,
                           child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(4),
                             onTap: () =>
                                 setState(() => section = destination.key),
                             child: Semantics(
@@ -469,9 +484,9 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
                                 ),
                                 decoration: BoxDecoration(
                                   color: section == destination.key
-                                      ? const Color(0xffe7f0e8)
+                                      ? const Color(0xffdbeafe)
                                       : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -480,7 +495,7 @@ class _SavdozaState extends State<Savdoza> with WidgetsBindingObserver {
                                       destination.icon,
                                       size: 22,
                                       color: section == destination.key
-                                          ? const Color(0xff24634f)
+                                          ? const Color(0xff1664c0)
                                           : Colors.blueGrey,
                                     ),
                                     const SizedBox(height: 3),
@@ -627,7 +642,7 @@ class _AuthPageState extends State<AuthPage> {
                       const Icon(
                         Icons.storefront,
                         size: 64,
-                        color: Color(0xff24634f),
+                        color: Color(0xff1664c0),
                       ),
                       const Text(
                         'Savdoza',
