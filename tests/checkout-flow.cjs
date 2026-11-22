@@ -479,6 +479,56 @@ test('receipt history paginates beyond the first hundred records', async () => {
   assert.equal(query.where.shopId, 'own-shop');
 });
 
+test('sale history searches all pages and limits cashier to their own sales', async () => {
+  let query;
+  let countedWhere;
+  let role = 'SHOP_ADMIN';
+  const route = load('src/app/api/sales/route.ts', {
+    '@/lib/prisma': { prisma: { sale: {
+      findMany: async value => { query = value; return [{ id: 'older-sale' }]; },
+      count: async ({ where }) => { countedWhere = where; return 127; },
+      aggregate: async () => ({ _sum: { payableAmount: 42000 } }),
+    } } },
+    '@/lib/tenant': { requireTenantContext: async () => ({ context: { shopId: 'own-shop', user: { role, id: 'own-cashier' } } }) },
+    '@/lib/validations': {}, '@/lib/audit': {}, '@/lib/refunds': { withRefundInfo: sale => sale },
+    '@/lib/logger': { logger: { error: error => { throw error; } } },
+    '@/lib/sale-replay': {}, '@/lib/receipt': {},
+  });
+  const { NextRequest } = require('next/server');
+  let response = await route.GET(new NextRequest('https://shop.example.uz/api/sales?historyPage=5&historySearch=Ali'));
+  let body = await response.json();
+  assert.equal(body.data.total, 127);
+  assert.equal(body.data.revenue, 42000);
+  assert.equal(query.skip, 100);
+  assert.equal(query.take, 25);
+  assert.equal(query.where.shopId, 'own-shop');
+  assert.equal(query.where.OR.length, 3);
+  assert.deepEqual(countedWhere, query.where);
+  role = 'CASHIER';
+  response = await route.GET(new NextRequest('https://shop.example.uz/api/sales?historyPage=2&historySearch=Ali'));
+  body = await response.json();
+  assert.equal(body.data.page, 2);
+  assert.equal(query.where.cashierId, 'own-cashier');
+  assert.equal(query.where.OR.length, 2);
+});
+
+test('native POS asks only for its own active shift', async () => {
+  let shiftWhere;
+  const route = load('src/app/api/shifts/route.ts', {
+    '@/lib/prisma': { prisma: {
+      shift: { findFirst: async ({ where }) => { shiftWhere = where; return { id: 'shift-1', openingCash: 1000, status: 'OPEN' }; }, findMany: async () => assert.fail('Do not load every shift') },
+      sale: { findMany: async () => [] }, return: { findMany: async () => [] }, cashMovement: { findMany: async () => [] },
+    } },
+    '@/lib/tenant': { requireTenantContext: async () => ({ context: { shopId: 'own-shop', user: { role: 'CASHIER', id: 'own-cashier' } } }) },
+  });
+  const { NextRequest } = require('next/server');
+  const response = await route.GET(new NextRequest('https://shop.example.uz/api/shifts?mine=active'));
+  const body = await response.json();
+  assert.deepEqual(shiftWhere, { shopId: 'own-shop', cashierId: 'own-cashier', status: 'OPEN' });
+  assert.equal(body.data[0].mine, true);
+  assert.equal(body.data[0].summary.expectedCash, 1000);
+});
+
 test('category editing stays tenant-scoped and occupied categories cannot be deleted', async () => {
   let where;
   let count = 2;

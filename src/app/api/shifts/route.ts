@@ -29,6 +29,10 @@ export async function GET(req: NextRequest) {
   const { context, errorResponse } = await requireTenantContext(req, [...roles]);
   if (errorResponse) return errorResponse;
   const { shopId, user } = context!;
+  if (req.nextUrl.searchParams.get("mine") === "active") {
+    const shift = await prisma.shift.findFirst({ where: { shopId, cashierId: user.id, status: "OPEN" }, include: { shop: { select: { name: true } }, cashier: { select: { fullName: true } }, cashMovements: { orderBy: { createdAt: "desc" } } } });
+    return NextResponse.json({ success: true, data: shift ? [{ ...shift, mine: true, summary: await summarize(shift.id, shift.openingCash) }] : [] });
+  }
   const shifts = await prisma.shift.findMany({ where: { shopId, ...(user.role === "CASHIER" ? { cashierId: user.id } : {}) }, include: { shop: { select: { name: true } }, cashier: { select: { fullName: true } }, cashMovements: { orderBy: { createdAt: "desc" } } }, orderBy: { openedAt: "desc" }, take: 50 });
   const data = await Promise.all(shifts.map(async (shift) => ({ ...shift, mine: shift.cashierId === user.id, summary: await summarize(shift.id, shift.openingCash) })));
   return NextResponse.json({ success: true, data });

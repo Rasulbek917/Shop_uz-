@@ -8,7 +8,9 @@ Birinchi login va katalog yuklash online bajariladi. Android sessiya, katalog va
 
 Android WorkManager tarmoq qaytganda va davriy tekshiruvlarda yuboradi. Android energiya va fon cheklovlari sabab vaqtni OS belgilaydi. Ilova ochilganda ham sinxronlash so‘raladi. API sessiya, obuna, qoldiq va summani tekshiradi. Konfliktli savdo telefonda saqlanadi va Sinxronlash ekranida ko‘rinadi. Ro‘yxatdan o‘tish, bank to‘lovi va boshqaruvdagi tahrirlar online ishlaydi.
 
-Chek Flutter’da chiziladi. PNG saqlash Android fayl oynasi orqali, chop etish Android PrintManager orqali amalga oshiriladi. Offline QR bir xil havolani saqlaydi. Serverga yuborilgach shu havola yakuniy chekni ochadi.
+POS’da savdodan oldin smena ochiladi. Smenani yopishdan oldin telefonda yoki kompyuterda navbatda turgan savdolarni sinxronlash kerak. Prechek savatni to‘lovdan oldin ko‘rsatadi; pul olmaydi va savdoni saqlamaydi.
+
+Chek Flutter’da chiziladi. PNG saqlash fayl oynasi orqali, chop etish Android PrintManager yoki Windows printer oynasi orqali amalga oshiriladi. Chek 58 mm kenglikda chop etishga moslangan. Offline QR bir xil havolani saqlaydi. Serverga yuborilgach shu havola yakuniy chekni ochadi.
 
 ## Yig‘ish va tekshirish
 

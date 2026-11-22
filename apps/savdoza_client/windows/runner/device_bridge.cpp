@@ -148,7 +148,9 @@ void PrintPng(HWND window, const std::vector<uint8_t>& bytes) {
             const float height = static_cast<float>(GetDeviceCaps(dialog.hDC, VERTRES));
             const float image_width = static_cast<float>(bitmap.GetWidth());
             const float image_height = static_cast<float>(bitmap.GetHeight());
-            const float scale = std::min(width / image_width, height / image_height);
+            // Keep receipts at 58 mm even when the selected printer defaults to A4.
+            const float receipt_width = static_cast<float>(GetDeviceCaps(dialog.hDC, LOGPIXELSX)) * 58.0f / 25.4f;
+            const float scale = std::min(std::min(width, receipt_width) / image_width, height / image_height);
             failed = graphics.DrawImage(&bitmap, 0.0f, 0.0f, image_width * scale, image_height * scale) != Gdiplus::Ok;
             graphics.Flush(Gdiplus::FlushIntentionSync);
             if (EndPage(dialog.hDC) <= 0) failed = true;

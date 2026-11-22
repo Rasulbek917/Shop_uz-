@@ -74,7 +74,7 @@ class MainActivity : FlutterActivity() {
                                 result.success(null)
                             }
                         }
-                        view.loadDataWithBaseURL(null, "<html><head><style>@page{margin:0}body{margin:0}img{width:58mm;max-width:100%}</style></head><body><img src='data:image/png;base64,${Base64.encodeToString(bytes, Base64.NO_WRAP)}'></body></html>", "text/html", "UTF-8", null)
+                        view.loadDataWithBaseURL(null, "<html><head><style>@page{size:58mm 200mm;margin:0}html,body{width:58mm;margin:0;padding:0}img{display:block;width:58mm;max-width:100%}</style></head><body><img src='data:image/png;base64,${Base64.encodeToString(bytes, Base64.NO_WRAP)}'></body></html>", "text/html", "UTF-8", null)
                     }
                 }
                 else -> result.notImplemented()

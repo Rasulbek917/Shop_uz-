@@ -40,6 +40,88 @@ class _PosPageState extends State<PosPage> {
   final List<CartLine> cart = [];
   String payment = 'CASH', category = '', customer = '';
   bool saving = false, showCart = false;
+  bool shiftLoading = true;
+  Json? activeShift;
+  @override
+  void initState() {
+    super.initState();
+    loadShift();
+  }
+
+  Future<void> loadShift() async {
+    if (mounted) setState(() => shiftLoading = true);
+    try {
+      final shifts = records(await widget.data.get('/api/shifts?mine=active', cacheKey: 'activeShift'));
+      if (mounted) setState(() => activeShift = shifts.where((row) => row['mine'] == true && row['status'] == 'OPEN').firstOrNull);
+    } catch (error) {
+      if (mounted) await message(context, error);
+    } finally {
+      if (mounted) setState(() => shiftLoading = false);
+    }
+  }
+
+  Future<void> openShift() async {
+    if (!widget.data.online) {
+      await message(context, 'Smenani ochish uchun internet kerak');
+      return;
+    }
+    final input = await editForm(context, 'Smenani ochish', const [
+      Field('openingCash', 'Boshlang‘ich naqd', number: true, required: true),
+    ], values: {'openingCash': 0});
+    if (input == null) return;
+    try {
+      await widget.data.api.call('/api/shifts', method: 'POST', body: input);
+      await loadShift();
+    } catch (error) {
+      if (mounted) await message(context, error);
+    }
+  }
+
+  Future<void> closeShift() async {
+    final shift = activeShift;
+    if (shift == null) return;
+    if (!widget.data.online) {
+      await message(context, 'Smenani yopish uchun internet kerak');
+      return;
+    }
+    if (widget.data.pending.isNotEmpty) {
+      await message(context, 'Avval sinxronlash kutilayotgan savdolarni yuboring');
+      return;
+    }
+    final input = await editForm(context, 'Smenani yopish', const [
+      Field('closingCash', 'Kassadagi haqiqiy naqd', number: true, required: true),
+      Field('notes', 'Izoh'),
+    ], values: {'closingCash': object(shift['summary'])['expectedCash'] ?? shift['openingCash'] ?? 0});
+    if (input == null) return;
+    try {
+      await widget.data.api.call('/api/shifts', method: 'PATCH', body: {...input, 'shiftId': shift['id']});
+      await loadShift();
+    } catch (error) {
+      if (mounted) await message(context, error);
+    }
+  }
+
+  Future<void> showPrecheck() async {
+    if (cart.isEmpty) return;
+    await showDialog<void>(context: context, builder: (dialog) => AlertDialog(
+      title: const Text('Oldindan chek'),
+      content: SizedBox(width: 360, child: SingleChildScrollView(child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('To‘lov hali qabul qilinmagan.'),
+          const Divider(),
+          for (final line in cart) Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text('${line.product['name']} × ${line.quantity} · ${money(line.price * line.quantity)}'),
+          ),
+          const Divider(),
+          Text('To‘lanadigan summa: ${money(total)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
+      ))),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialog), child: const Text('Kassaga qaytish'))],
+    ));
+  }
   num get reduction => num.tryParse(discount.text) ?? 0;
   Json get settings => object(widget.data.cache['shopSettings']);
   num get taxRate => settings['taxRate'] as num? ?? 0;
@@ -165,6 +247,10 @@ class _PosPageState extends State<PosPage> {
 
   Future<void> checkout(bool debt) async {
     if (saving || cart.isEmpty) return;
+    if (activeShift == null) {
+      await message(context, 'Savdodan oldin smenani oching');
+      return;
+    }
     if (!widget.data.access || !widget.data.sell) {
       await message(context, 'Faol hisob va tarif kerak');
       return;
@@ -451,6 +537,12 @@ class _PosPageState extends State<PosPage> {
                 : (value) => setState(() => customer = value ?? ''),
           ),
           const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: saving || cart.isEmpty ? null : showPrecheck,
+            icon: const Icon(Icons.receipt_long_outlined),
+            label: const Text('Prechek'),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -555,7 +647,7 @@ class _PosPageState extends State<PosPage> {
         ],
       ),
     );
-    return LayoutBuilder(
+    final terminal = LayoutBuilder(
       builder: (context, size) => Platform.isWindows || size.maxWidth >= 820
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -593,5 +685,16 @@ class _PosPageState extends State<PosPage> {
               ],
             ),
     );
+    return Column(children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(children: [
+          Expanded(child: Text(shiftLoading ? 'Smena tekshirilmoqda…' : activeShift == null ? 'Smena yopiq' : 'Smena ochiq · Naqd ${money(activeShift!['openingCash'] as num)}')),
+          IconButton(onPressed: shiftLoading ? null : loadShift, tooltip: 'Smenani yangilash', icon: const Icon(Icons.refresh)),
+          if (!shiftLoading) OutlinedButton(onPressed: activeShift == null ? openShift : closeShift, child: Text(activeShift == null ? 'Smenani ochish' : 'Smenani yopish')),
+        ]),
+      ),
+      Expanded(child: terminal),
+    ]);
   }
 }

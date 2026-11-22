@@ -9,23 +9,31 @@ export default function AdminSalesPage() {
   const [sales, setSales] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [revenue, setRevenue] = useState(0);
+  const [error, setError] = useState("");
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   useEffect(() => {
-    loadSales();
-  }, []);
+    const timer = setTimeout(() => { void loadSales(); }, 250);
+    return () => clearTimeout(timer);
+  }, [page, search]);
 
   const loadSales = async () => {
     setIsLoading(true);
+    setError("");
     try {
-      const res = await fetch("/api/sales");
+      const query = new URLSearchParams({ historyPage: String(page), historySearch: search });
+      const res = await fetch(`/api/sales?${query}`);
       const data = await res.json();
-      if (data.success) {
-        setSales(data.data || []);
-      }
+      if (!res.ok || !data.success) throw new Error(typeof data.error === "string" ? data.error : data.error?.message || "Savdolar yuklanmadi");
+      setSales(data.data.sales || []);
+      setTotal(data.data.total || 0);
+      setRevenue(data.data.revenue || 0);
     } catch (e) {
-      console.error(e);
+      setError(e instanceof Error ? e.message : "Savdolar yuklanmadi");
     } finally {
       setIsLoading(false);
     }
@@ -66,16 +74,6 @@ export default function AdminSalesPage() {
     setShowReceiptModal(true);
   };
 
-  const filtered = sales.filter((s) => {
-    return (
-      s.receiptNumber.toLowerCase().includes(search.toLowerCase()) ||
-      (s.cashier && s.cashier.fullName.toLowerCase().includes(search.toLowerCase())) ||
-      (s.customer && s.customer.name.toLowerCase().includes(search.toLowerCase()))
-    );
-  });
-
-  const totalSalesRevenue = sales.reduce((sum, s) => sum + s.payableAmount, 0);
-
   return (
     <div className="space-y-6">
       <ReceiptModal
@@ -98,11 +96,11 @@ export default function AdminSalesPage() {
         <div className="flex items-center gap-3">
           <div className="rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 text-xs font-bold text-primary-800">
             <span>Umumiy Tushum: </span>
-            <span className="text-sm font-extrabold">{formatCurrency(totalSalesRevenue)}</span>
+            <span className="text-sm font-extrabold">{formatCurrency(revenue)}</span>
           </div>
 
           <button
-            onClick={loadSales}
+            onClick={() => void loadSales()}
             className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50"
             title="Yangilash"
           >
@@ -116,11 +114,13 @@ export default function AdminSalesPage() {
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Chek raqami, kassir yoki xaridor ismi bo‘yicha qidirish..."
           className="w-full text-xs md:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
         />
       </div>
+
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -144,14 +144,14 @@ export default function AdminSalesPage() {
                     Yuklanmoqda...
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) : sales.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-xs text-slate-400">
                     Sotuvlar topilmadi.
                   </td>
                 </tr>
               ) : (
-                filtered.map((sale) => (
+                sales.map((sale) => (
                   <tr key={sale.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3.5 font-mono font-bold text-slate-900">
                       {sale.receiptNumber}
@@ -199,6 +199,10 @@ export default function AdminSalesPage() {
             </tbody>
           </table>
         </div>
+      </div>
+      <div className="flex items-center justify-between text-sm text-slate-600">
+        <span>{total} ta savdo · {page}-sahifa</span>
+        <div className="flex gap-2"><button type="button" disabled={page <= 1 || isLoading} onClick={() => setPage(page - 1)} className="rounded border px-3 py-1.5 disabled:opacity-40">Oldingi</button><button type="button" disabled={page * 25 >= total || isLoading} onClick={() => setPage(page + 1)} className="rounded border px-3 py-1.5 disabled:opacity-40">Keyingi</button></div>
       </div>
     </div>
   );

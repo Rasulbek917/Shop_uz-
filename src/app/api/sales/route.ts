@@ -20,6 +20,9 @@ export async function GET(req: NextRequest) {
     const startDate = req.nextUrl.searchParams.get("startDate");
     const endDate = req.nextUrl.searchParams.get("endDate");
     const receiptNumber = req.nextUrl.searchParams.get("receiptNumber");
+    const historyPage = Number(req.nextUrl.searchParams.get("historyPage"));
+    const paginatedHistory = Number.isInteger(historyPage) && historyPage > 0;
+    const historySearch = req.nextUrl.searchParams.get("historySearch")?.trim().slice(0, 100) || "";
 
     const where: any = {
       shopId,
@@ -39,6 +42,17 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    if (paginatedHistory) {
+      // History pages must search the whole shop history, not just the newest 100 sales.
+      // A cashier may only browse their own sales in this view.
+      if (user.role === "CASHIER") where.cashierId = user.id;
+      if (historySearch) where.OR = [
+        { receiptNumber: { contains: historySearch, mode: "insensitive" } },
+        { customer: { name: { contains: historySearch, mode: "insensitive" } } },
+        ...(user.role === "CASHIER" ? [] : [{ cashier: { fullName: { contains: historySearch, mode: "insensitive" } } }]),
+      ];
+    }
+
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = new Date(startDate);
@@ -49,6 +63,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const pageSize = 25;
     const sales = await prisma.sale.findMany({
       where,
       include: {
@@ -67,10 +82,18 @@ export async function GET(req: NextRequest) {
         },
         payments: true,
       },
-      orderBy: { createdAt: "desc" },
-      take: 100,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: paginatedHistory ? (historyPage - 1) * pageSize : 0,
+      take: paginatedHistory ? pageSize : 100,
     });
 
+    if (paginatedHistory) {
+      const [total, revenue] = await Promise.all([
+        prisma.sale.count({ where }),
+        prisma.sale.aggregate({ where, _sum: { payableAmount: true } }),
+      ]);
+      return NextResponse.json({ success: true, data: { sales: sales.map(withRefundInfo), total, page: historyPage, pageSize, revenue: revenue._sum.payableAmount || 0 } });
+    }
     return NextResponse.json({ success: true, data: sales.map(withRefundInfo) });
   } catch (error: any) {
     logger.error("Sales GET error", { error: error });
