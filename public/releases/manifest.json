@@ -8,9 +8,9 @@
   },
   "windows": {
     "url": "https://github.com/Rasulbek917/Shop_uz-/releases/download/windows-latest/savdoza-windows-setup.exe",
-    "version": "2.0.0+14",
-    "bytes": 10835501,
-    "sha256": "dcad4d113156148eeddbe50b53bc44789119b850c1be519e30a9daa73af3d5a6",
+    "version": "2.0.0+15",
+    "bytes": 10850850,
+    "sha256": "afc4a2dc762b24e24f16470b7069ea1e13a4f4ce14b73a4ae788451e0a206a96",
     "channel": "preview"
   }
 }
